@@ -1,6 +1,8 @@
 #ifndef COMMON_INCLUDED
 #define COMMON_INCLUDED
 
+static const float PI = 3.14159265359f;
+static const float PI2 = 3.14159265359f*2;
 
 cbuffer Constants : register(b0)
 {
@@ -11,31 +13,56 @@ cbuffer Constants : register(b0)
     float2 Mouse;
     float LifeTime;
     float SpawnRate;
+    uint FrameIndex;
 };
 
 struct Particle
 {
     float3 Position;
     float3 Velocity;
-    float3 color;
-    float age;
+    float3 Color;
+    float Age;
 };
 
 struct EmitterData{
      uint SpawnCountThisFrame;
      uint ConsumedSpawns;
-     uint SpawnAccamulator;
+     uint SpawnAccumulator;
 };
 
-float Random01(uint seed)
+uint WangHash(uint s)
 {
-    seed ^= 2747636419u;
-    seed *= 2654435769u;
-    seed ^= seed >> 16;
-    seed *= 2654435769u;
-    seed ^= seed >> 16;
-    seed *= 2654435769u;
-    return (seed & 0x00FFFFFF) / 16777215.0;
+    s = (s ^ 61u) ^ (s >> 16);
+    s *= 9u;
+    s = s ^ (s >> 4);
+    s *= 0x27d4eb2du;
+    s = s ^ (s >> 15);
+    return s;
 }
 
+float Random(uint seed)
+{
+    return WangHash(seed) / 4294967296.0;
+}
+
+float2 Rotate(float2 v, float angle)
+{
+    float c = cos(angle);
+    float s = sin(angle);
+
+    return float2(
+        v.x * c - v.y * s,
+        v.x * s + v.y * c
+    );
+}
+float2 Rotate(float v, float angle)
+{
+    float c = cos(angle);
+    float s = sin(angle);
+
+    return float2(
+        v.x * c,
+        v.x * s
+    );
+}
 #endif

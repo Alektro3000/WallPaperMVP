@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 
 public class ParticleSimulation
@@ -6,17 +7,28 @@ public class ParticleSimulation
     private readonly ParticleBuffers ParticleSystem;
     private int _width;
     private int _height;
+
+    Stopwatch timer = Stopwatch.StartNew();
+    double previousTime;
+    uint FrameIndex;
+
     public ParticleSimulation(ParticleBuffers partcileSystem, int width, int height)
     {
         _width = width;
         _height = height;
         ParticleSystem = partcileSystem;
+        previousTime = timer.Elapsed.TotalSeconds;
     }
 
     public void UpdateStaticResource(ref Constants constant)
     {
+        double currentTime = timer.Elapsed.TotalSeconds;
+        float deltaTime = (float)(currentTime - previousTime);
+        previousTime = currentTime;
+
         // Update static buffer
-        time = (time + 0.166f);
+        FrameIndex++;
+        time += deltaTime;
         float t = (float)(Math.Sin(time * 0.2) * 0.5 + 0.5);
 
         Win32.GetCursorPos(out Win32.POINT point);
@@ -24,10 +36,11 @@ public class ParticleSimulation
         constant.ViewMatrix = Matrix4x4.CreateScale((float)_height/_width,1,1);
         constant.MousePos = MousePos;
         constant.TintColor = new Vector4((MousePos.X+1)/2, (MousePos.Y+1)/2, 1.0f, 1.0f);
-        constant.DeltaTime = 0.166f;
-        constant.particleCount = ParticleSystem._particleCount;
+        constant.DeltaTime = deltaTime;
+        constant.ParticleCount = ParticleSystem._particleCount;
         constant.LifeTime = 1f;
-        constant.SpawnRate = 12f;
+        constant.SpawnRate = 1000f;
+        constant.FrameIndex = FrameIndex;
 
     }
 }

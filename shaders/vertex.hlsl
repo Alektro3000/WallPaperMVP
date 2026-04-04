@@ -26,6 +26,6 @@ VSOut main(VSInput input)
     float3 worldPos = part.Position + float3(input.localOffset * 0.1, 0.0);
     o.position = mul(float4(worldPos, 1.0), viewMatrix);
 
-    o.color = float4(part.color, 1.0) * TintColor;
+    o.color = float4(part.Color, part.Age/LifeTime);
     return o;
 }

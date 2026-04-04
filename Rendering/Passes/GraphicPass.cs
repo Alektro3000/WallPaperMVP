@@ -61,12 +61,12 @@ class GraphicPass : IDisposable
             PixelShader = ps,
 
             InputLayout = GetInputLayoutDescription(),
-
+            
             SampleMask = uint.MaxValue,
             PrimitiveTopologyType = PrimitiveTopologyType.Triangle,
 
             RasterizerState = RasterizerDescription.CullNone,
-            BlendState = BlendDescription.Opaque,
+            BlendState = BlendDescription.Additive,
             DepthStencilState = DepthStencilDescription.None,
 
             SampleDescription = SampleDescription.Default,

@@ -7,21 +7,23 @@ sealed class ComputePass : IDisposable
 
 
     //Compute
-    private ID3D12RootSignature _computeRootSignature;
-    private ID3D12PipelineState _computePSO;
+    private ID3D12RootSignature RootSignature;
+    private ID3D12PipelineState ParticlePSO;
+    private ID3D12PipelineState EmitterPSO;
 
-    private ParticleBuffers _particleSystem;
+    private ParticleBuffers ParticleBuffers;
 
     public ComputePass(ID3D12Device device, ParticleBuffers particleSystem)
     {
-        _particleSystem = particleSystem;
+        ParticleBuffers = particleSystem;
         CreateComputePipeline(device);
     }
 
     public void Dispose()
     {
-        _computeRootSignature.Dispose();
-        _computePSO.Dispose();
+        RootSignature.Dispose();
+        ParticlePSO.Dispose();
+        EmitterPSO.Dispose();
     }
 
     private void CreateComputePipeline(ID3D12Device device)
@@ -41,7 +43,7 @@ sealed class ComputePass : IDisposable
 
             new DescriptorRange1(
                 DescriptorRangeType.UnorderedAccessView,
-                1,   // one UAV
+                2,   // one UAV
                 0,   // u0
                 0,
                 (uint)DescriptorRangeFlags.None,
@@ -56,7 +58,7 @@ sealed class ComputePass : IDisposable
             // t0 descriptor table
             new RootParameter1(new RootDescriptorTable1(ranges[0]), ShaderVisibility.All),
 
-            // u0 descriptor table
+            // u0/u1 descriptor table
             new RootParameter1(new RootDescriptorTable1(ranges[1]), ShaderVisibility.All)
         };
 
@@ -74,34 +76,52 @@ sealed class ComputePass : IDisposable
             throw new InvalidOperationException(error);
         }
 
-        _computeRootSignature = device.CreateRootSignature(0, signatureBlob);
+        RootSignature = device.CreateRootSignature(0, signatureBlob);
 
         //
         // 3. Compile shader
         //
-        ReadOnlyMemory<byte> computeShader = ShaderHelper.PreCompile("compute.hlsl", DxcShaderStage.Compute);
+        ReadOnlyMemory<byte> ParticleShader = ShaderHelper.PreCompile("compute.hlsl", DxcShaderStage.Compute);
 
         //
         // 4. Compute PSO
         //
-        var psoDesc = new ComputePipelineStateDescription
+        var ParticleDesc = new ComputePipelineStateDescription
         {
-            RootSignature = _computeRootSignature,
-            ComputeShader = computeShader,
+            RootSignature = RootSignature,
+            ComputeShader = ParticleShader,
+            NodeMask = 0,
+            CachedPSO = default,
+            Flags = PipelineStateFlags.None
+        };
+        ParticlePSO = device.CreateComputePipelineState(ParticleDesc);
+
+        //
+        // 5. Compile shader
+        //
+        ReadOnlyMemory<byte> EmitterShader = ShaderHelper.PreCompile("precompute.hlsl", DxcShaderStage.Compute);
+
+        //
+        // 6. Compute PSO
+        //
+        var EmitterDesc = new ComputePipelineStateDescription
+        {
+            RootSignature = RootSignature,
+            ComputeShader = EmitterShader,
             NodeMask = 0,
             CachedPSO = default,
             Flags = PipelineStateFlags.None
         };
 
-        _computePSO = device.CreateComputePipelineState(psoDesc);
+        EmitterPSO = device.CreateComputePipelineState(EmitterDesc);
     }
 
 
     public void DispatchParticles(
     FrameResource frameResource)
     {
-        var read = _particleSystem.ReadBufferBinding;
-        var write =  _particleSystem.WriteBufferBinding;
+        var read = ParticleBuffers.ReadBufferBinding;
+        var write =  ParticleBuffers.WriteBufferBinding;
         var cmd = frameResource.CommandList;
         // Transition particle buffers into correct states.
         cmd.ResourceBarrierTransition(
@@ -109,8 +129,7 @@ sealed class ComputePass : IDisposable
             ResourceStates.UnorderedAccess,  
             ResourceStates.NonPixelShaderResource);
 
-        cmd.SetComputeRootSignature(_computeRootSignature);
-        cmd.SetPipelineState(_computePSO);
+        cmd.SetComputeRootSignature(RootSignature);
 
         cmd.SetComputeRootConstantBufferView(
             0,
@@ -122,7 +141,19 @@ sealed class ComputePass : IDisposable
         // Root parameter 2 = UAV table(u0)
         cmd.SetComputeRootDescriptorTable(2, write.ParticleBufferUAVGPU);
 
-        uint threadGroupCount = (_particleSystem._particleCount + 255) / 256;
+        // Sync previous frame
+        cmd.ResourceBarrierUnorderedAccessView(ParticleBuffers.EmitterBuffer);
+
+        // Emitter Update
+        cmd.SetPipelineState(EmitterPSO);
+        cmd.Dispatch(1, 1, 1);
+
+        // Sync
+        cmd.ResourceBarrierUnorderedAccessView(ParticleBuffers.EmitterBuffer);
+
+        //Particle Update
+        cmd.SetPipelineState(ParticlePSO);
+        uint threadGroupCount = (ParticleBuffers._particleCount + 255) / 256;
         cmd.Dispatch(threadGroupCount, 1, 1);
 
         // Ensure UAV writes are visible before later use.

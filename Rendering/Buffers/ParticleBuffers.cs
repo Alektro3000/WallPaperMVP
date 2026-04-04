@@ -7,7 +7,7 @@ using Vortice.DXGI;
 
 public class ParticleBuffers : IDisposable
 {
-    readonly public uint _particleCount = 10;
+    readonly public uint _particleCount = 1000;
     public const int particleBuffersLength = 2;
     const int Shader4ComponentMapping = 5768;
 
@@ -54,7 +54,11 @@ public class ParticleBuffers : IDisposable
     private Particle[] generateParticles()
     {
         return Enumerable.Range(0, (int)_particleCount)
-                          .Select(i => new Particle { Position = new Vector3(0.0f, -0.5f + ((float)i / _particleCount), 0.0f), Color = new Vector3(1f, 1f, 1f) })
+                          .Select(i => new Particle { 
+                            Position = new Vector3(0.0f, 0.0f, 0.0f), 
+                            Color = new Vector3(0.2f, 1f, 1f),
+                            Age = (float)i / _particleCount,
+                             })
                           .ToArray();
 
     }
