@@ -18,7 +18,6 @@ class Program
         return Win32.DefWindowProc(hWnd, msg, wParam, lParam);
     }
 
-
     static void Main()
     {
 
@@ -39,6 +38,7 @@ class Program
         try
         {
             using var renderer = new Renderer(hwnd, width, height);
+            var form = new SettingsForm(renderer);
             Win32.MSG msg;
 
             while (true)
@@ -49,13 +49,17 @@ class Program
                         return;
 
                     if (msg.message == Win32.WM_HOTKEY && msg.wParam.ToInt32() == Win32.HOTKEY_ID)
-                        OpenSettingsWindow(renderer);
+                    {
+                        form.Show();
+                    }
 
                     Win32.TranslateMessage(ref msg);
                     Win32.DispatchMessage(ref msg);
                 }
-
+                if(form.ShouldBeClosed)
+                    return;
                 renderer.Render();
+                
             }
         }
         catch (Exception ex)
@@ -67,9 +71,5 @@ class Program
         {
             Win32.UnregisterHotKey(hwnd, Win32.HOTKEY_ID);
         }
-    }
-    static void OpenSettingsWindow(Renderer renderer)
-    {
-        new SettingsForm().Show();
     }
 }

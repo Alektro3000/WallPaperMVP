@@ -9,44 +9,36 @@ using FeatureLevel = Vortice.Direct3D.FeatureLevel;
 using static Vortice.Direct3D11on12.Apis;
 using Vortice.DCommon;
 
-class Renderer2D : IDisposable
+class Renderer2DPass : IDisposable
 {
-    private int FrameCount;
-
     // D3D11On12 + D2D
     private ID3D11Device _d3d11Device;
     private ID3D11DeviceContext _d3d11Context;
     private ID3D11On12Device _d3d11On12Device;
-    private ID3D11Resource[] _wrappedBackBuffers;
 
     private ID2D1Factory1 _d2dFactory;
     private ID2D1Device _d2dDevice;
     private ID2D1DeviceContext _d2dContext;
-    private ID2D1Bitmap1[] _d2dTargets;
 
     private IDWriteFactory _writeFactory;
     private IDWriteTextFormat _textFormat;
     private ID2D1SolidColorBrush _brush;
-    
+
     private float _timeDelta = 0.016f * 4;
     private float _x = 0;
     private float _y = 0;
 
-    public Renderer2D(
-        ID3D12Device device, 
-        SharpGen.Runtime.IUnknown _commandQueue,
-        ID3D12Resource[] _renderTargets)
+    public Renderer2DPass(
+        ID3D12Device device,
+        SharpGen.Runtime.IUnknown _commandQueue)
     {
-        this.FrameCount = _renderTargets.Length;
-        _wrappedBackBuffers = new ID3D11Resource[FrameCount];
-        _d2dTargets = new ID2D1Bitmap1[FrameCount];
 
         // Create 11On12 device on top of the existing D3D12 device/queue.
         var hr = D3D11On12CreateDevice(
             device,
             DeviceCreationFlags.BgraSupport,
             [FeatureLevel.Level_12_0],
-            new[] { _commandQueue },
+            [_commandQueue],
             0,
             out _d3d11Device,
             out _d3d11Context,
@@ -68,38 +60,40 @@ class Renderer2D : IDisposable
         _textFormat = _writeFactory.CreateTextFormat("Segoe UI", 32.0f);
         _brush = _d2dContext.CreateSolidColorBrush(new Color4(1f, 1f, 1f, 1f));
 
-        for (int i = 0; i < FrameCount; i++)
+    }
+
+    public void InitBuffer(FrameResource frameResource)
+    {
+        // Wrap D3D12 back buffer so D3D11/D2D can render into it.
+        var wrappedDesc = new Vortice.Direct3D11on12.ResourceFlags
         {
-            // Wrap D3D12 back buffer so D3D11/D2D can render into it.
-            var wrappedDesc = new Vortice.Direct3D11on12.ResourceFlags
-            {
-                BindFlags = BindFlags.RenderTarget
-            };
+            BindFlags = BindFlags.RenderTarget
+        };
 
-            _wrappedBackBuffers[i] = _d3d11On12Device.CreateWrappedResource<ID3D11Resource>(
-                _renderTargets[i],
-                wrappedDesc,
-                ResourceStates.RenderTarget,
-                (int)ResourceStates.Present);
+        var backBuffer = _d3d11On12Device.CreateWrappedResource<ID3D11Resource>(
+            frameResource.RenderTarget,
+            wrappedDesc,
+            ResourceStates.RenderTarget,
+            ResourceStates.Present);
 
-            using IDXGISurface surface = _wrappedBackBuffers[i].QueryInterface<IDXGISurface>();
+        using IDXGISurface surface = backBuffer.QueryInterface<IDXGISurface>();
 
-            var bitmapProps = new BitmapProperties1(
-                new PixelFormat(Format.B8G8R8A8_UNorm, Vortice.DCommon.AlphaMode.Premultiplied),
-                96,
-                96,
-                BitmapOptions.Target | BitmapOptions.CannotDraw);
+        var bitmapProps = new BitmapProperties1(
+            new PixelFormat(Format.B8G8R8A8_UNorm, Vortice.DCommon.AlphaMode.Premultiplied),
+            96,
+            96,
+            BitmapOptions.Target | BitmapOptions.CannotDraw);
 
-            _d2dTargets[i] = _d2dContext.CreateBitmapFromDxgiSurface(surface, bitmapProps);
-        }
-    }    
-    
+        frameResource.WrappedBackBuffer = backBuffer;
+        frameResource.D2DTarget = _d2dContext.CreateBitmapFromDxgiSurface(surface, bitmapProps);
+    }
 
 
-    public void Render(uint _frameIndex){
+    public void Render(FrameResource resource)
+    {
         // Acquire wrapped resource for D3D11/D2D work
-        _d3d11On12Device.AcquireWrappedResources(new[] { _wrappedBackBuffers[_frameIndex] }, 1);
-        _d2dContext.Target = _d2dTargets[_frameIndex];
+        _d3d11On12Device.AcquireWrappedResources([resource.WrappedBackBuffer], 1);
+        _d2dContext.Target = resource.D2DTarget;
         _d2dContext.BeginDraw();
 
         _d2dContext.DrawText(
@@ -115,19 +109,17 @@ class Renderer2D : IDisposable
         _x = (_x + 50 * _timeDelta) % 2800f;
         _y = (_y + 60 * _timeDelta) % 1800f;
 
-        _d2dContext.EndDraw();
+        var result = _d2dContext.EndDraw();
+        if (result.Failure)
+        {
+            Console.WriteLine("Wrong 2D render");
+        }
         // This transitions wrapped resource from InState -> OutState
-        _d3d11On12Device.ReleaseWrappedResources(new[] { _wrappedBackBuffers[_frameIndex] }, 1);
+        _d3d11On12Device.ReleaseWrappedResources([resource.WrappedBackBuffer], 1);
         _d3d11Context.Flush();
     }
     public void Dispose()
     {
-        
-        for (int i = 0; i < FrameCount; i++)
-        {
-            _d2dTargets[i]?.Dispose();
-            _wrappedBackBuffers[i]?.Dispose();
-        }
 
         _brush?.Dispose();
         _textFormat?.Dispose();

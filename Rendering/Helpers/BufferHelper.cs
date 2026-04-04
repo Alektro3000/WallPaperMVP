@@ -65,8 +65,8 @@ public static class BufferHelper
         return buffer;
     }
 
-    public unsafe static (ID3D12Resource  Resource, ID3D12DescriptorHeap Heap) CreateStaticBuffer<T>(
-        ID3D12Device device, out T* mappedConstants)  where T : unmanaged
+    public unsafe static ID3D12Resource CreateStaticBuffer<T>(
+        ID3D12Device device, CpuDescriptorHandle cbvHandle, out T* mappedConstants)  where T : unmanaged
     {
         //constant Buffer size must be aligned to 256
         int constantBufferSize = (Marshal.SizeOf<T>() + 255) & ~255;
@@ -76,31 +76,26 @@ public static class BufferHelper
         void* _mappedConstants;
         _constantBuffer.Map(0, null, &_mappedConstants).CheckError();
         mappedConstants = (T*)_mappedConstants; 
-
-        var _cbvHeap = device.CreateDescriptorHeap(new DescriptorHeapDescription(
-            DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
-            1,
-            DescriptorHeapFlags.ShaderVisible,
-            0));
-
-        var cbvDesc = new ConstantBufferViewDescription
-        {
-            BufferLocation = _constantBuffer.GPUVirtualAddress,
-            SizeInBytes = (uint)constantBufferSize
-        };
-
-        device.CreateConstantBufferView(
-            cbvDesc,
-            _cbvHeap.GetCPUDescriptorHandleForHeapStart());
         
-        return (_constantBuffer, _cbvHeap);
+
+            var cbvDesc = new ConstantBufferViewDescription
+            {
+                BufferLocation = _constantBuffer.GPUVirtualAddress,
+                SizeInBytes = (uint)constantBufferSize
+            };
+
+            device.CreateConstantBufferView(
+                cbvDesc,
+                cbvHandle);
+
+        return _constantBuffer;
     }
 
 
     public static unsafe ID3D12Resource CreateDefaultBuffer<T>(
         ID3D12Device device,
         ReadOnlySpan<T> data,
-        ImmidiateCommandList commandList,
+        ImmediateCommandList commandList,
         ResourceStates finalState = ResourceStates.VertexAndConstantBuffer,
                 ResourceFlags resourceFlags = ResourceFlags.None)
         where T : unmanaged

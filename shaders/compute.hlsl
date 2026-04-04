@@ -1,22 +1,11 @@
-struct Particle
-{
-    float3 Position;
-    float3 Velocity;
-    float3 color;
-};
+#include "common/common.hlsli"
 
 StructuredBuffer<Particle> PrevParticles : register(t0);
 RWStructuredBuffer<Particle> NextParticles : register(u0);
 
-cbuffer Constants : register(b0)
-{
-    float4 TintColor;
-    uint ParticleCount;
-    float DeltaTime;
-    float2 Mouse;
-};
 
-[numthreads(256, 1, 1)] void main(uint3 dtid : SV_DispatchThreadID)
+[numthreads(256, 1, 1)] 
+void main(uint3 dtid : SV_DispatchThreadID)
 {
     uint i = dtid.x;
     if (i >= ParticleCount)

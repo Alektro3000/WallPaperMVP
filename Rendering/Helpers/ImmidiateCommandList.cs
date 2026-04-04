@@ -1,7 +1,7 @@
 
 using Vortice.Direct3D12;
 
-public class ImmidiateCommandList : IDisposable 
+public class ImmediateCommandList : IDisposable 
 {
     private ID3D12CommandAllocator _commandAllocator;
     private ID3D12GraphicsCommandList _commandList;
@@ -9,7 +9,8 @@ public class ImmidiateCommandList : IDisposable
     private ID3D12CommandQueue _commandQueue;
     private AutoResetEvent _fenceEvent;
     private ulong _fenceValue;
-    public ImmidiateCommandList(ID3D12Device device, ID3D12CommandQueue commandQueue)
+    public ImmediateCommandList(GraphicsContext context) : this(context.Device, context.CommandQueue){}
+    public ImmediateCommandList(ID3D12Device device, ID3D12CommandQueue commandQueue)
     {
         _commandAllocator =
             device.CreateCommandAllocator(CommandListType.Direct);

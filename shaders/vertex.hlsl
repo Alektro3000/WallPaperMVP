@@ -1,17 +1,13 @@
+#include "common/common.hlsli"
 
-cbuffer Constants : register(b0)
-{
-    float4 TintColor;
-};
+StructuredBuffer<Particle> Particles : register(t0);
 
 struct VSInput
 {
     float2 localOffset : POSITION;
     float2 uv          : TEXCOORD;
 
-    float3 position   : INSTANCE_POSITION;
-    float3 velocity   : INSTANCE_VELOCITY;
-    float3 color    : INSTANCE_COLOR;
+    uint index   : SV_InstanceID;
 };
 
 struct VSOut
@@ -25,9 +21,11 @@ VSOut main(VSInput input)
 {
     VSOut o;
 
-    float3 worldPos = input.position + float3(input.localOffset * 0.1, 0.0);
-    o.position = float4(worldPos, 1.0);
+    Particle part = Particles[input.index];
 
-    o.color = float4(input.color, 1.0) * TintColor;
+    float3 worldPos = part.Position + float3(input.localOffset * 0.1, 0.0);
+    o.position = mul(float4(worldPos, 1.0), viewMatrix);
+
+    o.color = float4(part.color, 1.0) * TintColor;
     return o;
 }

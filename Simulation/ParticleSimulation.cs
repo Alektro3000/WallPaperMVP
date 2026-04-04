@@ -1,0 +1,33 @@
+using System.Numerics;
+
+public class ParticleSimulation
+{
+    private float time = 0f;
+    private readonly ParticleBuffers ParticleSystem;
+    private int _width;
+    private int _height;
+    public ParticleSimulation(ParticleBuffers partcileSystem, int width, int height)
+    {
+        _width = width;
+        _height = height;
+        ParticleSystem = partcileSystem;
+    }
+
+    public void UpdateStaticResource(ref Constants constant)
+    {
+        // Update static buffer
+        time = (time + 0.166f);
+        float t = (float)(Math.Sin(time * 0.2) * 0.5 + 0.5);
+
+        Win32.GetCursorPos(out Win32.POINT point);
+        var MousePos = new Vector2(((float)point.X) / _width, (_height - (float)point.Y) / _height) * 2 - new Vector2(1, 1);
+        constant.ViewMatrix = Matrix4x4.CreateScale((float)_height/_width,1,1);
+        constant.MousePos = MousePos;
+        constant.TintColor = new Vector4((MousePos.X+1)/2, (MousePos.Y+1)/2, 1.0f, 1.0f);
+        constant.DeltaTime = 0.166f;
+        constant.particleCount = ParticleSystem._particleCount;
+        constant.LifeTime = 1f;
+        constant.SpawnRate = 12f;
+
+    }
+}

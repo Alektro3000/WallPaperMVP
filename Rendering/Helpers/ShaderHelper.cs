@@ -1,4 +1,5 @@
 
+using System.Text.RegularExpressions;
 using Vortice.Direct3D;
 using Vortice.Direct3D12;
 using Vortice.Dxc;
@@ -19,18 +20,25 @@ class ShaderHelper
     
     public static ReadOnlyMemory<byte> PreCompile(string path, DxcShaderStage stage)
     {
-        string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "shaders", path);
+        string shadersRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "shaders");
+        string fullPath = Path.Combine(shadersRoot, path);
 
         if (!File.Exists(fullPath))
         {
             throw new FileNotFoundException($"Shader file not found: {fullPath}");
         }
 
-        string source = File.ReadAllText(fullPath);
+
+        string source = LoadShaderWithIncludes(fullPath, shadersRoot, new HashSet<string>());
+
+        //string source = File.ReadAllText(fullPath);
 
         Console.WriteLine($"Compiling {path} as {stage}...");
 
-        var result = DxcCompiler.Compile(stage, source, "main", GetOptions());
+        var result = DxcCompiler.Compile(stage, 
+            source, 
+            "main", 
+            GetOptions());
 
         // IMPORTANT: Always check for errors first
         try
@@ -81,4 +89,38 @@ class ShaderHelper
         }
     }
     
+    private static string LoadShaderWithIncludes(
+        string filePath,
+        string shadersRoot,
+        HashSet<string> includeStack)
+    {
+        filePath = Path.GetFullPath(filePath);
+
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException($"Included shader file not found: {filePath}");
+
+        if (includeStack.Contains(filePath))
+            throw new InvalidOperationException($"Circular include detected: {filePath}");
+
+        includeStack.Add(filePath);
+
+        string source = File.ReadAllText(filePath);
+        string currentDir = Path.GetDirectoryName(filePath)!;
+
+        var includeRegex = new Regex(@"^\s*#include\s+""([^""]+)""", RegexOptions.Multiline);
+        string resolved = includeRegex.Replace(source, match =>
+        {
+            string relativeInclude = match.Groups[1].Value;
+
+            string includePath = Path.GetFullPath(Path.Combine(currentDir, relativeInclude));
+
+            if (!includePath.StartsWith(Path.GetFullPath(shadersRoot), StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"Include escapes shader root: {relativeInclude}");
+
+            return LoadShaderWithIncludes(includePath, shadersRoot, includeStack);
+        });
+
+        includeStack.Remove(filePath);
+        return resolved;
+    }
 }
