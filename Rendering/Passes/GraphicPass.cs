@@ -1,7 +1,7 @@
 using Vortice.Direct3D12;
 using Vortice.DXGI;
 using Vortice.Dxc;
-class GraphicPass : IDisposable
+public class GraphicPass : IDisposable
 {
     ID3D12Device _device;
 
@@ -12,12 +12,17 @@ class GraphicPass : IDisposable
 
     private ParticleBuffers ParticleBuffers;
     private GeometryBuffers GeometryBuffers;
-    public GraphicPass(ID3D12Device iD3D12Device, ParticleBuffers particleSystem, GeometryBuffers geometryBuffers)
+    public GraphicPass(
+        ID3D12Device iD3D12Device, 
+        ParticleBuffers particleSystem, 
+        GeometryBuffers geometryBuffers,
+        String VertexShaderPath,
+        String PixelShaderPath)
     {
         _device = iD3D12Device;
         ParticleBuffers = particleSystem;
         GeometryBuffers = geometryBuffers;
-        CreateGraphicPipeline();
+        CreateGraphicPipeline(VertexShaderPath, PixelShaderPath);
     }
     public void Dispose()
     {
@@ -25,7 +30,9 @@ class GraphicPass : IDisposable
         _pipelineState?.Dispose();
     }
     
-    private void CreateGraphicPipeline()
+    private void CreateGraphicPipeline(
+        String VertexShaderPath,
+        String PixelShaderPath)
     {
         var rootParameters = new[]
         {
@@ -51,8 +58,8 @@ class GraphicPass : IDisposable
 
         _rootSignature = _device.CreateRootSignature(rootSignatureDesc);
 
-        ReadOnlyMemory<byte> vs = ShaderHelper.PreCompile("vertex.hlsl", DxcShaderStage.Vertex);
-        ReadOnlyMemory<byte> ps = ShaderHelper.PreCompile("pixel.hlsl", DxcShaderStage.Pixel);
+        ReadOnlyMemory<byte> vs = ShaderHelper.PreCompile(VertexShaderPath, DxcShaderStage.Vertex);
+        ReadOnlyMemory<byte> ps = ShaderHelper.PreCompile(PixelShaderPath, DxcShaderStage.Pixel);
 
         GraphicsPipelineStateDescription pipelineStateDescription = new GraphicsPipelineStateDescription
         {
@@ -104,7 +111,7 @@ class GraphicPass : IDisposable
 
     }
 
-    public void Render(FrameResource currentResource)
+    public void Render(FrameResource currentResource, FrameManager.ConstantKey key)
     {
         var cmd = currentResource.CommandList;
         // Begin of Graphics Pass
@@ -113,7 +120,7 @@ class GraphicPass : IDisposable
         
         cmd.SetGraphicsRootConstantBufferView(
             0,
-            currentResource.ConstantBuffer.GPUVirtualAddress);
+            currentResource.GetBuffer(key).ConstantBuffer.GPUVirtualAddress);
         cmd.SetGraphicsRootDescriptorTable(
             1, 
             ParticleBuffers.WriteBufferBinding.ParticleBufferSRVGpu);
@@ -122,6 +129,6 @@ class GraphicPass : IDisposable
         cmd.IASetVertexBuffers(0, [GeometryBuffers.VertexBufferView]);
         cmd.IASetIndexBuffer(GeometryBuffers.IndexBufferView);
         
-        cmd.DrawIndexedInstanced(GeometryBuffers.IndexCount, ParticleBuffers._particleCount, 0, 0, 0);
+        cmd.DrawIndexedInstanced(GeometryBuffers.IndexCount, ParticleBuffers.particleCount, 0, 0, 0);
     }
 }

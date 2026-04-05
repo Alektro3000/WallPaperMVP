@@ -23,9 +23,9 @@ VSOut main(VSInput input)
 
     Particle part = Particles[input.index];
 
-    float3 worldPos = part.Position + float3(input.localOffset * 0.1, 0.0);
+    float3 worldPos = part.Position + float3(input.localOffset * (part.Size), 0.0);
     o.position = mul(float4(worldPos, 1.0), viewMatrix);
 
-    o.color = float4(part.Color, part.Age/LifeTime);
+    o.color = float4(part.Color);
     return o;
 }

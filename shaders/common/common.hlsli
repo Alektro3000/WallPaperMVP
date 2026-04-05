@@ -19,9 +19,10 @@ cbuffer Constants : register(b0)
 struct Particle
 {
     float3 Position;
+    float Size;
     float3 Velocity;
-    float3 Color;
     float Age;
+    float4 Color;
 };
 
 struct EmitterData{

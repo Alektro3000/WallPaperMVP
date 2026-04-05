@@ -7,7 +7,7 @@ using Vortice.DXGI;
 
 public class ParticleBuffers : IDisposable
 {
-    readonly public uint _particleCount = 1000;
+    readonly public uint particleCount;
     public const int particleBuffersLength = 2;
     const int Shader4ComponentMapping = 5768;
 
@@ -35,29 +35,24 @@ public class ParticleBuffers : IDisposable
 
     public ID3D12Resource EmitterBuffer;
 
-    public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator)
+    public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, uint particleCount = 3000)
     {
-
-        InitConstantBuffer(device, commandList, heapAllocator);
+        this.particleCount = particleCount;
+        InitConstantBuffer(device, commandList);
         InitPingPong(device, commandList, heapAllocator);
     }
-    private void InitConstantBuffer(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator)
+    private void InitConstantBuffer(ID3D12Device device, ImmediateCommandList commandList)
     {
-
-
         EmitterBuffer = BufferHelper.CreateDefaultBuffer(device, [new Emitter()], commandList,
             ResourceStates.VertexAndConstantBuffer,
             ResourceFlags.AllowUnorderedAccess);
-            
-
     }
     private Particle[] generateParticles()
     {
-        return Enumerable.Range(0, (int)_particleCount)
+        return Enumerable.Range(0, (int)particleCount)
                           .Select(i => new Particle { 
-                            Position = new Vector3(0.0f, 0.0f, 0.0f), 
-                            Color = new Vector3(0.2f, 1f, 1f),
-                            Age = (float)i / _particleCount,
+                            Position = new Vector3(0.0f, 0.0f, 0.0f),
+                            Age = -1f,
                              })
                           .ToArray();
 
@@ -80,7 +75,7 @@ public class ParticleBuffers : IDisposable
             Buffer = new BufferShaderResourceView
             {
                 FirstElement = 0,
-                NumElements = _particleCount,
+                NumElements = particleCount,
                 StructureByteStride = stride,
                 Flags = BufferShaderResourceViewFlags.None
             }
@@ -93,7 +88,7 @@ public class ParticleBuffers : IDisposable
             Buffer = new BufferUnorderedAccessView
             {
                 FirstElement = 0,
-                NumElements = _particleCount,
+                NumElements = particleCount,
                 StructureByteStride = stride,
                 CounterOffsetInBytes = 0,
                 Flags = BufferUnorderedAccessViewFlags.None

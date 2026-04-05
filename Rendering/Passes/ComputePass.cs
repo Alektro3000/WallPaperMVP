@@ -2,9 +2,8 @@ using Vortice.Direct3D12;
 using Vortice.DXGI;
 using Vortice.Dxc;
 using static Vortice.Direct3D12.D3D12;
-sealed class ComputePass : IDisposable
+sealed public class ComputePass : IDisposable
 {
-
 
     //Compute
     private ID3D12RootSignature RootSignature;
@@ -13,10 +12,10 @@ sealed class ComputePass : IDisposable
 
     private ParticleBuffers ParticleBuffers;
 
-    public ComputePass(ID3D12Device device, ParticleBuffers particleSystem)
+    public ComputePass(ID3D12Device device, ParticleBuffers particleSystem, String ComputePath, String precomputePath)
     {
         ParticleBuffers = particleSystem;
-        CreateComputePipeline(device);
+        CreateComputePipeline(device, ComputePath, precomputePath);
     }
 
     public void Dispose()
@@ -26,7 +25,7 @@ sealed class ComputePass : IDisposable
         EmitterPSO.Dispose();
     }
 
-    private void CreateComputePipeline(ID3D12Device device)
+    private void CreateComputePipeline(ID3D12Device device, String ComputePath, String precomputePath)
     {
         //
         // 2. Root signature
@@ -81,7 +80,7 @@ sealed class ComputePass : IDisposable
         //
         // 3. Compile shader
         //
-        ReadOnlyMemory<byte> ParticleShader = ShaderHelper.PreCompile("compute.hlsl", DxcShaderStage.Compute);
+        ReadOnlyMemory<byte> ParticleShader = ShaderHelper.PreCompile(ComputePath, DxcShaderStage.Compute);
 
         //
         // 4. Compute PSO
@@ -99,7 +98,7 @@ sealed class ComputePass : IDisposable
         //
         // 5. Compile shader
         //
-        ReadOnlyMemory<byte> EmitterShader = ShaderHelper.PreCompile("precompute.hlsl", DxcShaderStage.Compute);
+        ReadOnlyMemory<byte> EmitterShader = ShaderHelper.PreCompile(precomputePath, DxcShaderStage.Compute);
 
         //
         // 6. Compute PSO
@@ -117,12 +116,11 @@ sealed class ComputePass : IDisposable
     }
 
 
-    public void DispatchParticles(
-    FrameResource frameResource)
+    public void DispatchParticles(FrameResource currentResource, FrameManager.ConstantKey key)
     {
         var read = ParticleBuffers.ReadBufferBinding;
         var write =  ParticleBuffers.WriteBufferBinding;
-        var cmd = frameResource.CommandList;
+        var cmd = currentResource.CommandList;
         // Transition particle buffers into correct states.
         cmd.ResourceBarrierTransition(
             read.ParticleBuffer,
@@ -133,7 +131,7 @@ sealed class ComputePass : IDisposable
 
         cmd.SetComputeRootConstantBufferView(
             0,
-            frameResource.ConstantBuffer.GPUVirtualAddress);
+            currentResource.GetBuffer(key).ConstantBuffer.GPUVirtualAddress);
 
         // Root parameter 1 = SRV table(t0)
         cmd.SetComputeRootDescriptorTable(1, read.ParticleBufferSRVGpu);
@@ -153,7 +151,7 @@ sealed class ComputePass : IDisposable
 
         //Particle Update
         cmd.SetPipelineState(ParticlePSO);
-        uint threadGroupCount = (ParticleBuffers._particleCount + 255) / 256;
+        uint threadGroupCount = (ParticleBuffers.particleCount + 255) / 256;
         cmd.Dispatch(threadGroupCount, 1, 1);
 
         // Ensure UAV writes are visible before later use.

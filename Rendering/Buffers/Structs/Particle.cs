@@ -7,8 +7,9 @@ using System.Numerics;
 public struct Particle
 {
     public Vector3 Position; 
+    public float Size;
     public Vector3 Velocity; 
-    public Vector3 Color; 
     public float Age;
+    public Vector4 Color;
 }
 

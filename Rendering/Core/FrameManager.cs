@@ -15,6 +15,16 @@ public sealed class FrameManager : IDisposable
     //Frame Resource
     private FrameResource[] FrameResources = new FrameResource[FrameCount];
 
+    public struct ConstantKey
+    {
+        internal readonly int key;
+
+        internal ConstantKey(int key) : this()
+        {
+            this.key = key;
+        }
+    }
+
 
     // Synchronization
     private ID3D12Fence _fence;
@@ -83,7 +93,16 @@ public sealed class FrameManager : IDisposable
         _fence = device.CreateFence(0);
         _fenceValue = 1;
     }
-
+    int constantBufferSize = 0;
+    public ConstantKey ReserveBuffer()
+    {
+        return new ConstantKey(constantBufferSize++);
+    }
+    public void PopulateConstantBuffers()
+    {
+        foreach(var frame in FrameResources)
+            frame.ConstantBindings = [.. Enumerable.Range(0, constantBufferSize).Select(x=>new FrameResource.ConstantBinding())];
+    }
     private void CreateFrameResources(ID3D12Device device)
     {
         _rtvHeap = device.CreateDescriptorHeap(new DescriptorHeapDescription(
@@ -99,21 +118,17 @@ public sealed class FrameManager : IDisposable
             0));
 
         var _rtvDescriptorSize = device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
-        var _cbvDescriptorSize = device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
         CpuDescriptorHandle rtvHeapStart = _rtvHeap.GetCPUDescriptorHandleForHeapStart();
-        CpuDescriptorHandle cbvheapStart = _cbvHeap.GetCPUDescriptorHandleForHeapStart();
 
         for (uint i = 0; i < FrameCount; i++)
         {
             CpuDescriptorHandle rtvHandle = new CpuDescriptorHandle(in rtvHeapStart, (int)i, _rtvDescriptorSize);
-            CpuDescriptorHandle cbvHandle = new CpuDescriptorHandle(in cbvheapStart, (int)i, _cbvDescriptorSize);
 
             var renderTarget = _swapChain.GetBuffer<ID3D12Resource>(i);
             device.CreateRenderTargetView(renderTarget, null, rtvHandle);
 
             unsafe
             {
-                var constantBuffer = BufferHelper.CreateStaticBuffer(device, cbvHandle, out Constants* MappedConstants);
 
                 FrameResources[i] = new FrameResource(i, device)
                 {
@@ -121,9 +136,6 @@ public sealed class FrameManager : IDisposable
                     RenderTargetHandle = rtvHandle,
                     RenderTarget = renderTarget,
 
-                    ConstantBuffer = constantBuffer,
-                    MappedConstants = MappedConstants,
-                    ConstantHandle = cbvHandle,
                 };
             }
         } 
@@ -149,7 +161,7 @@ public sealed class FrameManager : IDisposable
         cmd.SetDescriptorHeaps( _heap.Heap);
 
         cmd.OMSetRenderTargets(currentResource.RenderTargetHandle);
-        cmd.ClearRenderTargetView(currentResource.RenderTargetHandle, new Color4(0.1f, 0.1f, 0.3f, 1.0f));
+        cmd.ClearRenderTargetView(currentResource.RenderTargetHandle, new Color4(0.0f, 0.0f, 0.0f, 1.0f));
         return currentResource;
     }
 
@@ -159,6 +171,21 @@ public sealed class FrameManager : IDisposable
         currentResource.CommandList.Close();
 
         Context.CommandQueue.ExecuteCommandList(currentResource.CommandList);
+    }
+    public void SwitchFrameResource(FrameResource currentResource)
+    {
+        currentResource.CommandList.ResourceBarrierTransition(
+            currentResource.RenderTarget,
+            ResourceStates.RenderTarget,
+            ResourceStates.Present);
+    }
+    public void EndFrame(FrameResource currentResource)
+    {
+        
+        ExecuteFrame(currentResource);
+        SwitchFrameResource(currentResource);
+
+        PresentFrame(currentResource);
     }
     public void PresentFrame(FrameResource currentResource)
     {

@@ -66,7 +66,7 @@ public static class BufferHelper
     }
 
     public unsafe static ID3D12Resource CreateStaticBuffer<T>(
-        ID3D12Device device, CpuDescriptorHandle cbvHandle, out T* mappedConstants)  where T : unmanaged
+        ID3D12Device device, out T* mappedConstants)  where T : unmanaged
     {
         //constant Buffer size must be aligned to 256
         int constantBufferSize = (Marshal.SizeOf<T>() + 255) & ~255;
@@ -77,16 +77,6 @@ public static class BufferHelper
         _constantBuffer.Map(0, null, &_mappedConstants).CheckError();
         mappedConstants = (T*)_mappedConstants; 
         
-
-            var cbvDesc = new ConstantBufferViewDescription
-            {
-                BufferLocation = _constantBuffer.GPUVirtualAddress,
-                SizeInBytes = (uint)constantBufferSize
-            };
-
-            device.CreateConstantBufferView(
-                cbvDesc,
-                cbvHandle);
 
         return _constantBuffer;
     }

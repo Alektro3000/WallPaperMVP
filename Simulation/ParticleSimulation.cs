@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Numerics;
 
-public class ParticleSimulation
+public class ParticleController
 {
     private float time = 0f;
     private readonly ParticleBuffers ParticleSystem;
@@ -12,7 +12,7 @@ public class ParticleSimulation
     double previousTime;
     uint FrameIndex;
 
-    public ParticleSimulation(ParticleBuffers partcileSystem, int width, int height)
+    public ParticleController(ParticleBuffers partcileSystem, int width, int height)
     {
         _width = width;
         _height = height;
@@ -37,10 +37,9 @@ public class ParticleSimulation
         constant.MousePos = MousePos;
         constant.TintColor = new Vector4((MousePos.X+1)/2, (MousePos.Y+1)/2, 1.0f, 1.0f);
         constant.DeltaTime = deltaTime;
-        constant.ParticleCount = ParticleSystem._particleCount;
-        constant.LifeTime = 1f;
-        constant.SpawnRate = 1000f;
+        constant.ParticleCount = ParticleSystem.particleCount;
+        constant.LifeTime = 3f;
+        constant.SpawnRate = 300f;
         constant.FrameIndex = FrameIndex;
-
     }
 }

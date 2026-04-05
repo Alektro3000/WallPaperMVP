@@ -1,7 +1,9 @@
 
+using System.Reflection.Metadata;
 using Vortice.Direct2D1;
 using Vortice.Direct3D11;
 using Vortice.Direct3D12;
+using static FrameManager;
 
 public sealed class FrameResource : IDisposable
 {
@@ -14,12 +16,14 @@ public sealed class FrameResource : IDisposable
     public ID3D12GraphicsCommandList CommandList;
 
     //Constant Buffer
-    public ID3D12Resource ConstantBuffer;
-    public CpuDescriptorHandle ConstantHandle;
+    public struct ConstantBinding
+    {
+        public ID3D12Resource ConstantBuffer;
 
-    public unsafe Constants* MappedConstants;
-    public unsafe ref Constants Constants => ref *MappedConstants;
-    
+        public unsafe byte* MappedConstants;
+        public unsafe ref T Constants<T>() where T : unmanaged => ref *(T*)MappedConstants;
+    }
+    public ConstantBinding[] ConstantBindings;
 
     public ID3D11Resource WrappedBackBuffer;
     public ID2D1Bitmap1 D2DTarget;
@@ -40,12 +44,23 @@ public sealed class FrameResource : IDisposable
         CommandList.Close();
     }
 
+    public void AddBuffer(ConstantKey key, ConstantBinding binding)
+    {
+        ConstantBindings[key.key] = binding;
+    }
+    public ConstantBinding GetBuffer(ConstantKey key)
+    {
+        return ConstantBindings[key.key];
+    }
+
     public void Dispose()
     {
         D2DTarget?.Dispose();
         WrappedBackBuffer?.Dispose();
 
-        ConstantBuffer?.Dispose();
+        foreach(var bind in ConstantBindings)
+            bind.ConstantBuffer?.Dispose();
+
         CommandList?.Dispose();
         CommandAllocator?.Dispose();
         RenderTarget?.Dispose();
