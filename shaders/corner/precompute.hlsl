@@ -1,4 +1,5 @@
-#include "common/common.hlsli"
+#include "../common/common.hlsli"
+#include "common.hlsli"
 
 
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
@@ -8,7 +9,7 @@ void main(uint3 tid : SV_DispatchThreadID)
 {
     EmitterData data = Emitter[0];
 
-    uint increment = (uint)(SpawnRate * DeltaTime * 65536.0);
+    uint increment = (uint)( (SpawnRate * DeltaTime ) * 65536.0) ;
 
     uint acc = data.SpawnAccumulator + increment;
     uint spawnCount = acc >> 16;

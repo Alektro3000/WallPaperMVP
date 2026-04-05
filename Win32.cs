@@ -30,6 +30,9 @@ public static class Win32
 
     private const int WM_SPAWN_WORKER = 0x052C;
 
+    private const int LWA_COLORKEY = 0x00000001;
+    private const int LWA_ALPHA    = 0x00000002;
+
 
     // Ctrl + Shift + F10
     public const uint MOD_CONTROL = 0x0002;
@@ -100,7 +103,7 @@ public static class Win32
             IntPtr.Zero,
             IntPtr.Zero,
             IntPtr.Zero);
-
+        SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
         return hwnd;
     }
 
@@ -181,6 +184,13 @@ public static class Win32
 
     [DllImport("user32.dll")]
     public static extern int GetSystemMetrics(int nIndex);
+
+    [DllImport("user32.dll")]
+    public static extern bool SetLayeredWindowAttributes(
+        IntPtr hwnd,
+        uint crKey,
+        byte bAlpha,
+        uint dwFlags);
 
     [DllImport("user32.dll")]
     public static extern IntPtr FindWindow(string className, string? windowName);

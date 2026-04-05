@@ -1,4 +1,6 @@
-#include "common/common.hlsli"
+#include "../common/common.hlsli"
+#include "common.hlsli"
+
 
 StructuredBuffer<Particle> PrevParticles : register(t0);
 RWStructuredBuffer<Particle> NextParticles : register(u0);
@@ -22,14 +24,14 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
             float speed = 0.3 + 0.3 * Random(seed * 3 + 1);
 
             p.Position = 0;
-            p.Velocity = float3(Rotate(speed, angle), 0);
+            p.Velocity = Rotate(speed, angle);
             p.Age = LifeTime * (0.5f + 0.5f * Random(seed+2));
         }
     }
     float scaledAge = p.Age/LifeTime;
 
     float2 right = p.Velocity.yx * float2(1, -1) - p.Position.xy * 0.5f;
-    p.Velocity += float3(right * 1 * DeltaTime, 0);
+    p.Velocity += right * DeltaTime;
 
     p.Position = p.Position + p.Velocity * DeltaTime;
     p.Age -= DeltaTime;
@@ -39,5 +41,16 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
     p.Color.g *= 1.2f - scaledAge;
     //p.Color.r *= 0.2f + scaledAge;
     
+    if (p.Age < 0)
+    {
+        p.Size = 0;
+        p.Color = 0;
+    }
+    else
+    {
+        p.Size = 0.06 + 0.05 * scaledAge * scaledAge;
+        p.Color = float4(0.2f, 0.9f * (1.2f - scaledAge), 1.f, scaledAge);
+    }
+
     NextParticles[i] = p;
 }

@@ -51,7 +51,7 @@ public class ParticleBuffers : IDisposable
     {
         return Enumerable.Range(0, (int)particleCount)
                           .Select(i => new Particle { 
-                            Position = new Vector3(0.0f, 0.0f, 0.0f),
+                            Position = new Vector2(0.0f, 0.0f),
                             Age = -1f,
                              })
                           .ToArray();
@@ -155,5 +155,6 @@ public class ParticleBuffers : IDisposable
     {
         for (int i = 0; i < Buffers.Length; i++)
             Buffers[i].ParticleBuffer.Dispose();
+        EmitterBuffer?.Dispose();
     }
 }

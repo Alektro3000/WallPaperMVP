@@ -10,7 +10,6 @@ public abstract class ParticleSystem : IDisposable
     protected GraphicPass GraphicPass;
 
     protected ParticleBuffers ParticleBuffers;
-    protected ParticleController ParticleSystemController;
     protected FrameManager.ConstantKey ConstantKey;
 
     public void Dispatch(FrameResource currentResource)
@@ -21,29 +20,12 @@ public abstract class ParticleSystem : IDisposable
     {
         GraphicPass.Render(currentResource, ConstantKey);
     }
-    public void UpdateStaticResource(FrameResource currentResource)
-    {
-        ParticleSystemController.UpdateStaticResource(ref currentResource.GetBuffer(ConstantKey).Constants<Constants>());
-    }
+    public abstract void UpdateStaticResource(FrameResource currentResource);
     public void SwapBuffers()
     {
         ParticleBuffers.SwapBuffers();
     }
-    public void InitBuffer(FrameResource frameResource, ID3D12Device device)
-    {        
-        unsafe
-        {
-            var constantBuffer = BufferHelper.CreateStaticBuffer(device, out Constants* MappedConstants);
-            
-            var binding = new FrameResource.ConstantBinding
-            {
-                ConstantBuffer = constantBuffer,
-                MappedConstants = (byte*)MappedConstants,
-            };
-            
-            frameResource.AddBuffer(ConstantKey, binding);
-        }
-    }
+    public abstract void InitBuffer(FrameResource frameResource, ID3D12Device device);
     public void Dispose()
     {
         GraphicPass.Dispose();

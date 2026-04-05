@@ -27,6 +27,7 @@ public sealed class FrameResource : IDisposable
 
     public ID3D11Resource WrappedBackBuffer;
     public ID2D1Bitmap1 D2DTarget;
+    public FrameMetric frameMetric;
 
     public ulong FenceValue;
 

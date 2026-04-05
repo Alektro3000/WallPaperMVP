@@ -38,7 +38,11 @@ class Program
         try
         {
             using var renderer = new Renderer(hwnd, width, height);
-            var form = new SettingsForm(renderer);
+            var form = new SettingsForm(new MouseSettings());
+            form.SettingsApplied += (setting) => {
+                (renderer.ParticleSystems.First(x=>x is MouseSystem) as MouseSystem)
+                    ?.UpdateMouseSettings(setting);
+            };
             Win32.MSG msg;
 
             while (true)

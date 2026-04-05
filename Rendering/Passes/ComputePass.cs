@@ -121,11 +121,12 @@ sealed public class ComputePass : IDisposable
         var read = ParticleBuffers.ReadBufferBinding;
         var write =  ParticleBuffers.WriteBufferBinding;
         var cmd = currentResource.CommandList;
-        // Transition particle buffers into correct states.
+        
+        // Transition particle buffers into correct states.            
         cmd.ResourceBarrierTransition(
-            read.ParticleBuffer,
-            ResourceStates.UnorderedAccess,  
-            ResourceStates.NonPixelShaderResource);
+            write.ParticleBuffer,
+            ResourceStates.NonPixelShaderResource,
+            ResourceStates.UnorderedAccess);
 
         cmd.SetComputeRootSignature(RootSignature);
 
@@ -154,15 +155,11 @@ sealed public class ComputePass : IDisposable
         uint threadGroupCount = (ParticleBuffers.particleCount + 255) / 256;
         cmd.Dispatch(threadGroupCount, 1, 1);
 
-        // Ensure UAV writes are visible before later use.
-        cmd.ResourceBarrier(new ResourceBarrier(new ResourceUnorderedAccessViewBarrier(write.ParticleBuffer)));
-
-        // Example: if you will render from _particleBufferWrite afterward.
+        // Ensure UAV writes are visible before later use in vertex shader
         cmd.ResourceBarrierTransition(
             write.ParticleBuffer,
             ResourceStates.UnorderedAccess,
             ResourceStates.NonPixelShaderResource);
-
     }
 
 }

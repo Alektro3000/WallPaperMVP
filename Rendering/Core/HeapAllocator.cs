@@ -2,7 +2,7 @@
 
 using Vortice.Direct3D12;
 
-public class HeapAllocator
+public class HeapAllocator : IDisposable
 {
     public struct HeapRangeDescriptor
     {
@@ -51,5 +51,10 @@ public class HeapAllocator
             CpuHandle = _baseCpu,
             GpuHandle = _baseGpu,
         };
+    }
+
+    public void Dispose()
+    {
+        _heap?.Dispose();
     }
 }

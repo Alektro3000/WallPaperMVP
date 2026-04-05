@@ -7,7 +7,7 @@ public sealed class Renderer : IDisposable
     private readonly HeapAllocator HeapAllocator;
     private readonly GeometryBuffers GeometryBuffers;
 
-    private readonly ParticleSystem ParticleSystem;
+    public readonly ParticleSystem[] ParticleSystems;
     public Renderer(IntPtr hwnd, int width, int height)
     {
         Context = new GraphicsContext();
@@ -16,9 +16,19 @@ public sealed class Renderer : IDisposable
         HeapAllocator = new HeapAllocator(Context.Device);
         FrameManager = new FrameManager(Context, hwnd, width, height, HeapAllocator);
         GeometryBuffers = new GeometryBuffers(Context.Device, commandList, HeapAllocator);
-        ParticleSystem = new WhirlSytem(Context.Device, commandList, GeometryBuffers, HeapAllocator, FrameManager,  width, height);
+        ParticleSystems = [
+            new MouseSystem(Context.Device, commandList, GeometryBuffers, HeapAllocator, FrameManager),
+            new WhirlSystem(Context.Device, commandList, GeometryBuffers, HeapAllocator, FrameManager),
+            new CornerSystem(Context.Device, commandList, GeometryBuffers, HeapAllocator, FrameManager),
+        ];
         FrameManager.PopulateConstantBuffers();
-        FrameManager.ExecuteForEachFrame(x => ParticleSystem.InitBuffer(x, Context.Device));
+        FrameManager.ExecuteForEachFrame(x =>
+        {
+            foreach (var item in ParticleSystems)
+            {
+                item.InitBuffer(x, Context.Device);
+            }
+        });
 
         //renderer2D = new Renderer2DPass(Context.Device, Context.CommandQueue);
     }
@@ -26,13 +36,20 @@ public sealed class Renderer : IDisposable
     public void Render()
     {
         var currentResource = FrameManager.BeginFrame();
+        foreach (var item in ParticleSystems)
+            item.UpdateStaticResource(currentResource);
 
-        ParticleSystem.UpdateStaticResource(currentResource);
-        ParticleSystem.Dispatch(currentResource);
-        ParticleSystem.Render(currentResource);
+        foreach (var item in ParticleSystems)
+            item.Dispatch(currentResource);
+
+        foreach (var item in ParticleSystems)
+            item.Render(currentResource);
+            
 
         FrameManager.EndFrame(currentResource);
-        ParticleSystem.SwapBuffers();
+        
+        foreach (var item in ParticleSystems)
+            item.SwapBuffers();
     }
 
 
@@ -40,8 +57,11 @@ public sealed class Renderer : IDisposable
     {
         FrameManager.WaitForAllFrames();
 
+        GeometryBuffers.Dispose();
+        HeapAllocator.Dispose();
 
-        ParticleSystem.Dispose();
+        foreach (var item in ParticleSystems)
+            item.Dispose();
         FrameManager.Dispose();
         Context.Dispose();
 

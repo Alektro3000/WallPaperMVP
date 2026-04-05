@@ -4,25 +4,15 @@
 static const float PI = 3.14159265359f;
 static const float PI2 = 3.14159265359f*2;
 
-cbuffer Constants : register(b0)
-{
-    float4x4 viewMatrix;
-    float4 TintColor;
-    uint ParticleCount;
-    float DeltaTime;
-    float2 Mouse;
-    float LifeTime;
-    float SpawnRate;
-    uint FrameIndex;
-};
 
 struct Particle
 {
-    float3 Position;
-    float Size;
-    float3 Velocity;
-    float Age;
     float4 Color;
+    float2 Position;
+    float2 Velocity;
+    float Size;
+    float Age;
+    float4 CustomData;
 };
 
 struct EmitterData{

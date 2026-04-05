@@ -1,15 +1,20 @@
 using Vortice.Direct3D12;
 using Vortice.DXGI;
 using Vortice.Mathematics;
+using Vortice.DirectComposition;
+using static Vortice.DirectComposition.DComp;
+using Vortice.Direct3D11;
+using Vortice.Direct3D11on12;
+using Vortice.Direct3D;
 
 public sealed class FrameManager : IDisposable
 {
     private const int FrameCount = 2;
+    private const bool Transparent = false;
 
     // D3D12
     private IDXGISwapChain3 _swapChain;
     private ID3D12DescriptorHeap _rtvHeap;
-    private ID3D12DescriptorHeap _cbvHeap;
 
 
     //Frame Resource
@@ -25,7 +30,6 @@ public sealed class FrameManager : IDisposable
         }
     }
 
-
     // Synchronization
     private ID3D12Fence _fence;
     private ulong _fenceValue;
@@ -40,6 +44,7 @@ public sealed class FrameManager : IDisposable
     private Viewport _viewport;
     private RectI _scissor;
     private HeapAllocator _heap;
+    private FrameMetricManager manager; 
     public FrameManager(GraphicsContext context, IntPtr hwnd, int width, int height, HeapAllocator heap)
     {
         _hwnd = hwnd;
@@ -48,6 +53,8 @@ public sealed class FrameManager : IDisposable
         _heap = heap;
 
         Context = context;
+
+        manager = new FrameMetricManager(width, height);
 
         CreateSwapChain();
         CreateFence(context.Device);
@@ -66,26 +73,80 @@ public sealed class FrameManager : IDisposable
         using IDXGIFactory4 factory = DXGI.CreateDXGIFactory2<IDXGIFactory4>(false);
 #endif
 
-        var swapChainDesc = new SwapChainDescription1
+
+        if(Transparent)
         {
-            Width = (uint)_width,
-            Height = (uint)_height,
-            Format = Format.B8G8R8A8_UNorm,
-            Stereo = false,
-            SampleDescription = SampleDescription.Default,
-            BufferUsage = Usage.RenderTargetOutput,
-            BufferCount = FrameCount,
-            Scaling = Scaling.Stretch,
-            SwapEffect = SwapEffect.FlipDiscard,
-            AlphaMode = AlphaMode.Ignore
-        };
+            var swapChainDesc = new SwapChainDescription1
+            {
+                Width = (uint)_width,
+                Height = (uint)_height,
+                Format = Format.B8G8R8A8_UNorm,
+                Stereo = false,
+                SampleDescription = SampleDescription.Default,
+                BufferUsage = Usage.RenderTargetOutput,
+                BufferCount = FrameCount,
+                Scaling = Scaling.Stretch,
+                SwapEffect = SwapEffect.FlipSequential,
+                AlphaMode = AlphaMode.Premultiplied
+            };
+            using IDXGISwapChain1 tempSwapChain = factory.CreateSwapChainForComposition(
+                Context.CommandQueue,
+                swapChainDesc);
+            _swapChain = tempSwapChain.QueryInterface<IDXGISwapChain3>();
 
-        using IDXGISwapChain1 tempSwapChain = factory.CreateSwapChainForHwnd(
-            Context.CommandQueue,
-            _hwnd,
-            swapChainDesc);
+            Apis.D3D11On12CreateDevice(
+                Context.Device,
+                DeviceCreationFlags.BgraSupport,
+                [FeatureLevel.Level_12_0],
+                [Context.CommandQueue],
+                0,
+                out ID3D11Device d3d11Device,
+                out _,
+                out _);
 
-        _swapChain = tempSwapChain.QueryInterface<IDXGISwapChain3>();
+            IDXGIDevice dxgiDevice = d3d11Device.QueryInterface<IDXGIDevice>();
+
+            // 2. DirectComposition device
+            DCompositionCreateDevice(
+                dxgiDevice,
+                out IDCompositionDevice dcompDevice);
+
+            // 3. Target bound to HWND
+            dcompDevice.CreateTargetForHwnd(_hwnd, true, out IDCompositionTarget target);
+
+            // 4. Visual
+            dcompDevice.CreateVisual(out IDCompositionVisual visual);
+
+            // 5. Put swap chain into visual
+            visual.SetContent(_swapChain);
+
+            // 6. Put visual into target
+            target.SetRoot(visual);
+
+            // 7. Apply
+            dcompDevice.Commit();
+        }
+        else
+        {
+            var swapChainDesc = new SwapChainDescription1
+            {
+                Width = (uint)_width,
+                Height = (uint)_height,
+                Format = Format.B8G8R8A8_UNorm,
+                Stereo = false,
+                SampleDescription = SampleDescription.Default,
+                BufferUsage = Usage.RenderTargetOutput,
+                BufferCount = FrameCount,
+                Scaling = Scaling.Stretch,
+                SwapEffect = SwapEffect.FlipDiscard,
+                AlphaMode = AlphaMode.Ignore
+            };
+            using IDXGISwapChain1 tempSwapChain = factory.CreateSwapChainForHwnd(
+                Context.CommandQueue,
+                _hwnd,
+                swapChainDesc);
+            _swapChain = tempSwapChain.QueryInterface<IDXGISwapChain3>();
+        }
     }
 
     private void CreateFence(ID3D12Device device)
@@ -109,12 +170,6 @@ public sealed class FrameManager : IDisposable
             DescriptorHeapType.RenderTargetView,
             FrameCount,
             DescriptorHeapFlags.None,
-            0));
-
-        _cbvHeap = device.CreateDescriptorHeap(new DescriptorHeapDescription(
-            DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
-            FrameCount,
-            DescriptorHeapFlags.ShaderVisible,
             0));
 
         var _rtvDescriptorSize = device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
@@ -145,6 +200,7 @@ public sealed class FrameManager : IDisposable
     {
         var currentResource = FrameResources[ _swapChain.CurrentBackBufferIndex];
         WaitForFrame(currentResource);
+        currentResource.frameMetric = manager.Update();
         currentResource.CommandAllocator.Reset();
 
         var cmd = currentResource.CommandList;
@@ -161,7 +217,7 @@ public sealed class FrameManager : IDisposable
         cmd.SetDescriptorHeaps( _heap.Heap);
 
         cmd.OMSetRenderTargets(currentResource.RenderTargetHandle);
-        cmd.ClearRenderTargetView(currentResource.RenderTargetHandle, new Color4(0.0f, 0.0f, 0.0f, 1.0f));
+        cmd.ClearRenderTargetView(currentResource.RenderTargetHandle, new Color4(0.0f, 0.0f, 0.0f, 0.0f));
         return currentResource;
     }
 
@@ -180,10 +236,9 @@ public sealed class FrameManager : IDisposable
             ResourceStates.Present);
     }
     public void EndFrame(FrameResource currentResource)
-    {
-        
-        ExecuteFrame(currentResource);
+    {   
         SwitchFrameResource(currentResource);
+        ExecuteFrame(currentResource);
 
         PresentFrame(currentResource);
     }
