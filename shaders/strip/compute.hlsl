@@ -5,6 +5,12 @@ StructuredBuffer<Particle> PrevParticles : register(t0);
 RWStructuredBuffer<Particle> NextParticles : register(u0);
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
 
+float2 SnapToGrid(float2 value, float2 gridSize)
+{
+    return round(value / gridSize) * gridSize;
+}
+
+// Uses CustomData.xy to store unsnapped position
 [numthreads(256, 1, 1)]
 void main(uint3 dtid : SV_DispatchThreadID)
 {
@@ -13,6 +19,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
         return;
 
     Particle p = PrevParticles[i];
+
 
     if (p.Age < 0)
     {
@@ -23,22 +30,22 @@ void main(uint3 dtid : SV_DispatchThreadID)
         {
             uint seed = i + FrameIndex * 12345;
 
-            float2 rnd = normalize(Random2(seed)-0.5f);
-
-            p.Position = sign(rnd) * (SpawnPosition-SpawnDistribution) + rnd * SpawnDistribution;
-            p.Velocity = rnd * (0.03f);
+            uint stripId = WangHash(seed)%5;
+            uint leftRight = WangHash(seed)%2 * 2 - 1;
+            float2 rnd = Random2(seed)-0.5f;
+            p.Position = Strips[stripId].Position + Strips[stripId].Size * rnd;
+            p.Position.x = leftRight*p.Position.x;
+            p.Velocity = p.Position;
 
             // initial visible age/lifetime
-            p.Age = LifeTime;
+            p.Age = LifeTime * (0.9f + 0.1f * Random(seed * 17 + 5));
         }
     }
     else
     {
-        //p.Velocity += p.Position * DeltaTime * 0.01f;
+        // move using previous velocity
         p.Position += p.Velocity * DeltaTime;
 
-        if(any(abs(p.Position) > RemoveBox))
-            p.Age -= DeltaTime * 6;
         p.Age -= DeltaTime;
     }
 
@@ -52,8 +59,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
         // velocity points away from current mouse position
         float scaledAge = saturate(p.Age / LifeTime);
         p.Size = Size;
-
-        p.Color = float4(saturate(Color), scaledAge > 0.8f ? 5-5*scaledAge : scaledAge*1.25);
+        p.Color = float4(Color, scaledAge);
     }
 
     NextParticles[i] = p;

@@ -12,7 +12,8 @@ struct Particle
     float2 Velocity;
     float Size;
     float Age;
-    float4 CustomData;
+    float2 CustomData;
+    float4 CustomData1;
 };
 
 struct EmitterData{
@@ -34,6 +35,10 @@ uint WangHash(uint s)
 float Random(uint seed)
 {
     return WangHash(seed) / 4294967296.0;
+}
+float2 Random2(uint seed)
+{
+    return float2(WangHash(seed) / 4294967296.0, WangHash(seed + 120) / 4294967296.0);
 }
 
 float2 Rotate(float2 v, float angle)

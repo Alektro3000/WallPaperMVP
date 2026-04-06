@@ -11,6 +11,7 @@ public struct Particle
     public Vector2 Velocity; 
     public float Age;
     public float Size;
-    public Vector4 CustomData;
+    public Vector2 CustomData;
+    public Vector4 CustomData1;
 }
 

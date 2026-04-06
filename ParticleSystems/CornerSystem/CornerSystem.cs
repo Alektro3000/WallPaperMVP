@@ -11,7 +11,7 @@ public class CornerSystem : ParticleSystem
         HeapAllocator HeapAllocator, 
         FrameManager FrameManager)
     {
-        ParticleBuffers = new ParticleBuffers(device, commandList, HeapAllocator, 3000);
+        ParticleBuffers = new ParticleBuffers(device, commandList, HeapAllocator, 1024);
         GraphicPass = new GraphicPass(device, ParticleBuffers, GeometryBuffers, "vertex.hlsl", "pixel.hlsl");
         ComputePass = new ComputePass(device, ParticleBuffers, "corner/compute.hlsl", "corner/precompute.hlsl");
         ParticleSystemController = new CornerController(ParticleBuffers);

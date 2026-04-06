@@ -20,13 +20,13 @@ public class CornerController
                 );
         constant.DeltaTime = frameMetric.DeltaTime;
         constant.ParticleCount = ParticleSystem.particleCount;
-        constant.LifeTime = 3f;
-        constant.SpawnRate = 300f;
+        constant.LifeTime = 6f;
+        constant.SpawnRate = 70f;
         constant.FrameIndex = frameMetric.FrameIndex;
         constant.Color = new Vector3(0.2f, 0.9f, 1f);
-        constant.Size = 0.1f;
-        constant.SpawnDistribution = new Vector2(0.25f,0.25f);
-        constant.SpawnPosition = new Vector2(1/scale,1);
+        constant.Size = 0.05f;
+        constant.SpawnDistribution = new Vector2(0.4f,0.4f);
+        constant.SpawnPosition = new Vector2(1/scale,1) + new Vector2(0.03f);
         constant.RemoveBox = constant.SpawnPosition + new Vector2(0.05f);
     }
 }

@@ -11,7 +11,7 @@ public class MouseSystem : ParticleSystem
         HeapAllocator HeapAllocator, 
         FrameManager FrameManager)
     {
-        ParticleBuffers = new ParticleBuffers(device, commandList, HeapAllocator, 3000);
+        ParticleBuffers = new ParticleBuffers(device, commandList, HeapAllocator, 2048);
         GraphicPass = new GraphicPass(device, ParticleBuffers, GeometryBuffers, "vertex.hlsl", "pixel.hlsl");
         ComputePass = new ComputePass(device, ParticleBuffers, "mouse/compute.hlsl", "mouse/precompute.hlsl");
         ParticleSystemController = new MouseController(ParticleBuffers);
