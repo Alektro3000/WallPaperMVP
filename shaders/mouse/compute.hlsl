@@ -5,11 +5,6 @@ StructuredBuffer<Particle> PrevParticles : register(t0);
 RWStructuredBuffer<Particle> NextParticles : register(u0);
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
 
-float2 SnapToGrid(float2 value, float2 gridSize)
-{
-    return round(value / gridSize) * gridSize;
-}
-
 // Uses CustomData.xy to store unsnapped position
 [numthreads(256, 1, 1)]
 void main(uint3 dtid : SV_DispatchThreadID)
@@ -22,8 +17,6 @@ void main(uint3 dtid : SV_DispatchThreadID)
 
     float2 Prev = mousePosPrev;
     float2 Pos  = mousePos;
-
-    float dist = length(Prev - Pos) / max(DeltaTime, 0.0001f)*0.2f + 0.05f;
 
     if (p.Age < 0)
     {
@@ -43,8 +36,11 @@ void main(uint3 dtid : SV_DispatchThreadID)
             float trailT = (float)spawnIndex / max(1.0f, (float)Emitter[0].SpawnCountThisFrame);
             float2 loc = lerp(Prev, Pos, trailT);
 
+
+            float mouseSpeed = length(Prev - Pos) / max(DeltaTime, 0.0001f)*0.2f + 0.001f;
+
             // random offset around the trail
-            float offsetScale = min(1, max(1 / dist, 0.2)) ;
+            float offsetScale = min(1, max(4 / mouseSpeed, 0.2)) ;
             loc += rnd * offsetScale;
 
             p.CustomData.xy = loc;

@@ -4,6 +4,10 @@
 static const float PI = 3.14159265359f;
 static const float PI2 = 3.14159265359f*2;
 
+float2 SnapToGrid(float2 value, float2 gridSize)
+{
+    return round(value / gridSize) * gridSize;
+}
 
 struct Particle
 {

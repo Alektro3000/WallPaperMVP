@@ -18,6 +18,7 @@ cbuffer StripConstants : register(b0)
     float3 Color;
 
     float SpawnRate;
+    float2 GridSize;
     float Acceleration;
     float Size;
 };

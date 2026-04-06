@@ -11,7 +11,7 @@ public class StripSystem : ParticleSystem
         HeapAllocator HeapAllocator, 
         FrameManager FrameManager)
     {
-        ParticleBuffers = new ParticleBuffers(device, commandList, HeapAllocator, 2048);
+        ParticleBuffers = new ParticleBuffers(device, commandList, HeapAllocator, 2048 * 2);
         GraphicPass = new GraphicPass(device, ParticleBuffers, GeometryBuffers, "vertex.hlsl", "pixel.hlsl");
         ComputePass = new ComputePass(device, ParticleBuffers, "strip/compute.hlsl", "strip/precompute.hlsl");
         ParticleSystemController = new StripController(ParticleBuffers);

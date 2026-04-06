@@ -28,6 +28,7 @@ public struct StripConstants
     public StripDescription strip4;
     public Vector3 Color;
     public float SpawnRate;
+    public Vector2 GridSize;
     public float Acceleration;
     public float Size;
     //public fixed float stripPositionY[5];

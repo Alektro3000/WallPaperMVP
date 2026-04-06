@@ -35,13 +35,21 @@ public class ParticleBuffers : IDisposable
 
     public ID3D12Resource EmitterBuffer;
 
-    public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, uint particleCount = 3000)
+
+    public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, Particle[] initParticles)
+    {
+        particleCount = (uint)initParticles.Length;
+        InitEmitterBuffer(device, commandList);
+        InitPingPong(device, commandList, heapAllocator, initParticles);
+    }
+
+    public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator,  uint particleCount)
     {
         this.particleCount = particleCount;
-        InitConstantBuffer(device, commandList);
-        InitPingPong(device, commandList, heapAllocator);
+        InitEmitterBuffer(device, commandList);
+        InitPingPong(device, commandList, heapAllocator, generateParticles());
     }
-    private void InitConstantBuffer(ID3D12Device device, ImmediateCommandList commandList)
+    private void InitEmitterBuffer(ID3D12Device device, ImmediateCommandList commandList)
     {
         EmitterBuffer = BufferHelper.CreateDefaultBuffer(device, [new Emitter()], commandList,
             ResourceStates.VertexAndConstantBuffer,
@@ -57,9 +65,8 @@ public class ParticleBuffers : IDisposable
                           .ToArray();
 
     }
-    private void InitPingPong(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator)
+    private void InitPingPong(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, Particle[] initParticles)
     {
-        Particle[] vertices = generateParticles();
         //
         // 1. Descriptor heap for SRV/UAV
         //
@@ -101,7 +108,7 @@ public class ParticleBuffers : IDisposable
 
             (var _uavCpu, var _uavGpu) = heapAllocator.Allocate(2);
 
-            var buffer = BufferHelper.CreateDefaultBuffer(device, vertices, commandList,
+            var buffer = BufferHelper.CreateDefaultBuffer(device, initParticles, commandList,
                 ResourceStates.VertexAndConstantBuffer,
                 ResourceFlags.AllowUnorderedAccess);
 

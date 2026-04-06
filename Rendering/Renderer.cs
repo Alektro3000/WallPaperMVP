@@ -21,6 +21,7 @@ public sealed class Renderer : IDisposable
             new WhirlSystem(Context.Device, commandList, GeometryBuffers, HeapAllocator, FrameManager),
             new CornerSystem(Context.Device, commandList, GeometryBuffers, HeapAllocator, FrameManager),
             new StripSystem(Context.Device, commandList, GeometryBuffers, HeapAllocator, FrameManager),
+            new TextSystem(Context.Device, commandList, GeometryBuffers, HeapAllocator, FrameManager),
         ];
         FrameManager.PopulateConstantBuffers();
         FrameManager.ExecuteForEachFrame(x =>

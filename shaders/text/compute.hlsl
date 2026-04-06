@@ -21,25 +21,20 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
         {
             uint seed = i + FrameIndex * 12345;
             float angle = Random(seed) * PI2;
-            float speed = 0.3 + 0.3 * Random(seed * 3 + 1);
+            float speed = 0.0 + 0.0 * Random(seed * 3 + 1);
 
-            p.Position = 0;
+            p.Position = p.CustomData.xy;
             p.Velocity = Rotate(speed, angle);
             p.Age = LifeTime * (0.5f + 0.5f * Random(seed+2));
         }
     }
     float scaledAge = p.Age/LifeTime;
 
-    float2 right = p.Velocity.yx * float2(1, -1) - p.Position.xy * 0.5f;
-    p.Velocity += right * DeltaTime;
-
     p.Position = p.Position + p.Velocity * DeltaTime;
     p.Age -= DeltaTime;
 
-    p.Size = 0.06 + 0.05 * scaledAge * scaledAge;
+    p.Size = 0.06;
     p.Color = float4(0.2f, 0.9f, 1.f, scaledAge);
-    p.Color.g *= 1.2f - scaledAge;
-    //p.Color.r *= 0.2f + scaledAge;
     
     if (p.Age < 0)
     {
@@ -49,7 +44,7 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
     else
     {
         float initRegion = saturate(1.2f - scaledAge * 10);
-        p.Size = 0.06 - initRegion * 0.06f;
+        p.Size = 0.01 - initRegion * 0.01f;
         p.Color = float4(initRegion + 0.2f , 0.9f * (1.2f - scaledAge), 1.f, scaledAge);
     }
 
