@@ -11,10 +11,14 @@ sealed public class ComputePass : IDisposable
     private ID3D12PipelineState EmitterPSO;
 
     private ParticleBuffers ParticleBuffers;
+    private CommonBuffers CommonBuffers;
+    private FieldBuffers FieldBuffers;
 
-    public ComputePass(ID3D12Device device, ParticleBuffers particleSystem, String ComputePath, String precomputePath)
+    public ComputePass(ID3D12Device device, ParticleBuffers particleSystem, CommonBuffers commonBuffers, FieldBuffers fieldBuffers, String ComputePath, String precomputePath)
     {
         ParticleBuffers = particleSystem;
+        FieldBuffers = fieldBuffers;
+        CommonBuffers = commonBuffers;
         CreateComputePipeline(device, ComputePath, precomputePath);
     }
 
@@ -27,45 +31,55 @@ sealed public class ComputePass : IDisposable
 
     private void CreateComputePipeline(ID3D12Device device, String ComputePath, String precomputePath)
     {
+        var staticSampler = new StaticSamplerDescription(
+            ShaderVisibility.All,
+            0, // s0
+            0  // space0
+        )
+        {
+            Filter = Filter.MinMagMipLinear,
+            AddressU = TextureAddressMode.Clamp,
+            AddressV = TextureAddressMode.Clamp,
+            AddressW = TextureAddressMode.Clamp,
+            ComparisonFunction = ComparisonFunction.Never,
+            MaxLOD = float.MaxValue
+        };
+
         //
         // 2. Root signature
         //
-        var ranges = new[]
-        {
-            new DescriptorRange1(
-                DescriptorRangeType.ShaderResourceView,
-                1,   // one SRV
-                0,   // t0 
-                0,
-                (uint)DescriptorRangeFlags.None,
-                0),
-
-            new DescriptorRange1(
-                DescriptorRangeType.UnorderedAccessView,
-                2,   // one UAV
-                0,   // u0
-                0,
-                (uint)DescriptorRangeFlags.None,
-                0)
-        };
-
         var rootParams = new[]
         {
             // b0 as root CBV
             new RootParameter1(RootParameterType.ConstantBufferView, new RootDescriptor1(0, 0), ShaderVisibility.All),
 
-            // t0 descriptor table
-            new RootParameter1(new RootDescriptorTable1(ranges[0]), ShaderVisibility.All),
+            // t0 descriptor table - ping pong read
+            new RootParameter1(new RootDescriptorTable1(new DescriptorRange1(
+                DescriptorRangeType.ShaderResourceView,
+                1,   // 
+                0)), ShaderVisibility.All),
 
-            // u0/u1 descriptor table
-            new RootParameter1(new RootDescriptorTable1(ranges[1]), ShaderVisibility.All)
+            // u0/u1 descriptor table - ping pong write + emitter buffer
+            new RootParameter1(new RootDescriptorTable1(new DescriptorRange1(
+                DescriptorRangeType.UnorderedAccessView,
+                2,
+                0)), ShaderVisibility.All),
+
+            // t1 descriptor table - force field
+            new RootParameter1(new RootDescriptorTable1(new DescriptorRange1(
+                DescriptorRangeType.ShaderResourceView,
+                1,   // 
+                1)), ShaderVisibility.All),
+
+            // b1 as root CBV
+            new RootParameter1(RootParameterType.ConstantBufferView, new RootDescriptor1(1,0), ShaderVisibility.All),
         };
 
         var rootSigDesc = new VersionedRootSignatureDescription(
             new RootSignatureDescription1(
                 RootSignatureFlags.None,
                 rootParams,
-                null));
+                [staticSampler]));
 
         Vortice.Direct3D.Blob signatureBlob;
         string error = D3D12SerializeVersionedRootSignature(rootSigDesc, out signatureBlob);
@@ -119,9 +133,9 @@ sealed public class ComputePass : IDisposable
     public void DispatchParticles(FrameResource currentResource, FrameManager.ConstantKey key)
     {
         var read = ParticleBuffers.ReadBufferBinding;
-        var write =  ParticleBuffers.WriteBufferBinding;
+        var write = ParticleBuffers.WriteBufferBinding;
         var cmd = currentResource.CommandList;
-        
+
         // Transition particle buffers into correct states.            
         cmd.ResourceBarrierTransition(
             write.ParticleBuffer,
@@ -132,23 +146,30 @@ sealed public class ComputePass : IDisposable
 
         cmd.SetComputeRootConstantBufferView(
             0,
-            currentResource.GetBuffer(key).ConstantBuffer.GPUVirtualAddress);
+            currentResource.GetGPUVirtualAddress(key));
 
         // Root parameter 1 = SRV table(t0)
         cmd.SetComputeRootDescriptorTable(1, read.ParticleBufferSRVGpu);
 
-        // Root parameter 2 = UAV table(u0)
+        // Root parameter 2 = UAV table(u0/u1)
         cmd.SetComputeRootDescriptorTable(2, write.ParticleBufferUAVGPU);
 
+        // Root parameter 3 = SRV table(t1)
+        cmd.SetComputeRootDescriptorTable(3, FieldBuffers.SRVFieldDescriptor);
+
+        // Root parameter 5 = CBV 
+        cmd.SetComputeRootConstantBufferView(4,
+                currentResource.GetGPUVirtualAddress(CommonBuffers.commonKey));
+
         // Sync previous frame
-        cmd.ResourceBarrierUnorderedAccessView(ParticleBuffers.EmitterBuffer);
+        cmd.ResourceBarrierUnorderedAccessView(ParticleBuffers.ComputeBuffers[0]);
 
         // Emitter Update
         cmd.SetPipelineState(EmitterPSO);
         cmd.Dispatch(1, 1, 1);
 
         // Sync
-        cmd.ResourceBarrierUnorderedAccessView(ParticleBuffers.EmitterBuffer);
+        cmd.ResourceBarrierUnorderedAccessView(ParticleBuffers.ComputeBuffers[0]);
 
         //Particle Update
         cmd.SetPipelineState(ParticlePSO);

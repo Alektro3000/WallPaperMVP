@@ -1,4 +1,3 @@
-#include "../common/common.hlsli"
 #include "common.hlsli"
 
 
@@ -6,7 +5,8 @@ StructuredBuffer<Particle> PrevParticles : register(t0);
 RWStructuredBuffer<Particle> NextParticles : register(u0);
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
 
-[numthreads(256, 1, 1)] void main(uint3 dtid : SV_DispatchThreadID)
+[numthreads(256, 1, 1)] 
+void main(uint3 dtid : SV_DispatchThreadID)
 {
     uint i = dtid.x;
     if (i >= ParticleCount)
@@ -21,25 +21,23 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
         {
             uint seed = i + FrameIndex * 12345;
             float angle = Random(seed) * PI2;
-            float speed = 0.3 + 0.3 * Random(seed * 3 + 1);
+            float speed = 0.2 + 0.2 * Random(seed * 3 + 1);
 
-            p.Position = 0;
+            p.Position = CenterPosition;
             p.Velocity = Rotate(speed, angle);
-            p.Age = LifeTime * (0.5f + 0.5f * Random(seed+2));
+            p.Age = LifeTime * (0.9f + 0.1f * Random(seed+2));
         }
     }
     float scaledAge = p.Age/LifeTime;
 
-    float2 right = p.Velocity.yx * float2(1, -1) - p.Position.xy * 0.5f;
+    float2 right = p.Velocity.yx * float2(1, -1) - (p.Position.xy - CenterPosition) * 0.1f;
     p.Velocity += right * DeltaTime;
 
     p.Position = p.Position + p.Velocity * DeltaTime;
     p.Age -= DeltaTime;
 
     p.Size = 0.06 + 0.05 * scaledAge * scaledAge;
-    p.Color = float4(0.2f, 0.9f, 1.f, scaledAge);
-    p.Color.g *= 1.2f - scaledAge;
-    //p.Color.r *= 0.2f + scaledAge;
+    p.Color = float4(0.2f, 0.9f *  (1.2f - scaledAge), 1.f, scaledAge);
     
     if (p.Age < 0)
     {
@@ -48,10 +46,10 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
     }
     else
     {
-        float initRegion = saturate(1.2f - scaledAge * 10);
+        float initRegion = saturate(scaledAge * 3 - 1.3f);
         p.Size = 0.06 - initRegion * 0.06f;
-        p.Color = float4(initRegion + 0.2f , 0.9f * (1.2f - scaledAge), 1.f, scaledAge);
+        p.Color = float4(0.4f , 0.9f * (1.2f - scaledAge), 1.f, scaledAge);
     }
 
-    NextParticles[i] = p;
+    NextParticles[i] = updateParticleField(p);
 }

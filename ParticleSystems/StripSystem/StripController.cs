@@ -14,15 +14,9 @@ public class StripController
     public void UpdateStaticResource(ref StripConstants constant, FrameMetric frameMetric)
     {
         // Update static buffer
-        constant.ViewMatrix =
-            Matrix4x4.Transpose(
-                Matrix4x4.CreateScale((float)frameMetric.height / frameMetric.width, 1, 1)
-                );
-        constant.DeltaTime = frameMetric.DeltaTime;
         constant.ParticleCount = ParticleSystem.particleCount;
         constant.LifeTime = 3f;
         constant.SpawnRate = 500f;
-        constant.FrameIndex = frameMetric.FrameIndex;
         constant.Color  = new Vector3(0.2f, 0.9f, 1f);
         constant.Size = 0.04f;
         constant.GridSize = new Vector2(0.01f, 0.02f);

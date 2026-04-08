@@ -7,7 +7,6 @@ using Vortice.DXGI;
 
 public class GeometryBuffers : IDisposable
 {
-    private ID3D12Device _device;
     readonly public uint IndexCount = 6;
 
     public ID3D12Resource IndexBuffer  { get; }
@@ -18,9 +17,7 @@ public class GeometryBuffers : IDisposable
     
     
     public GeometryBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator)
-    {
-        _device = device;
-        
+    {        
         QuadVertex[] quadVertices =
         [
             new QuadVertex { LocalOffset = new Vector2(-0.5f, -0.5f), UV = new Vector2(0, 1) },
@@ -29,13 +26,13 @@ public class GeometryBuffers : IDisposable
             new QuadVertex { LocalOffset = new Vector2(-0.5f,  0.5f), UV = new Vector2(0, 0) },
         ];
 
-        VertexBuffer = BufferHelper.CreateDefaultBuffer(_device, quadVertices, commandList);
+        VertexBuffer = BufferHelper.CreateDefaultBuffer(device, quadVertices, commandList);
         VertexBufferView = BufferHelper.CreateVertexBufferView<QuadVertex>(VertexBuffer, (uint)quadVertices.Length);
         
 
 
         ushort[] quadIndices = [0, 1, 2, 0, 2, 3];
-        IndexBuffer = BufferHelper.CreateDefaultBuffer(_device, quadIndices, commandList);
+        IndexBuffer = BufferHelper.CreateDefaultBuffer(device, quadIndices, commandList);
         IndexBufferView = BufferHelper.CreateIndexBufferView(IndexBuffer, (uint)quadIndices.Length);
 
 

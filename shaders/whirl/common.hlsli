@@ -1,9 +1,9 @@
-cbuffer Constants : register(b0)
+#include "../common/commonCompute.hlsli"
+
+cbuffer ParticleConstants : register(b0)
 {
-    float4x4 ViewMatrix;
-    float DeltaTime;
-    uint FrameIndex;
     float LifeTime;
     uint ParticleCount;
+    float2 CenterPosition;
     float SpawnRate;
 };

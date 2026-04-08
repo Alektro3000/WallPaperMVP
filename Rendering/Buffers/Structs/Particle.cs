@@ -9,8 +9,8 @@ public struct Particle
     public Vector4 Color;
     public Vector2 Position; 
     public Vector2 Velocity; 
-    public float Age;
     public float Size;
+    public float Age;
     public Vector2 CustomData;
     public Vector4 CustomData1;
 }

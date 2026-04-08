@@ -65,6 +65,16 @@ public static class BufferHelper
         return buffer;
     }
 
+    public unsafe static ConstantBinding CreateConstantBuffer<T>(ID3D12Device device) where T : unmanaged
+    {
+        var constant = CreateStaticBuffer<T>(device, out var mappedConstants);
+        return new ConstantBinding()
+        {
+            ConstantBuffer = constant,
+            MappedConstants = (byte*)mappedConstants,
+        };
+    }
+
     public unsafe static ID3D12Resource CreateStaticBuffer<T>(
         ID3D12Device device, out T* mappedConstants)  where T : unmanaged
     {

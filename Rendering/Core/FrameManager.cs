@@ -162,7 +162,7 @@ public sealed class FrameManager : IDisposable
     public void PopulateConstantBuffers()
     {
         foreach(var frame in FrameResources)
-            frame.ConstantBindings = [.. Enumerable.Range(0, constantBufferSize).Select(x=>new FrameResource.ConstantBinding())];
+            frame.ConstantBindings = [.. Enumerable.Range(0, constantBufferSize).Select(x=>new ConstantBinding())];
     }
     private void CreateFrameResources(ID3D12Device device)
     {

@@ -15,14 +15,6 @@ public sealed class FrameResource : IDisposable
     public ID3D12CommandAllocator CommandAllocator;
     public ID3D12GraphicsCommandList CommandList;
 
-    //Constant Buffer
-    public struct ConstantBinding
-    {
-        public ID3D12Resource ConstantBuffer;
-
-        public unsafe byte* MappedConstants;
-        public unsafe ref T Constants<T>() where T : unmanaged => ref *(T*)MappedConstants;
-    }
     public ConstantBinding[] ConstantBindings;
 
     public ID3D11Resource WrappedBackBuffer;
@@ -46,13 +38,12 @@ public sealed class FrameResource : IDisposable
     }
 
     public void AddBuffer(ConstantKey key, ConstantBinding binding)
-    {
-        ConstantBindings[key.key] = binding;
-    }
-    public ConstantBinding GetBuffer(ConstantKey key)
-    {
-        return ConstantBindings[key.key];
-    }
+        => ConstantBindings[key.key] = binding;
+    
+    public ref T GetBufferConstantRef<T>(ConstantKey key) where T : unmanaged
+        => ref ConstantBindings[key.key].Constants<T>();
+    public ulong GetGPUVirtualAddress(ConstantKey key)
+        => ConstantBindings[key.key].ConstantBuffer.GPUVirtualAddress;
 
     public void Dispose()
     {

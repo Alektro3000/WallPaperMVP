@@ -1,4 +1,3 @@
-#include "../common/common.hlsli"
 #include "common.hlsli"
 
 StructuredBuffer<Particle> PrevParticles : register(t0);
@@ -56,5 +55,5 @@ void main(uint3 dtid : SV_DispatchThreadID)
         p.Color = float4(saturate(Color), scaledAge > 0.8f ? 5-5*scaledAge : scaledAge*1.25);
     }
 
-    NextParticles[i] = p;
+    NextParticles[i] = updateParticleField(p);
 }

@@ -5,38 +5,20 @@ public class WhirlSystem : ParticleSystem
 {
     protected WhirlController ParticleSystemController;
     public WhirlSystem(
-        ID3D12Device device, 
-        ImmediateCommandList commandList, 
-        GeometryBuffers GeometryBuffers, 
-        HeapAllocator HeapAllocator, 
-        FrameManager FrameManager)
+        InitContext context)
     {
-        ParticleBuffers = new ParticleBuffers(device, commandList, HeapAllocator, 2048);
-        GraphicPass = new GraphicPass(device, ParticleBuffers, GeometryBuffers, "vertex.hlsl", "pixel.hlsl");
-        ComputePass = new ComputePass(device, ParticleBuffers, "whirl/compute.hlsl", "whirl/precompute.hlsl");
+        ConstructRequiredFields(context, 2048, "whirl/compute.hlsl", "whirl/precompute.hlsl");
         ParticleSystemController = new WhirlController(ParticleBuffers);
-        ConstantKey = FrameManager.ReserveBuffer();
     }
 
-    public override void UpdateStaticResource(FrameResource currentResource)
+    public override void UpdateConstantBuffers(FrameResource currentResource)
     {
         ParticleSystemController.UpdateStaticResource(
-            ref currentResource.GetBuffer(ConstantKey).Constants<WhirlConstants>(),
+            ref currentResource.GetBufferConstantRef<WhirlConstants>(ConstantKey),
             currentResource.frameMetric);
     }
     public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
-    {        
-        unsafe
-        {
-            var constantBuffer = BufferHelper.CreateStaticBuffer(device, out WhirlConstants* MappedConstants);
-            
-            var binding = new FrameResource.ConstantBinding
-            {
-                ConstantBuffer = constantBuffer,
-                MappedConstants = (byte*)MappedConstants,
-            };
-            
-            frameResource.AddBuffer(ConstantKey, binding);
-        }
+    {
+        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<WhirlConstants>(device));
     }
 }

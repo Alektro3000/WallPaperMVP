@@ -1,6 +1,15 @@
 #ifndef COMMON_INCLUDED
 #define COMMON_INCLUDED
 
+cbuffer CommonConstants : register(b1)
+{
+    float4x4 ViewMatrix;
+    float DeltaTime;
+    uint FrameIndex;
+    uint2 fieldSize;
+    float ScreenRatio;
+};
+
 static const float PI = 3.14159265359f;
 static const float PI2 = 3.14159265359f*2;
 

@@ -17,23 +17,16 @@ public class MouseController
 
     public void UpdateStaticResource(ref MouseConstants constant, FrameMetric metric)
     {
-            
         constant.ParticleCount = ParticleSystem.particleCount;
         constant.LifeTime = mouseSettings.LifeTime;
         constant.SpawnRate = mouseSettings.SpawnRate;
         constant.SpawnRatePerUnit = mouseSettings.SpawnRatePerUnit;
         constant.Color = mouseSettings.Color;
         constant.Velocity = mouseSettings.Velocity;
-
-        constant.DeltaTime = metric.DeltaTime;
-        constant.FrameIndex = metric.FrameIndex;
-
         
         Win32.GetCursorPos(out Win32.POINT point);
         float ratio = (float)metric.height/metric.width;
         var MousePos = new Vector2(((float)point.X) / metric.height, (metric.height - (float)point.Y) / metric.height) * 2 - new Vector2(1/ratio, 1);
-        constant.ViewMatrix = 
-            Matrix4x4.CreateScale(ratio,1,1);
 
         constant.mousePos = MousePos;
         constant.mousePosPrev = prevMousePos;

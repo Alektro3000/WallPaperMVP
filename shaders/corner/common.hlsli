@@ -1,10 +1,6 @@
+#include "../common/commonCompute.hlsli"
 cbuffer Constants : register(b0)
 {
-    float4x4 ViewMatrix;
-    float DeltaTime;
-    uint FrameIndex;
-    float LifeTime;
-    uint ParticleCount;
     float3 Color;
     float SpawnRate;
     float2 SpawnPosition;
@@ -12,4 +8,6 @@ cbuffer Constants : register(b0)
     float2 RemoveBox;
     float Size;
     float Velocity;
+    float LifeTime;
+    uint ParticleCount;
 };

@@ -1,4 +1,3 @@
-#include "../common/common.hlsli"
 #include "common.hlsli"
 
 
@@ -48,5 +47,5 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
         p.Color = float4(initRegion + 0.2f , 0.9f * (1.2f - scaledAge), 1.f, scaledAge);
     }
 
-    NextParticles[i] = p;
+    NextParticles[i] = updateParticleField(p);
 }

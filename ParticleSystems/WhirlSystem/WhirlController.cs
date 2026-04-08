@@ -14,15 +14,9 @@ public class WhirlController
     public void UpdateStaticResource(ref WhirlConstants constant, FrameMetric frameMetric)
     {
         // Update static buffer
-        constant.ViewMatrix =
-            Matrix4x4.Transpose(
-                Matrix4x4.CreateTranslation(0, 0.2f, 0) *
-                Matrix4x4.CreateScale((float)frameMetric.height / frameMetric.width, 1, 1)
-                );
-        constant.DeltaTime = frameMetric.DeltaTime;
         constant.ParticleCount = ParticleSystem.particleCount;
         constant.LifeTime = 3f;
-        constant.SpawnRate = 300f;
-        constant.FrameIndex = frameMetric.FrameIndex;
+        constant.SpawnRate = 150f;
+        constant.CenterPosition = new Vector2(0f,0.2f);
     }
 }

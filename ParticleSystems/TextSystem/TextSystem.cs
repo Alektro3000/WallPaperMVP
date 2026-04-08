@@ -6,41 +6,21 @@ public class TextSystem : ParticleSystem
 {
     protected TextController ParticleSystemController;
     public TextSystem(
-        ID3D12Device device, 
-        ImmediateCommandList commandList, 
-        GeometryBuffers GeometryBuffers, 
-        HeapAllocator HeapAllocator, 
-        FrameManager FrameManager)
+        InitContext context)
     {
-        
-
-        ParticleBuffers = new ParticleBuffers(device, commandList, HeapAllocator, generateParticles());
-        GraphicPass = new GraphicPass(device, ParticleBuffers, GeometryBuffers, "vertex.hlsl", "pixel.hlsl");
-        ComputePass = new ComputePass(device, ParticleBuffers, "text/compute.hlsl", "text/precompute.hlsl");
+        ConstructRequiredFields(context, generateParticles(), "text/compute.hlsl", "text/precompute.hlsl");
         ParticleSystemController = new TextController(ParticleBuffers);
-        ConstantKey = FrameManager.ReserveBuffer();
     }
 
-    public override void UpdateStaticResource(FrameResource currentResource)
+    public override void UpdateConstantBuffers(FrameResource currentResource)
     {
-        ParticleSystemController.UpdateStaticResource(
-            ref currentResource.GetBuffer(ConstantKey).Constants<TextConstants>(),
+        ParticleSystemController.UpdateConstantBuffer(
+            ref currentResource.GetBufferConstantRef<TextConstants>(ConstantKey),
             currentResource.frameMetric);
     }
     public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
-    {        
-        unsafe
-        {
-            var constantBuffer = BufferHelper.CreateStaticBuffer(device, out TextConstants* MappedConstants);
-            
-            var binding = new FrameResource.ConstantBinding
-            {
-                ConstantBuffer = constantBuffer,
-                MappedConstants = (byte*)MappedConstants,
-            };
-            
-            frameResource.AddBuffer(ConstantKey, binding);
-        }
+    {
+        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<TextConstants>(device));
     }
     Random random = new Random();
     private Point GetRandomWhitePixelWeightedTop(Bitmap bitmap)

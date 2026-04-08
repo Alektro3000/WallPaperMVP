@@ -3,7 +3,6 @@ using Vortice.DXGI;
 using Vortice.Dxc;
 public class GraphicPass : IDisposable
 {
-    ID3D12Device _device;
 
     // Graphigs Pipeline
     private ID3D12RootSignature _rootSignature;
@@ -12,17 +11,19 @@ public class GraphicPass : IDisposable
 
     private ParticleBuffers ParticleBuffers;
     private GeometryBuffers GeometryBuffers;
+    private CommonBuffers CommonBuffers;
     public GraphicPass(
-        ID3D12Device iD3D12Device, 
+        ID3D12Device device, 
         ParticleBuffers particleSystem, 
+        CommonBuffers commonBuffers, 
         GeometryBuffers geometryBuffers,
         String VertexShaderPath,
         String PixelShaderPath)
     {
-        _device = iD3D12Device;
         ParticleBuffers = particleSystem;
         GeometryBuffers = geometryBuffers;
-        CreateGraphicPipeline(VertexShaderPath, PixelShaderPath);
+        CommonBuffers = commonBuffers;
+        CreateGraphicPipeline(device, VertexShaderPath, PixelShaderPath);
     }
     public void Dispose()
     {
@@ -31,6 +32,7 @@ public class GraphicPass : IDisposable
     }
     
     private void CreateGraphicPipeline(
+        ID3D12Device device, 
         String VertexShaderPath,
         String PixelShaderPath)
     {
@@ -49,14 +51,18 @@ public class GraphicPass : IDisposable
                             1,   // one SRV
                             0)   // t0
                     }),
-                ShaderVisibility.Vertex)
+                ShaderVisibility.Vertex),
+            new RootParameter1(
+                RootParameterType.ConstantBufferView,
+                new RootDescriptor1(1, 0),
+                ShaderVisibility.Vertex),
         };
 
         RootSignatureDescription1 rootSignatureDesc = new(
             RootSignatureFlags.AllowInputAssemblerInputLayout, rootParameters);
 
 
-        _rootSignature = _device.CreateRootSignature(rootSignatureDesc);
+        _rootSignature = device.CreateRootSignature(rootSignatureDesc);
 
         ReadOnlyMemory<byte> vs = ShaderHelper.PreCompile(VertexShaderPath, DxcShaderStage.Vertex);
         ReadOnlyMemory<byte> ps = ShaderHelper.PreCompile(PixelShaderPath, DxcShaderStage.Pixel);
@@ -81,7 +87,7 @@ public class GraphicPass : IDisposable
             RenderTargetFormats = [Format.B8G8R8A8_UNorm]
         };
 
-        _pipelineState = _device.CreateGraphicsPipelineState(pipelineStateDescription);
+        _pipelineState = device.CreateGraphicsPipelineState(pipelineStateDescription);
 
     }
 
@@ -120,10 +126,13 @@ public class GraphicPass : IDisposable
         
         cmd.SetGraphicsRootConstantBufferView(
             0,
-            currentResource.GetBuffer(key).ConstantBuffer.GPUVirtualAddress);
+            currentResource.GetGPUVirtualAddress(key));
         cmd.SetGraphicsRootDescriptorTable(
             1, 
             ParticleBuffers.WriteBufferBinding.ParticleBufferSRVGpu);
+        cmd.SetGraphicsRootConstantBufferView(
+            2, 
+            currentResource.GetGPUVirtualAddress(CommonBuffers.commonKey));
 
         cmd.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
         cmd.IASetVertexBuffers(0, [GeometryBuffers.VertexBufferView]);

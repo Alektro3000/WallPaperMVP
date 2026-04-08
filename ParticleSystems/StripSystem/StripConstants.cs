@@ -16,19 +16,19 @@ public struct StripConstants
             size = new Vector2(sizeX, sizeY);
         }
     }
-    public Matrix4x4 ViewMatrix;
-    public float DeltaTime;
-    public uint FrameIndex;
     public float LifeTime;
     public uint ParticleCount;
+    public Vector2 GridSize;
+
     public StripDescription strip0;
     public StripDescription strip1;
     public StripDescription strip2;
     public StripDescription strip3;
     public StripDescription strip4;
+
     public Vector3 Color;
     public float SpawnRate;
-    public Vector2 GridSize;
+    
     public float Acceleration;
     public float Size;
     //public fixed float stripPositionY[5];

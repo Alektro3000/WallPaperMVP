@@ -1,4 +1,3 @@
-#include "../common/common.hlsli"
 #include "common.hlsli"
 
 RWStructuredBuffer<EmitterData> Emitter : register(u1);

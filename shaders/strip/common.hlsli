@@ -1,3 +1,5 @@
+#include "../common/commonCompute.hlsli"
+
 struct StripDescription
 {
     float2 Position;
@@ -6,19 +8,15 @@ struct StripDescription
 
 cbuffer StripConstants : register(b0)
 {
-    float4x4 ViewMatrix;
-
-    float DeltaTime;
-    uint FrameIndex;
     float LifeTime;
     uint ParticleCount;
+    float2 GridSize;
 
     StripDescription Strips[5];
 
     float3 Color;
-
     float SpawnRate;
-    float2 GridSize;
+    
     float Acceleration;
     float Size;
 };

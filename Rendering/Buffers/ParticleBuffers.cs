@@ -1,6 +1,8 @@
 
 using System.ComponentModel;
+using System.Data.Common;
 using System.Numerics;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using Vortice.Direct3D12;
 using Vortice.DXGI;
@@ -9,7 +11,6 @@ public class ParticleBuffers : IDisposable
 {
     readonly public uint particleCount;
     public const int particleBuffersLength = 2;
-    const int Shader4ComponentMapping = 5768;
 
     public struct ParticleBufferBinding
     {
@@ -33,35 +34,38 @@ public class ParticleBuffers : IDisposable
     public ParticleBufferBinding WriteBufferBinding => Buffers[WriteIndex];
 
 
-    public ID3D12Resource EmitterBuffer;
+    public List<ID3D12Resource> ComputeBuffers;
 
 
     public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, Particle[] initParticles)
     {
         particleCount = (uint)initParticles.Length;
+        ComputeBuffers = [];
         InitEmitterBuffer(device, commandList);
         InitPingPong(device, commandList, heapAllocator, initParticles);
     }
 
-    public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator,  uint particleCount)
+    public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, uint particleCount)
     {
         this.particleCount = particleCount;
+        ComputeBuffers = [];
         InitEmitterBuffer(device, commandList);
         InitPingPong(device, commandList, heapAllocator, generateParticles());
     }
     private void InitEmitterBuffer(ID3D12Device device, ImmediateCommandList commandList)
     {
-        EmitterBuffer = BufferHelper.CreateDefaultBuffer(device, [new Emitter()], commandList,
+        ComputeBuffers.Add(BufferHelper.CreateDefaultBuffer(device, [new Emitter()], commandList,
             ResourceStates.VertexAndConstantBuffer,
-            ResourceFlags.AllowUnorderedAccess);
+            ResourceFlags.AllowUnorderedAccess));
     }
     private Particle[] generateParticles()
     {
         return Enumerable.Range(0, (int)particleCount)
-                          .Select(i => new Particle { 
-                            Position = new Vector2(0.0f, 0.0f),
-                            Age = -1f,
-                             })
+                          .Select(i => new Particle
+                          {
+                              Position = new Vector2(0.0f, 0.0f),
+                              Age = -1f,
+                          })
                           .ToArray();
 
     }
@@ -77,7 +81,7 @@ public class ParticleBuffers : IDisposable
         var srvDesc = new ShaderResourceViewDescription
         {
             ViewDimension = ShaderResourceViewDimension.Buffer,
-            Shader4ComponentMapping = Shader4ComponentMapping,
+            Shader4ComponentMapping = ShaderConstants.Shader4ComponentMapping,
             Format = Format.Unknown,
             Buffer = new BufferShaderResourceView
             {
@@ -106,7 +110,7 @@ public class ParticleBuffers : IDisposable
         {
             (var _srvCpu, var _srvGpu) = heapAllocator.Allocate();
 
-            (var _uavCpu, var _uavGpu) = heapAllocator.Allocate(2);
+            (var _uavCpu, var _uavGpu) = heapAllocator.Allocate(1 + (uint)ComputeBuffers.Count);
 
             var buffer = BufferHelper.CreateDefaultBuffer(device, initParticles, commandList,
                 ResourceStates.VertexAndConstantBuffer,
@@ -125,28 +129,31 @@ public class ParticleBuffers : IDisposable
                 ParticleBufferUAVCpu = _uavCpu,
                 ParticleBuffer = buffer,
             };
-                
             var EmitterBufferUAVCpu = new CpuDescriptorHandle(_uavCpu, 1, heapAllocator.DescriptorSize);
-            uint strideEmitter = (uint)Marshal.SizeOf<Emitter>();
-            
-            var EmitterUAVDesc = new UnorderedAccessViewDescription
-            {
-                ViewDimension = UnorderedAccessViewDimension.Buffer,
-                Format = Format.Unknown,
-                Buffer = new BufferUnorderedAccessView
-                {
-                    FirstElement = 0,
-                    NumElements = 1,
-                    StructureByteStride = strideEmitter,
-                    CounterOffsetInBytes = 0,
-                    Flags = BufferUnorderedAccessViewFlags.None
-                }
-            };
-        
-            device.CreateUnorderedAccessView(EmitterBuffer, null, EmitterUAVDesc, EmitterBufferUAVCpu);
+            bindUAVResource(device, ComputeBuffers[0], EmitterBufferUAVCpu);
 
             Buffers[i] = bufferBinding;
         }
+    }
+    public void bindUAVResource(ID3D12Device device, ID3D12Resource resource, CpuDescriptorHandle handle)
+    {
+        uint strideEmitter = (uint)Marshal.SizeOf<Emitter>();
+
+        var EmitterUAVDesc = new UnorderedAccessViewDescription
+        {
+            ViewDimension = UnorderedAccessViewDimension.Buffer,
+            Format = Format.Unknown,
+            Buffer = new BufferUnorderedAccessView
+            {
+                FirstElement = 0,
+                NumElements = 1,
+                StructureByteStride = strideEmitter,
+                CounterOffsetInBytes = 0,
+                Flags = BufferUnorderedAccessViewFlags.None
+            }
+        };
+
+        device.CreateUnorderedAccessView(resource, null, EmitterUAVDesc, handle);
     }
     public ID3D12Resource this[int id]
     {
@@ -162,6 +169,6 @@ public class ParticleBuffers : IDisposable
     {
         for (int i = 0; i < Buffers.Length; i++)
             Buffers[i].ParticleBuffer.Dispose();
-        EmitterBuffer?.Dispose();
+        ComputeBuffers.ForEach(x=>x.Dispose());
     }
 }

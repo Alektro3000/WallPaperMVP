@@ -2,11 +2,6 @@
 
 StructuredBuffer<Particle> Particles : register(t0);
 
-cbuffer Constants : register(b0)
-{
-    float4x4 viewProjection;
-};
-
 struct VSInput
 {
     float2 localOffset : POSITION;
@@ -29,7 +24,7 @@ VSOut main(VSInput input)
     Particle part = Particles[input.index];
 
     float2 worldPos = part.Position + input.localOffset * (part.Size);
-    o.position = mul(float4(worldPos, 0, 1.0), viewProjection);
+    o.position = mul(float4(worldPos, 0, 1.0), ViewMatrix);
 
     o.color = part.Color;
     return o;

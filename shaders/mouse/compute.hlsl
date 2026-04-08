@@ -1,4 +1,3 @@
-#include "../common/common.hlsli"
 #include "common.hlsli"
 
 StructuredBuffer<Particle> PrevParticles : register(t0);
