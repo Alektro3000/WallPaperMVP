@@ -10,6 +10,8 @@ public class MouseSystem : ParticleSystem
     {
         ConstructRequiredFields(context, 4096 , "mouse/compute.hlsl", "mouse/precompute.hlsl");
         ParticleSystemController = new MouseController(ParticleBuffers, context.systemSettings);
+        
+        Serilog.Log.Information("Mouse System Initialized");
     }
     public override void UpdateConstantBuffers(FrameResource currentResource)
     {

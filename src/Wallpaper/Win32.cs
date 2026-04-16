@@ -1,20 +1,30 @@
 using System;
 using System.Runtime.InteropServices;
+using Serilog;
 
 public static class Win32
 {
     // =========================
     // Constants
     // =========================
-    
+
     // Define the DPI awareness context constant
     public const int DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4;
 
     public const int WS_POPUP = unchecked((int)0x80000000);
     public const int WS_VISIBLE = 0x10000000;
-    
+
     public const int WS_EX_LAYERED = 0x80000;
     public const int WS_EX_TRANSPARENT = 0x20;
+    public const int WS_EX_TOOLWINDOW = 0x00000080;
+    public const int WS_EX_NOACTIVATE = 0x08000000;
+
+    public static readonly IntPtr HWND_BOTTOM = new IntPtr(1);
+
+    public const uint SWP_NOSIZE = 0x0001;
+    public const uint SWP_NOMOVE = 0x0002;
+    public const uint SWP_NOACTIVATE = 0x0010;
+    public const uint SWP_SHOWWINDOW = 0x0040;
 
     public const int WM_DESTROY = 0x0002;
     public const int WM_QUIT = 0x0012;
@@ -31,13 +41,13 @@ public static class Win32
     private const int WM_SPAWN_WORKER = 0x052C;
 
     private const int LWA_COLORKEY = 0x00000001;
-    private const int LWA_ALPHA    = 0x00000002;
+    private const int LWA_ALPHA = 0x00000002;
 
 
     // Ctrl + Shift + F10
     public const uint MOD_CONTROL = 0x0002;
-    public const uint MOD_SHIFT   = 0x0004;
-    public const uint VK_F10      = 0x79;
+    public const uint MOD_SHIFT = 0x0004;
+    public const uint VK_F10 = 0x79;
 
 
     // =========================
@@ -82,6 +92,7 @@ public static class Win32
     // =========================
     public static IntPtr CreateWallpaperWindow(int width, int height, WndProc wndProcDelegate)
     {
+        Log.Debug("Creating Main Window;");
         string className = "WallpaperClass";
 
         var wc = new WNDCLASSEX
@@ -94,7 +105,7 @@ public static class Win32
         RegisterClassEx(ref wc);
 
         IntPtr hwnd = CreateWindowEx(
-            WS_EX_LAYERED | WS_EX_TRANSPARENT, // Correct combination for click-through
+            WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, // Correct combination for click-through
             className,
             "Wallpaper",
             WS_POPUP | WS_VISIBLE,
@@ -104,6 +115,19 @@ public static class Win32
             IntPtr.Zero,
             IntPtr.Zero);
         SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
+
+        Log.Debug("Window created with {Hwnd} hwnd", hwnd);
+
+        SetWindowPos(
+            hwnd,
+            HWND_BOTTOM,
+            0, 0, width, height,
+            SWP_NOACTIVATE | SWP_SHOWWINDOW);
+
+
+
+        Log.Debug("Window {Hwnd} hwnd moved to background", hwnd);
+
         return hwnd;
     }
 
@@ -112,7 +136,93 @@ public static class Win32
     // =========================
     public static void AttachToWallpaper(IntPtr hwnd)
     {
+        Log.Information("Attaching window {Hwnd} to wallpaper layer", hwnd);
+
         IntPtr progman = FindWindow("Progman", null);
+
+        if (progman == IntPtr.Zero)
+        {
+            Log.Error("Failed to find Progman window");
+            throw new InvalidOperationException("Could not find Progman window");
+        }
+        Log.Debug("Found Progman window: {Progman}", progman);
+
+        IntPtr progmanShellView = FindWindowEx(progman, IntPtr.Zero, "SHELLDLL_DefView", null);
+        IntPtr targetWorkerW;
+        if (progmanShellView != IntPtr.Zero)
+        {
+            Log.Warning("Progman has SHELLDLL_DefView {ShellView}", progmanShellView);
+        }
+        targetWorkerW = AttachSelector(progman);
+
+        if (targetWorkerW == IntPtr.Zero)
+        {
+            Log.Error("Failed to find target window for wallpaper attachment");
+            throw new InvalidOperationException("Could not locate WorkerW wallpaper host");
+        }
+
+        IntPtr previousParent = SetParent(hwnd, targetWorkerW);
+
+
+        Log.Information(
+            "Attached window {Hwnd} to target {target}; previous parent was {PreviousParent}",
+            hwnd,
+            targetWorkerW,
+            previousParent);
+
+        ShowWindow(hwnd, SW_SHOW);
+    }
+    public static IntPtr AttachToWallpaperAlt(IntPtr hwnd, IntPtr progman)
+    {
+        SendMessageTimeout(
+            progman,
+            WM_SPAWN_WORKER,
+            IntPtr.Zero,
+            IntPtr.Zero,
+            0,
+            1000,
+            out _);
+
+        IntPtr shellViewInProgman = FindWindowEx(progman, IntPtr.Zero, "SHELLDLL_DefView", null);
+        Log.Debug("Progman direct SHELLDLL_DefView = {ShellView}", shellViewInProgman);
+
+        IntPtr searchAfter = IntPtr.Zero;
+        IntPtr best = IntPtr.Zero;
+
+        while (true)
+        {
+            IntPtr worker = FindWindowEx(IntPtr.Zero, searchAfter, "WorkerW", null);
+            if (worker == IntPtr.Zero)
+                break;
+
+            searchAfter = worker;
+
+            Log.Debug("Examining WorkerW {Worker}", worker);
+
+
+            // skip if it hosts desktop icons
+            IntPtr shellView = FindWindowEx(worker, IntPtr.Zero, "SHELLDLL_DefView", null);
+            if (shellView != IntPtr.Zero)
+            {
+                Log.Debug("Skipping WorkerW {Worker}: hosts SHELLDLL_DefView {ShellView}", worker, shellView);
+                continue;
+            }
+
+            // fallback: remember last reasonable candidate
+            Log.Debug("Remembering WorkerW {Worker} as candidate", worker);
+            best = worker;
+        }
+
+        if (best == IntPtr.Zero)
+        {
+            Log.Error("No suitable WorkerW found in Alt");
+        }
+        return best;
+    }
+
+    public static IntPtr AttachSelector(IntPtr progman)
+    {
+        Log.Debug("Sending WM_SPAWN_WORKER message to Progman");
 
         SendMessageTimeout(
             progman,
@@ -123,27 +233,39 @@ public static class Win32
             1000,
             out _);
 
-        IntPtr workerW = IntPtr.Zero;
+        IntPtr searchAfter = IntPtr.Zero;
+        IntPtr targetWorkerW = IntPtr.Zero;
 
         while (true)
         {
-            IntPtr worker = FindWindowEx(IntPtr.Zero, workerW, "WorkerW", null);
+            IntPtr worker = FindWindowEx(IntPtr.Zero, searchAfter, "WorkerW", null);
             if (worker == IntPtr.Zero)
                 break;
+
+            Log.Debug("Enumerated WorkerW {Worker}", worker);
 
             IntPtr shellView = FindWindowEx(worker, IntPtr.Zero, "SHELLDLL_DefView", null);
 
             if (shellView != IntPtr.Zero)
             {
-                workerW = FindWindowEx(IntPtr.Zero, worker, "WorkerW", null);
+                Log.Debug(
+                    "Found SHELLDLL_DefView {ShellView} inside WorkerW {Worker}",
+                    shellView,
+                    worker);
+
+                targetWorkerW = FindWindowEx(IntPtr.Zero, worker, "WorkerW", null);
+                Log.Debug("Next WorkerW after shell host is {TargetWorkerW}", targetWorkerW);
                 break;
             }
 
-            workerW = worker;
+            searchAfter = worker;
         }
 
-        SetParent(hwnd, workerW);
-        ShowWindow(hwnd, SW_SHOW);
+        if (targetWorkerW == IntPtr.Zero)
+        {
+            Log.Error("No suitable WorkerW found in Base");
+        }
+        return targetWorkerW;
     }
 
     // =========================
@@ -210,7 +332,7 @@ public static class Win32
         int flags,
         int timeout,
         out IntPtr result);
-        
+
     [DllImport("user32.dll")]
     public static extern bool SetProcessDpiAwarenessContext(int value);
 
@@ -227,7 +349,7 @@ public static class Win32
         IntPtr hWnd,
         int id);
 
-    
+
     [StructLayout(LayoutKind.Sequential)]
     public struct POINT
     {
@@ -237,5 +359,32 @@ public static class Win32
 
     [DllImport("user32.dll")]
     public static extern bool GetCursorPos(out POINT lpPoint);
-    
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [DllImport("user32.dll")]
+    public static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetParent(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool SetWindowPos(
+    IntPtr hWnd,
+    IntPtr hWndInsertAfter,
+    int X,
+    int Y,
+    int cx,
+    int cy,
+    uint uFlags);
 }

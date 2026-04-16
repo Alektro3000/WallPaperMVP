@@ -20,7 +20,10 @@ public sealed class Renderer : IDisposable
         using var commandList = new ImmediateCommandList(Context);
 
         HeapAllocator = new HeapAllocator(Context.Device);
+
         FrameManager = new FrameManager(Context, hwnd, width, height, HeapAllocator);
+        Serilog.Log.Information("FrameManager Initialized {@FrameManager}", FrameManager);
+
         GeometryBuffers = new GeometryBuffers(Context.Device, commandList, HeapAllocator);
         var field = 
             new FieldBuffers(Context.Device, FrameManager, HeapAllocator);
@@ -38,7 +41,11 @@ public sealed class Renderer : IDisposable
         ];
 
         fieldPass = new FieldPass(Context.Device, field, common, "field.hlsl");
+        Serilog.Log.Information("FieldPass Initialized");
+
         debugPass = new DebugPass(Context.Device, field.SRVFieldDescriptor);
+        Serilog.Log.Information("debugPass Initialized");
+
 
         ParticleSystem.InitContext context = new ParticleSystem.InitContext
         {
@@ -54,6 +61,10 @@ public sealed class Renderer : IDisposable
         
         ParticleSystems = [
             new MouseSystem(context),
+            new TextSystem(context),
+            new WhirlSystem(context),
+            new StripSystem(context),
+            new CornerSystem(context),
         ];
         FrameManager.PopulateConstantBuffers();
         FrameManager.ExecuteForEachFrame(x =>
@@ -86,7 +97,6 @@ public sealed class Renderer : IDisposable
         foreach (var item in ParticleSystems)
             item.Render(currentResource);
             
-        //debugPass.Render(currentResource);
         FrameManager.EndFrame(currentResource);
         
         foreach (var item in ParticleSystems)

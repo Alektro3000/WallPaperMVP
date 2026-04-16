@@ -8,10 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Reflection.MetadataLoadContext" Version="10.0.5" />
-    <PackageReference Include="Vortice.Direct3D12" Version="3.8.3" />
-    <PackageReference Include="Vortice.DirectComposition" Version="3.8.3" />
     <PackageReference Include="Vortice.DXC" Version="3.8.3" />
-    <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
   </ItemGroup>
 
 </Project>

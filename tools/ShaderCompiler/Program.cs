@@ -2,9 +2,6 @@
 using System.Text.RegularExpressions;
 using Vortice.Dxc;
 using System.Reflection;
-using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
-using System.Runtime.Loader;
 
 internal static class Program
 {
@@ -12,7 +9,7 @@ internal static class Program
     {
         try
         {
-            Run(args);
+            RunReflection(args);
             return 0;
         }
         catch (Exception ex)
@@ -22,11 +19,6 @@ internal static class Program
             return 1;
         }
     }
-    private static void Run(string[] args)
-    {
-        
-    }
-
     private static void RunReflection(string[] args)
     {
         if (args.Length < 3)
