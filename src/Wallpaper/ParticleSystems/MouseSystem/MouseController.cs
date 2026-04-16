@@ -5,7 +5,7 @@ public class MouseController
     private readonly ParticleBuffers ParticleSystem;
     private Vector2 prevMousePos;
 
-    public MouseSettings mouseSettings = new MouseSettings();
+    public MouseSettings mouseSettings = new MouseSettings(0.016f);
 
     public MouseController(ParticleBuffers partcileSystem)
     {
@@ -15,11 +15,7 @@ public class MouseController
     public void UpdateStaticResource(ref MouseConstants constant, FrameMetric metric)
     {
         constant.ParticleCount = ParticleSystem.particleCount;
-        constant.LifeTime = mouseSettings.LifeTime;
-        constant.SpawnRate = mouseSettings.SpawnRate;
-        constant.SpawnRatePerUnit = mouseSettings.SpawnRatePerUnit;
-        constant.Color = mouseSettings.Color;
-        constant.Velocity = mouseSettings.Velocity;
+        constant.mouseSettings = mouseSettings;
         
         Win32.GetCursorPos(out Win32.POINT point);
         float ratio = (float)metric.height/metric.width;
@@ -27,8 +23,6 @@ public class MouseController
 
         constant.mousePos = MousePos;
         constant.mousePosPrev = prevMousePos;
-        constant.GridSize = new Vector2(1, 1) * mouseSettings.Size;
-        constant.Size =  mouseSettings.Size;
         prevMousePos = MousePos;
     }
 }

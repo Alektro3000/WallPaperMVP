@@ -19,8 +19,8 @@ class Program
 
     static void Main()
     {
-
         Win32.SetProcessDpiAwarenessContext(Win32.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
 
         int width = Win32.GetSystemMetrics(Win32.SM_CXSCREEN);
         int height = Win32.GetSystemMetrics(Win32.SM_CYSCREEN);
@@ -43,6 +43,35 @@ class Program
                     ?.UpdateMouseSettings(setting);
             };
             Win32.MSG msg;
+            
+        NotifyIcon trayIcon = new NotifyIcon
+        {
+            Icon = new Icon("app.ico"),
+            Text = "Wallpaper",
+            Visible = true
+        };
+
+        // Optional context menu
+        ContextMenuStrip menu = new ContextMenuStrip();
+        menu.Items.Add("Settings", null, (s, e) =>
+        {
+            form.Show();
+        });
+
+        menu.Items.Add("Exit", null, (s, e) =>
+        {
+            form.ShouldBeClosed = true;
+            trayIcon.Visible = false;
+        });
+
+        trayIcon.ContextMenuStrip = menu;
+
+        // Double-click handler
+        trayIcon.DoubleClick += (s, e) =>
+        {
+            MessageBox.Show("Tray icon double-clicked");
+        };
+
 
             while (true)
             {

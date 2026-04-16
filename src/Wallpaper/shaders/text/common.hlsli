@@ -2,7 +2,11 @@
 
 cbuffer Constants : register(b0)
 {
-    float LifeTime;
     uint ParticleCount;
+    float3 padding;
+
+
+    float LifeTime;
     float SpawnRate;
+    float Size;
 };

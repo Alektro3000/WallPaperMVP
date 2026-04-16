@@ -15,8 +15,6 @@ public class WhirlController
     {
         // Update static buffer
         constant.ParticleCount = ParticleSystem.particleCount;
-        constant.LifeTime = 3f;
-        constant.SpawnRate = 150f;
-        constant.CenterPosition = new Vector2(0f,0.2f);
+        constant.WhirlSettings = new WhirlSettings();
     }
 }

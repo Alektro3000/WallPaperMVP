@@ -72,7 +72,9 @@ internal static class Program
 
                 Console.WriteLine($"{type.FullName}: {path} [{stage}]");
                 Console.WriteLine($"{inputPath} to {outputPath}");
-                Compile(inputPath, inputRoot, outputPath, stage);
+
+                //if(File.GetLastWriteTimeUtc(inputPath) >= File.GetLastWriteTimeUtc(outputPath))
+                    Compile(inputPath, inputRoot, outputPath, stage);
             }
         }
     }

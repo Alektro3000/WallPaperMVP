@@ -1,4 +1,4 @@
-﻿
+
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public sealed class ShaderAttribute : Attribute
 {

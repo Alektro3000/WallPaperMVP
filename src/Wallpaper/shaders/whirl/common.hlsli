@@ -2,8 +2,18 @@
 
 cbuffer ParticleConstants : register(b0)
 {
-    float LifeTime;
     uint ParticleCount;
+    float3 padding;
+
     float2 CenterPosition;
+    float LifeTime;
     float SpawnRate;
+
+    float Speed;
+    float Tangent;
+    float Radial;
+    float Size;
+    
+    float InitRegion;
+    float InitOffset;
 };

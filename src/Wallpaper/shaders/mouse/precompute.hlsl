@@ -17,6 +17,8 @@ void main(uint3 tid : SV_DispatchThreadID)
         spawnCount += data.SpawnCountThisFrame - data.ConsumedSpawns;
     acc &= 0xFFFF;
 
+
+    Emitter[0].VelocityBlend = pow(1.0f - 0.08f, 120.0f * DeltaTime);
     Emitter[0].SpawnAccumulator = acc;
     Emitter[0].SpawnCountThisFrame = spawnCount;
     Emitter[0].ConsumedSpawns = 0;

@@ -18,6 +18,7 @@ public class CommonUpdater(CommonBuffers buffers) : IConstantUpdater
                 );
         constant.height = FieldBuffers.height;
         constant.width = FieldBuffers.width;
-        constant.ScreenRatio = (float)currentResource.frameMetric.height / currentResource.frameMetric.width;
+        constant.ScreenRatio = (float)currentResource.frameMetric.width/currentResource.frameMetric.height;
+        constant.ScreenRatioInv = (float)currentResource.frameMetric.height/currentResource.frameMetric.width;
     }
 }

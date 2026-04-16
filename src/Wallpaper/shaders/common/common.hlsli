@@ -8,6 +8,7 @@ cbuffer CommonConstants : register(b1)
     uint FrameIndex;
     uint2 fieldSize;
     float ScreenRatio;
+    float ScreenRatioInv;
 };
 
 static const float PI = 3.14159265359f;
@@ -33,6 +34,7 @@ struct EmitterData{
      uint SpawnCountThisFrame;
      uint ConsumedSpawns;
      uint SpawnAccumulator;
+     float VelocityBlend;
 };
 
 uint WangHash(uint s)

@@ -1,0 +1,1 @@
+to open settings use: ctrl + shift + f10

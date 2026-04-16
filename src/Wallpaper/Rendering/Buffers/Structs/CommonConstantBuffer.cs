@@ -10,4 +10,5 @@ public struct CommonConstantBuffer
     public uint width;
     public uint height;
     public float ScreenRatio;
+    public float ScreenRatioInv;
 }

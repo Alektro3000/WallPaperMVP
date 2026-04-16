@@ -12,7 +12,6 @@
     <PackageReference Include="Vortice.DirectComposition" Version="3.8.3" />
     <PackageReference Include="Vortice.DXC" Version="3.8.3" />
     <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
-    <ProjectReference Include="..\ShaderConvention\ShaderConvention.csproj" />
   </ItemGroup>
 
 </Project>

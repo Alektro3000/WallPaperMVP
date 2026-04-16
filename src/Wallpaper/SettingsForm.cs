@@ -224,10 +224,9 @@ public class SettingsForm : Form
     }
     private void UpdateSettings()
     {
-        Settings = new MouseSettings
+        Settings = new MouseSettings((float)_size.Value)
         {
             Color = _selectedColor,
-            Size = (float)_size.Value,
             LifeTime = (float)_lifeTime.Value,
             SpawnRate = (float)_spawnRate.Value,
             SpawnRatePerUnit = (float)_spawnRatePerUnit.Value,

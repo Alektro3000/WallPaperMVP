@@ -5,7 +5,8 @@ StructuredBuffer<Particle> PrevParticles : register(t0);
 RWStructuredBuffer<Particle> NextParticles : register(u0);
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
 
-[numthreads(256, 1, 1)] void main(uint3 dtid : SV_DispatchThreadID)
+[numthreads(256, 1, 1)] 
+void main(uint3 dtid : SV_DispatchThreadID)
 {
     uint i = dtid.x;
     if (i >= ParticleCount)
@@ -19,8 +20,8 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
         if (spawnIndex < Emitter[0].SpawnCountThisFrame)
         {
             uint seed = i + FrameIndex * 12345;
-            float angle = Random(seed) * PI2;
-            float speed = 0.0 + 0.0 * Random(seed * 3 + 1);
+            float angle = Random(seed) * PI/8 - PI/16 + PI/2;
+            float speed = 0.01 + 0.00 * Random(seed * 3 + 1);
 
             p.Position = p.CustomData.xy;
             p.Velocity = Rotate(speed, angle);
@@ -29,11 +30,9 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
     }
     float scaledAge = p.Age/LifeTime;
 
-    p.Position = p.Position + p.Velocity * DeltaTime;
+    p.Position += p.Velocity * DeltaTime;
     p.Age -= DeltaTime;
 
-    p.Size = 0.06;
-    p.Color = float4(0.2f, 0.9f, 1.f, scaledAge);
     
     if (p.Age < 0)
     {
@@ -43,7 +42,7 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
     else
     {
         float initRegion = saturate(1.2f - scaledAge * 10);
-        p.Size = 0.01 - initRegion * 0.01f;
+        p.Size = Size * (1 - initRegion);
         p.Color = float4(initRegion + 0.2f , 0.9f * (1.2f - scaledAge), 1.f, scaledAge);
     }
 

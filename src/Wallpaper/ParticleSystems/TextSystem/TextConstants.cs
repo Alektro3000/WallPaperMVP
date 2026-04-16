@@ -5,7 +5,19 @@ using System.Runtime.InteropServices;
 [StructLayout(LayoutKind.Sequential)]
 public struct TextConstants
 {
-    public float LifeTime;
     public uint ParticleCount;
-    public float SpawnRate;
+    public Vector3 padding;
+    public TextSettings Settings;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct TextSettings
+{
+    public float LifeTime = 3f;
+    public float SpawnRate = 1000f;
+    public float Size = 0.01f;
+
+    public TextSettings()
+    {
+    }
 }

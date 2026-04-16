@@ -2,17 +2,20 @@
 
 cbuffer Constants : register(b0)
 {
-    float LifeTime;
-    uint ParticleCount;
     float2 mousePos;
-
     float2 mousePosPrev;
-    float SpawnRate;
-    float SpawnRatePerUnit;
+
+    uint ParticleCount;
+    int3 _padding;
     
     float3 Color;
     float Size;
     
     float2 GridSize;
     float Velocity;
+    float LifeTime;
+
+    float SpawnRate;
+    float SpawnRatePerUnit;
+    float InitVelocity;
 };

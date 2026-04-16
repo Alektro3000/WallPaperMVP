@@ -15,7 +15,6 @@ public class TextController
     {
         // Update static buffer
         constant.ParticleCount = ParticleSystem.particleCount;
-        constant.LifeTime = 3f;
-        constant.SpawnRate = 1000f;
+        constant.Settings = new TextSettings();
     }
 }
