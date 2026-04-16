@@ -3,3 +3,4 @@
 dumps/**
 procdump.exe
 .vs/**
+.vscode/**

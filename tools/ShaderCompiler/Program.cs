@@ -22,8 +22,12 @@ internal static class Program
             return 1;
         }
     }
-
     private static void Run(string[] args)
+    {
+        
+    }
+
+    private static void RunReflection(string[] args)
     {
         if (args.Length < 3)
            throw new ArgumentException("Expected: <assemblyPath> <projectDir> <outputDir>");
@@ -32,9 +36,9 @@ internal static class Program
         string projectDir = Path.GetFullPath(args[1]);
         string outputDir = Path.GetFullPath(args[2]);
         
-        // string assemblyPath = "G:\\projects\\mine\\WallPaperMVP\\src\\Wallpaper\\bin\\Debug\\net10.0-windows\\WallpaperMVP.dll" ;
+        // string assemblyPath = "G:\\projects\\mine\\WallPaperMVP\\src\\Wallpaper\\bin\\Debug\\net8.0-windows\\WallpaperMVP.dll" ;
         // string projectDir = "G:\\projects\\mine\\WallPaperMVP\\src\\Wallpaper" ;
-        // string outputDir = "G:\\projects\\mine\\WallPaperMVP\\src\\Wallpaper\\bin\\Debug\\net10.0-windows\\" ;
+        // string outputDir = "G:\\projects\\mine\\WallPaperMVP\\src\\Wallpaper\\bin\\Debug\\net8.0-windows\\" ;
 
         Console.WriteLine($"assemblyPath = {assemblyPath}");
 
@@ -74,7 +78,7 @@ internal static class Program
                 Console.WriteLine($"{inputPath} to {outputPath}");
 
                 //if(File.GetLastWriteTimeUtc(inputPath) >= File.GetLastWriteTimeUtc(outputPath))
-                    Compile(inputPath, inputRoot, outputPath, stage);
+                Compile(inputPath, inputRoot, outputPath, stage);
             }
         }
     }

@@ -26,13 +26,13 @@ public class GeometryBuffers : IDisposable
             new QuadVertex { LocalOffset = new Vector2(-0.5f,  0.5f), UV = new Vector2(0, 0) },
         ];
 
-        VertexBuffer = BufferHelper.CreateDefaultBuffer(device, quadVertices, commandList);
+        VertexBuffer = BufferHelper.CreateDefaultBuffer<QuadVertex>(device, quadVertices, commandList);
         VertexBufferView = BufferHelper.CreateVertexBufferView<QuadVertex>(VertexBuffer, (uint)quadVertices.Length);
         
 
 
         ushort[] quadIndices = [0, 1, 2, 0, 2, 3];
-        IndexBuffer = BufferHelper.CreateDefaultBuffer(device, quadIndices, commandList);
+        IndexBuffer = BufferHelper.CreateDefaultBuffer<ushort>(device, quadIndices, commandList);
         IndexBufferView = BufferHelper.CreateIndexBufferView(IndexBuffer, (uint)quadIndices.Length);
 
 

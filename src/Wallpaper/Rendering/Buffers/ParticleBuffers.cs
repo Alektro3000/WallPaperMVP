@@ -112,7 +112,7 @@ public class ParticleBuffers : IDisposable
 
             (var _uavCpu, var _uavGpu) = heapAllocator.Allocate(1 + (uint)ComputeBuffers.Count);
 
-            var buffer = BufferHelper.CreateDefaultBuffer(device, initParticles, commandList,
+            var buffer = BufferHelper.CreateDefaultBuffer<Particle>(device, initParticles, commandList,
                 ResourceStates.VertexAndConstantBuffer,
                 ResourceFlags.AllowUnorderedAccess);
 

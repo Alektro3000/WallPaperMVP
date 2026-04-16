@@ -2,17 +2,28 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TransparentMode>true</TransparentMode>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TransparentMode)' == 'true'">
+    <DefineConstants>$(DefineConstants);TRANSPARENT</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Vortice.Direct3D12" Version="3.8.3" />
     <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TransparentMode)' == 'true'">
+    <PackageReference Include="Vortice.DirectComposition" Version="3.8.3" />
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+  </ItemGroup>
+
   <Target Name="CompileShaders" AfterTargets="Build">
     <Exec Command="dotnet run --project &quot;$(MSBuildProjectDirectory)\..\..\tools\ShaderCompiler\ShaderCompiler.csproj&quot; -- &quot;$(TargetPath)&quot; &quot;$(MSBuildProjectDirectory)&quot; &quot;$([System.IO.Path]::GetDirectoryName($(TargetPath)))&quot;" />
   </Target>

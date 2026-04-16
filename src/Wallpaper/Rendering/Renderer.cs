@@ -54,10 +54,6 @@ public sealed class Renderer : IDisposable
         
         ParticleSystems = [
             new MouseSystem(context),
-            new WhirlSystem(context),
-            new CornerSystem(context),
-            new StripSystem(context),
-            new TextSystem(context),
         ];
         FrameManager.PopulateConstantBuffers();
         FrameManager.ExecuteForEachFrame(x =>

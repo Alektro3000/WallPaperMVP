@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 class Program
 {
-    
+
     // =========================
     // Window procedure
     // =========================
@@ -41,34 +41,29 @@ class Program
             using var form = new SettingsForm(settings);
 
             Win32.MSG msg;
-            
-        NotifyIcon trayIcon = new NotifyIcon
-        {
-            Icon = new Icon("app.ico"),
-            Text = "Wallpaper",
-            Visible = true
-        };
 
-        // Optional context menu
-        ContextMenuStrip menu = new ContextMenuStrip();
-        menu.Items.Add("Settings", null, (s, e) =>
-        {
-            form.Show();
-        });
+            using NotifyIcon trayIcon = new NotifyIcon
+            {
+                Icon = new Icon(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico")),
+                Text = "Wallpaper",
+                Visible = true
+            };
 
-        menu.Items.Add("Exit", null, (s, e) =>
-        {
-            form.ShouldBeClosed = true;
-            trayIcon.Visible = false;
-        });
+            // Optional context menu
+            ContextMenuStrip menu = new ContextMenuStrip();
+            menu.Items.Add("Settings", null, (s, e) =>
+            {
+                form.Show();
+            });
 
-        trayIcon.ContextMenuStrip = menu;
+            menu.Items.Add("Exit", null, (s, e) =>
+            {
+                form.ShouldBeClosed = true;
+                trayIcon.Visible = false;
+            });
 
-        // Double-click handler
-        trayIcon.DoubleClick += (s, e) =>
-        {
-            MessageBox.Show("Tray icon double-clicked");
-        };
+            trayIcon.ContextMenuStrip = menu;
+
 
 
             while (true)
@@ -86,10 +81,10 @@ class Program
                     Win32.TranslateMessage(ref msg);
                     Win32.DispatchMessage(ref msg);
                 }
-                if(form.ShouldBeClosed)
+                if (form.ShouldBeClosed)
                     return;
                 renderer.Render();
-                
+
             }
         }
         catch (Exception ex)
