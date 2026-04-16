@@ -9,4 +9,9 @@ cbuffer Constants : register(b0)
     float LifeTime;
     float SpawnRate;
     float Size;
+    float Speed;
+    
+    
+    float InitRegion;
+    float InitOffset;
 };

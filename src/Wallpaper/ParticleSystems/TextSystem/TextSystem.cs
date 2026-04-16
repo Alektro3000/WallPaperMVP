@@ -11,7 +11,7 @@ public class TextSystem : ParticleSystem
         InitContext context)
     {
         ConstructRequiredFields(context, generateParticles(), "text/compute.hlsl", "text/precompute.hlsl");
-        ParticleSystemController = new TextController(ParticleBuffers);
+        ParticleSystemController = new TextController(ParticleBuffers, context.systemSettings);
     }
 
     public override void UpdateConstantBuffers(FrameResource currentResource)

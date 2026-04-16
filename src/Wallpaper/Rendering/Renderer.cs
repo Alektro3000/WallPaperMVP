@@ -14,7 +14,7 @@ public sealed class Renderer : IDisposable
 
     private readonly DebugPass debugPass;
     public readonly ParticleSystem[] ParticleSystems;
-    public Renderer(IntPtr hwnd, int width, int height)
+    public Renderer(IntPtr hwnd, int width, int height, SystemSettings systemSettings)
     {
         Context = new GraphicsContext();
         using var commandList = new ImmediateCommandList(Context);
@@ -49,6 +49,7 @@ public sealed class Renderer : IDisposable
             FrameManager = FrameManager,
             commmonBuffers = common,
             fieldBuffers = field,
+            systemSettings = systemSettings
         };
         
         ParticleSystems = [

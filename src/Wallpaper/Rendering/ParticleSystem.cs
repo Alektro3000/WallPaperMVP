@@ -14,6 +14,7 @@ public abstract class ParticleSystem : IDisposable
         public FrameManager FrameManager;
         public CommonBuffers commmonBuffers;
         public FieldBuffers fieldBuffers;
+        public SystemSettings systemSettings;
     }
     
     protected ComputePass ComputePass;

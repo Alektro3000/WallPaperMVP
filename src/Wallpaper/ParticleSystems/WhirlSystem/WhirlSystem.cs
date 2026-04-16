@@ -10,7 +10,7 @@ public class WhirlSystem : ParticleSystem
         InitContext context)
     {
         ConstructRequiredFields(context, 2048, "whirl/compute.hlsl", "whirl/precompute.hlsl");
-        ParticleSystemController = new WhirlController(ParticleBuffers);
+        ParticleSystemController = new WhirlController(ParticleBuffers, context.systemSettings);
     }
 
     public override void UpdateConstantBuffers(FrameResource currentResource)

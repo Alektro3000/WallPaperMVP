@@ -5,17 +5,18 @@ public class MouseController
     private readonly ParticleBuffers ParticleSystem;
     private Vector2 prevMousePos;
 
-    public MouseSettings mouseSettings = new MouseSettings(0.016f);
+    public SystemSettings systemSettings;
 
-    public MouseController(ParticleBuffers partcileSystem)
+    public MouseController(ParticleBuffers partcileSystem, SystemSettings settings)
     {
+        systemSettings = settings;
         ParticleSystem = partcileSystem;
     }
 
     public void UpdateStaticResource(ref MouseConstants constant, FrameMetric metric)
     {
         constant.ParticleCount = ParticleSystem.particleCount;
-        constant.mouseSettings = mouseSettings;
+        constant.mouseSettings = systemSettings.mouseSettings;
         
         Win32.GetCursorPos(out Win32.POINT point);
         float ratio = (float)metric.height/metric.width;

@@ -5,9 +5,11 @@ public class WhirlController
 {
     private readonly ParticleBuffers ParticleSystem;
 
+    private SystemSettings systemSettings;
 
-    public WhirlController(ParticleBuffers partcileSystem)
+    public WhirlController(ParticleBuffers partcileSystem, SystemSettings settings)
     {
+        systemSettings = settings;
         ParticleSystem = partcileSystem;
     }
 
@@ -15,6 +17,6 @@ public class WhirlController
     {
         // Update static buffer
         constant.ParticleCount = ParticleSystem.particleCount;
-        constant.WhirlSettings = new WhirlSettings();
+        constant.WhirlSettings = systemSettings.whirlSettings;
     }
 }

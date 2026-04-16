@@ -8,12 +8,8 @@ public class MouseSystem : ParticleSystem
     protected MouseController ParticleSystemController;
     public MouseSystem(InitContext context)
     {
-        ConstructRequiredFields(context, 4096, "mouse/compute.hlsl", "mouse/precompute.hlsl");
-        ParticleSystemController = new MouseController(ParticleBuffers);
-    }
-    public void UpdateMouseSettings(MouseSettings mouseSettings)
-    {
-        ParticleSystemController.mouseSettings = mouseSettings;
+        ConstructRequiredFields(context, 4096 , "mouse/compute.hlsl", "mouse/precompute.hlsl");
+        ParticleSystemController = new MouseController(ParticleBuffers, context.systemSettings);
     }
     public override void UpdateConstantBuffers(FrameResource currentResource)
     {

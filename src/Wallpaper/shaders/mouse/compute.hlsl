@@ -112,7 +112,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
 
         float scaledAge = saturate(p.Age / LifeTime);
         p.Size = Size;
-        p.Color = float4(Emitter[0].VelocityBlend.xxx, (scaledAge + 0.3 * p.CustomData1.x) * dirLen * 20);
+        p.Color = float4(Color, (scaledAge + 0.3 * p.CustomData1.x) * dirLen * 20);
     }
 
     NextParticles[i] = p;

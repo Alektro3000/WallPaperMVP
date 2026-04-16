@@ -21,7 +21,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
         {
             uint seed = i + FrameIndex * 12345;
             float angle = Random(seed) * PI/8 - PI/16 + PI/2;
-            float speed = 0.01 + 0.00 * Random(seed * 3 + 1);
+            float speed = Speed;
 
             p.Position = p.CustomData.xy;
             p.Velocity = Rotate(speed, angle);
@@ -41,7 +41,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
     }
     else
     {
-        float initRegion = saturate(1.2f - scaledAge * 10);
+        float initRegion = saturate((scaledAge - InitOffset) * InitRegion);
         p.Size = Size * (1 - initRegion);
         p.Color = float4(initRegion + 0.2f , 0.9f * (1.2f - scaledAge), 1.f, scaledAge);
     }

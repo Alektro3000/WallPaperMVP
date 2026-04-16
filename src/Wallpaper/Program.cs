@@ -36,12 +36,10 @@ class Program
 
         try
         {
-            using var renderer = new Renderer(hwnd, width, height);
-            var form = new SettingsForm(new MouseSettings());
-            form.SettingsApplied += (setting) => {
-                (renderer.ParticleSystems.First(x=>x is MouseSystem) as MouseSystem)
-                    ?.UpdateMouseSettings(setting);
-            };
+            var settings = new SystemSettings();
+            using var renderer = new Renderer(hwnd, width, height, settings);
+            using var form = new SettingsForm(settings);
+
             Win32.MSG msg;
             
         NotifyIcon trayIcon = new NotifyIcon

@@ -11,8 +11,8 @@ public struct MouseSettings
     public float Velocity = 0.05f;
     public float LifeTime = 1f;
     
-    public float SpawnRate = 500f;
-    public float SpawnRatePerUnit = 50f;
+    public float SpawnRate = 300f;
+    public float SpawnRatePerUnit = 100f;
     public float InitSpeed = 40f;
 
     public MouseSettings(float Size = 0.016f) : this()

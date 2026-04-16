@@ -4,10 +4,12 @@ using System.Numerics;
 public class TextController
 {
     private readonly ParticleBuffers ParticleSystem;
+    private SystemSettings systemSettings;
 
 
-    public TextController(ParticleBuffers partcileSystem)
+    public TextController(ParticleBuffers partcileSystem, SystemSettings settings)
     {
+        systemSettings = settings;
         ParticleSystem = partcileSystem;
     }
 
@@ -15,6 +17,6 @@ public class TextController
     {
         // Update static buffer
         constant.ParticleCount = ParticleSystem.particleCount;
-        constant.Settings = new TextSettings();
+        constant.Settings = systemSettings.textSettings;
     }
 }

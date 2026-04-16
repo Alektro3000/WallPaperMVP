@@ -1,142 +1,64 @@
-using System;
-using System.Drawing;
 using System.Numerics;
 using System.Windows.Forms;
 
-public class SettingsForm : Form
+public sealed class SettingsForm : Form
 {
-    private readonly TableLayoutPanel _layout;
-    private readonly Button _applyButton;
-    private readonly Button _closeButton;
-
-    private readonly Button _colorButton;
-    private readonly Panel _colorPreview;
-    private readonly ColorDialog _colorDialog;
-
-    private Vector3 _selectedColor;
-
-    private readonly NumericUpDown _size;
-    private readonly NumericUpDown _lifeTime;
-    private readonly NumericUpDown _spawnRate;
-    private readonly NumericUpDown _spawnRatePerUnit;
-    private readonly NumericUpDown _velocity;
-
+    private readonly SystemSettings _settings;
     public bool ShouldBeClosed = false;
 
-    public MouseSettings Settings { get; private set; }
-
-    public event Action<MouseSettings>? SettingsApplied;
-
-    public SettingsForm(MouseSettings initialSettings)
+    public SettingsForm(SystemSettings settings)
     {
-        Settings = initialSettings;
+        _settings = settings;
 
-        Text = "Wallpaper Settings";
+        Text = "Particle Settings";
         Width = 420;
-        Height = 500;
-        StartPosition = FormStartPosition.CenterScreen;
+        Height = 700;
 
-        _layout = new TableLayoutPanel
+        var tabs = new TabControl
         {
-            Dock = DockStyle.Fill,
-            ColumnCount = 2,
-            AutoScroll = true,
-            Padding = new Padding(12)
+            Dock = DockStyle.Fill
         };
 
-        _layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
-        _layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        tabs.TabPages.Add(CreateMouseTab());
+        tabs.TabPages.Add(CreateTextTab());
+        tabs.TabPages.Add(CreateWhirlTab());
 
-        Controls.Add(_layout);
-        _selectedColor = initialSettings.Color;
 
-        _colorDialog = new ColorDialog
+        Controls.Add(tabs);
+        var buttons = new FlowLayoutPanel
         {
-            FullOpen = true
-        };
-
-        _colorPreview = new Panel
-        {
-            Width = 48,
-            Height = 24,
-            BorderStyle = BorderStyle.FixedSingle,
-            BackColor = VectorToColor(_selectedColor),
-            Margin = new Padding(0, 2, 8, 2)
-        };
-
-        _colorButton = new Button
-        {
-            Text = "Choose...",
-            AutoSize = true
-        };
-
-        _colorButton.Click += (_, _) =>
-        {
-            _colorDialog.Color = _colorPreview.BackColor;
-
-            if (_colorDialog.ShowDialog(this) == DialogResult.OK)
-            {
-                _colorPreview.BackColor = _colorDialog.Color;
-                _selectedColor = ColorToVector(_colorDialog.Color);
-                UpdateSettings();
-            }
-        };
-
-        var colorPanel = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            AutoSize = true,
-            WrapContents = false
-        };
-
-        colorPanel.Controls.Add(_colorPreview);
-        colorPanel.Controls.Add(_colorButton);
-
-        AddRow("Color", colorPanel);
-
-        _size = CreateFloatEditor(0, 0.2m, 0.001m, (decimal)initialSettings.Size);
-        _lifeTime = CreateFloatEditor(0, 3, 0.1m, (decimal)initialSettings.LifeTime);
-        _spawnRate = CreateFloatEditor(0, 100000, 100m, (decimal)initialSettings.SpawnRate);
-        _spawnRatePerUnit = CreateFloatEditor(0, 100000, 100m, (decimal)initialSettings.SpawnRatePerUnit);
-        _velocity = CreateFloatEditor(0, 10, 0.01m, (decimal)initialSettings.Velocity);
-        
-
-
-        AddRow("Size", _size);
-        AddRow("LifeTime", _lifeTime);
-        AddRow("SpawnRate", _spawnRate);
-        AddRow("Spawn / Unit", _spawnRatePerUnit);
-        AddRow("Velocity", _velocity);
-
-
-        var buttonsPanel = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Fill,
+            Dock = DockStyle.Bottom,
+            Height = 48,
             FlowDirection = FlowDirection.RightToLeft,
-            AutoSize = true,
-            WrapContents = false
+            Padding = new Padding(8)
         };
 
-        _applyButton = new Button
+        var closeAppButton = new Button
         {
-            Text = "Close",
-            AutoSize = true
+            Text = "Close App",
+            Width = 100,
+            Height = 30
         };
-
-        _closeButton = new Button
+        closeAppButton.Click += (_, _) =>
         {
-            Text = "Exit",
-            AutoSize = true
+            ShouldBeClosed = true;
+            Hide();
         };
 
-        _applyButton.Click += (_, _) => Hide();
-        _closeButton.Click += OnCloseClick;
+        var hideButton = new Button
+        {
+            Text = "Hide",
+            Width = 100,
+            Height = 30
+        };
+        hideButton.Click += (_, _) => Hide();
 
-        buttonsPanel.Controls.Add(_closeButton);
-        buttonsPanel.Controls.Add(_applyButton);
+        buttons.Controls.Add(closeAppButton);
+        buttons.Controls.Add(hideButton);
 
-        AddFullWidthRow(buttonsPanel);
         FormClosing += OnFormClosing;
+        Controls.Add(buttons);
+
     }
 
     private void OnFormClosing(object? sender, FormClosingEventArgs e)
@@ -148,112 +70,154 @@ public class SettingsForm : Form
             Hide();
         }
     }
-    
-    private NumericUpDown CreateFloatEditor(decimal min, decimal max, decimal increment, decimal value)
-    {
-        var ans = new NumericUpDown
-        {
-            DecimalPlaces = 3,
-            Minimum = min,
-            Maximum = max,
-            Increment = increment,
-            Value = Clamp(value, min, max),
-            Dock = DockStyle.Fill,
-        };
 
-        ans.ValueChanged += (_, _) => UpdateSettings();
-        return ans;
+    private TabPage CreateMouseTab()
+    {
+        var tab = new TabPage("Mouse");
+        var panel = CreatePanel(tab);
+
+        AddFloat(panel, "Color R", _settings.mouseSettings.Color.X,
+            v => _settings.mouseSettings.Color.X = v);
+        AddFloat(panel, "Color G", _settings.mouseSettings.Color.Y,
+            v => _settings.mouseSettings.Color.Y = v);
+        AddFloat(panel, "Color B", _settings.mouseSettings.Color.Z,
+            v => _settings.mouseSettings.Color.Z = v);
+
+        AddFloat(panel, "Size", _settings.mouseSettings.Size,
+            v => _settings.mouseSettings.Size = v);
+
+        AddFloat(panel, "Grid Size X", _settings.mouseSettings.GridSize.X,
+            v => _settings.mouseSettings.GridSize.X = v);
+        AddFloat(panel, "Grid Size Y", _settings.mouseSettings.GridSize.Y,
+            v => _settings.mouseSettings.GridSize.Y = v);
+
+        AddFloat(panel, "Velocity", _settings.mouseSettings.Velocity,
+            v => _settings.mouseSettings.Velocity = v);
+
+        AddFloat(panel, "Life Time", _settings.mouseSettings.LifeTime,
+            v => _settings.mouseSettings.LifeTime = v);
+
+        AddFloat(panel, "Spawn Rate", _settings.mouseSettings.SpawnRate,
+            v => _settings.mouseSettings.SpawnRate = v);
+
+        AddFloat(panel, "Spawn Rate / Unit", _settings.mouseSettings.SpawnRatePerUnit,
+            v => _settings.mouseSettings.SpawnRatePerUnit = v);
+
+        AddFloat(panel, "Init Speed", _settings.mouseSettings.InitSpeed,
+            v => _settings.mouseSettings.InitSpeed = v);
+
+        return tab;
     }
 
-    private static decimal Clamp(decimal value, decimal min, decimal max)
+    private TabPage CreateTextTab()
     {
-        if (value < min) return min;
-        if (value > max) return max;
-        return value;
+        var tab = new TabPage("Text");
+        var panel = CreatePanel(tab);
+
+        AddFloat(panel, "Life Time", _settings.textSettings.LifeTime,
+            v => _settings.textSettings.LifeTime = v);
+
+        AddFloat(panel, "Spawn Rate", _settings.textSettings.SpawnRate,
+            v => _settings.textSettings.SpawnRate = v);
+
+        AddFloat(panel, "Size", _settings.textSettings.Size,
+            v => _settings.textSettings.Size = v);
+
+        AddFloat(panel, "Speed", _settings.textSettings.Speed,
+            v => _settings.textSettings.Speed = v);
+
+        AddFloat(panel, "Init Region", _settings.textSettings.InitRegion,
+            v => _settings.textSettings.InitRegion = v);
+
+        AddFloat(panel, "Init Offset", _settings.textSettings.InitOffset,
+            v => _settings.textSettings.InitOffset = v);
+
+        return tab;
     }
 
-    private Panel CreateFuturePanel(string text)
+    private TabPage CreateWhirlTab()
     {
-        var panel = new Panel
+        var tab = new TabPage("Whirl");
+        var panel = CreatePanel(tab);
+
+        AddFloat(panel, "Center X", _settings.whirlSettings.CenterPosition.X,
+            v => _settings.whirlSettings.CenterPosition.X = v);
+        AddFloat(panel, "Center Y", _settings.whirlSettings.CenterPosition.Y,
+            v => _settings.whirlSettings.CenterPosition.Y = v);
+
+        AddFloat(panel, "Life Time", _settings.whirlSettings.LifeTime,
+            v => _settings.whirlSettings.LifeTime = v);
+
+        AddFloat(panel, "Spawn Rate", _settings.whirlSettings.SpawnRate,
+            v => _settings.whirlSettings.SpawnRate = v);
+
+        AddFloat(panel, "Speed", _settings.whirlSettings.Speed,
+            v => _settings.whirlSettings.Speed = v);
+
+        AddFloat(panel, "Tangent", _settings.whirlSettings.Tangent,
+            v => _settings.whirlSettings.Tangent = v);
+
+        AddFloat(panel, "Radial", _settings.whirlSettings.Radial,
+            v => _settings.whirlSettings.Radial = v);
+
+        AddFloat(panel, "Size", _settings.whirlSettings.Size,
+            v => _settings.whirlSettings.Size = v);
+
+        AddFloat(panel, "Init Region", _settings.whirlSettings.InitRegion,
+            v => _settings.whirlSettings.InitRegion = v);
+
+        AddFloat(panel, "Init Offset", _settings.whirlSettings.InitOffset,
+            v => _settings.whirlSettings.InitOffset = v);
+
+        return tab;
+    }
+
+    private static FlowLayoutPanel CreatePanel(TabPage page)
+    {
+        var panel = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
-            Height = 28
+            AutoScroll = true,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            Padding = new Padding(8)
         };
 
-        var label = new Label
-        {
-            Text = text,
-            Dock = DockStyle.Fill,
-            TextAlign = ContentAlignment.MiddleLeft,
-            ForeColor = Color.Gray
-        };
-
-        panel.Controls.Add(label);
+        page.Controls.Add(panel);
         return panel;
     }
 
-    private void AddRow(string labelText, Control editor)
+    private static void AddFloat(FlowLayoutPanel panel, string label, float value, Action<float> setter)
     {
-        int row = _layout.RowCount++;
-        _layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-
-        var label = new Label
+        var row = new Panel
         {
-            Text = labelText,
-            TextAlign = ContentAlignment.MiddleLeft,
-            Dock = DockStyle.Fill,
-            AutoSize = true,
-            Margin = new Padding(3, 6, 3, 6)
+            Width = 340,
+            Height = 32
         };
 
-        editor.Margin = new Padding(3, 3, 3, 3);
-        editor.Dock = DockStyle.Fill;
-
-        _layout.Controls.Add(label, 0, row);
-        _layout.Controls.Add(editor, 1, row);
-    }
-
-    private void AddFullWidthRow(Control control)
-    {
-        int row = _layout.RowCount++;
-        _layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-
-        control.Dock = DockStyle.Fill;
-        _layout.Controls.Add(control, 0, row);
-        _layout.SetColumnSpan(control, 2);
-    }
-    private void UpdateSettings()
-    {
-        Settings = new MouseSettings((float)_size.Value)
+        var text = new Label
         {
-            Color = _selectedColor,
-            LifeTime = (float)_lifeTime.Value,
-            SpawnRate = (float)_spawnRate.Value,
-            SpawnRatePerUnit = (float)_spawnRatePerUnit.Value,
-            Velocity = (float)_velocity.Value
+            Text = label,
+            Left = 0,
+            Top = 8,
+            Width = 150
         };
 
-        SettingsApplied?.Invoke(Settings);
-    }
-    private static Color VectorToColor(Vector3 v)
-    {
-        int r = (int)(Math.Clamp(v.X, 0f, 1f) * 255f);
-        int g = (int)(Math.Clamp(v.Y, 0f, 1f) * 255f);
-        int b = (int)(Math.Clamp(v.Z, 0f, 1f) * 255f);
+        var box = new NumericUpDown
+        {
+            Left = 160,
+            Width = 120,
+            DecimalPlaces = 4,
+            Increment = 0.01m,
+            Minimum = -100000,
+            Maximum = 100000,
+            Value = (decimal)value
+        };
 
-        return Color.FromArgb(r, g, b);
-    }
+        box.ValueChanged += (_, _) => setter((float)box.Value);
 
-    private static Vector3 ColorToVector(Color c)
-    {
-        return new Vector3(
-            c.R / 255f,
-            c.G / 255f,
-            c.B / 255f);
-    }
-    private void OnCloseClick(object? sender, EventArgs e)
-    {
-        ShouldBeClosed = true;
-        Close();
+        row.Controls.Add(text);
+        row.Controls.Add(box);
+        panel.Controls.Add(row);
     }
 }

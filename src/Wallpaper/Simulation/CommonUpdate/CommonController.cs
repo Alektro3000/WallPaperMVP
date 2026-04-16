@@ -1,5 +1,4 @@
 using System.Numerics;
-using Vortice.Direct3D12;
 
 public class CommonUpdater(CommonBuffers buffers) : IConstantUpdater
 {
