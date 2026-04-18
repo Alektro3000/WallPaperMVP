@@ -12,11 +12,11 @@ public class StripSystem : ParticleSystem
         ParticleSystemController = new StripController(ParticleBuffers);
     }
 
-    public override void UpdateConstantBuffers(FrameResource currentResource)
+    public override void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings)
     {
         ParticleSystemController.UpdateStaticResource(
             ref currentResource.GetBufferConstantRef<StripConstants>(ConstantKey),
-            currentResource.frameMetric);
+            currentResource.frameMetric, systemSettings);
     }
     public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
     {

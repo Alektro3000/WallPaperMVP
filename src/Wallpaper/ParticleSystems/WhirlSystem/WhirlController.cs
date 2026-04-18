@@ -5,15 +5,13 @@ public class WhirlController
 {
     private readonly ParticleBuffers ParticleSystem;
 
-    private SystemSettings systemSettings;
 
-    public WhirlController(ParticleBuffers partcileSystem, SystemSettings settings)
+    public WhirlController(ParticleBuffers partcileSystem)
     {
-        systemSettings = settings;
         ParticleSystem = partcileSystem;
     }
 
-    public void UpdateStaticResource(ref WhirlConstants constant, FrameMetric frameMetric)
+    public void UpdateStaticResource(ref WhirlConstants constant, FrameMetric frameMetric, SystemSettings systemSettings)
     {
         // Update static buffer
         constant.ParticleCount = ParticleSystem.particleCount;

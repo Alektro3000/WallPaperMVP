@@ -6,7 +6,7 @@ using Vortice.Direct3D12;
 public class FieldUpdater(FieldBuffers buffers) : IConstantUpdater
 {
     public List<WindowEnumerator.WindowInfo> previousWindows = [];
-    public void UpdateConstants(FrameResource currentResource)
+    public void UpdateConstants(FrameResource currentResource, SystemSettings systemSettings)
     {
         UpdateConstant(currentResource, ref currentResource.GetBufferConstantRef<FieldConstantBuffer>(buffers.fieldKey));
     }

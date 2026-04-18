@@ -14,7 +14,6 @@ public abstract class ParticleSystem : IDisposable
         public FrameManager FrameManager;
         public CommonBuffers commmonBuffers;
         public FieldBuffers fieldBuffers;
-        public SystemSettings systemSettings;
     }
     
     protected ComputePass ComputePass;
@@ -30,7 +29,7 @@ public abstract class ParticleSystem : IDisposable
     public void Render(FrameResource currentResource)
         => GraphicPass.Render(currentResource, ConstantKey);
     
-    public abstract void UpdateConstantBuffers(FrameResource currentResource);
+    public abstract void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings);
     public void SwapBuffers()
         => ParticleBuffers.SwapBuffers();
 

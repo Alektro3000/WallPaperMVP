@@ -11,14 +11,14 @@ public class TextSystem : ParticleSystem
         InitContext context)
     {
         ConstructRequiredFields(context, generateParticles(), "text/compute.hlsl", "text/precompute.hlsl");
-        ParticleSystemController = new TextController(ParticleBuffers, context.systemSettings);
+        ParticleSystemController = new TextController(ParticleBuffers);
     }
 
-    public override void UpdateConstantBuffers(FrameResource currentResource)
+    public override void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings)
     {
         ParticleSystemController.UpdateConstantBuffer(
             ref currentResource.GetBufferConstantRef<TextConstants>(ConstantKey),
-            currentResource.frameMetric);
+            currentResource.frameMetric, systemSettings);
     }
     public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
     {

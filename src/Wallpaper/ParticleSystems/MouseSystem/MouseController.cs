@@ -5,15 +5,13 @@ public class MouseController
     private readonly ParticleBuffers ParticleSystem;
     private Vector2 prevMousePos;
 
-    public SystemSettings systemSettings;
 
-    public MouseController(ParticleBuffers partcileSystem, SystemSettings settings)
+    public MouseController(ParticleBuffers partcileSystem)
     {
-        systemSettings = settings;
         ParticleSystem = partcileSystem;
     }
 
-    public void UpdateStaticResource(ref MouseConstants constant, FrameMetric metric)
+    public void UpdateStaticResource(ref MouseConstants constant, FrameMetric metric, SystemSettings systemSettings)
     {
         constant.ParticleCount = ParticleSystem.particleCount;
         constant.mouseSettings = systemSettings.mouseSettings;

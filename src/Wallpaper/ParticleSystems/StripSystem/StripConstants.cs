@@ -16,20 +16,47 @@ public struct StripConstants
             size = new Vector2(sizeX, sizeY);
         }
     }
-    public float LifeTime;
     public uint ParticleCount;
-    public Vector2 GridSize;
+    private Vector3 _padding;
 
     public StripDescription strip0;
     public StripDescription strip1;
     public StripDescription strip2;
     public StripDescription strip3;
     public StripDescription strip4;
+    public StripSettings stripSettings;
+}
 
-    public Vector3 Color;
-    public float SpawnRate;
+public struct StripSettings
+{
+    [UiLabel("Color")]
+    [UiColor(normalized: true)]
+    public Vector3 Color = new Vector3(0.2f, 0.9f, 1f);
+    [UiLabel("Spawn Rate")]
+    [UiRange(0f, 5000f, 1f)]
+    public float SpawnRate = 500f;
     
-    public float Acceleration;
-    public float Size;
-    //public fixed float stripPositionY[5];
+    [UiLabel("Acceleration")]
+    [UiRange(-20f, 20f, 0.1f)]
+    public float Acceleration = 1;
+
+    [UiLabel("Size")]
+    [UiRange(0.001f, 0.2f, 0.001f)]
+    public float Size = 0.04f;
+    
+    [UiLabel("Grid Size")]
+    [UiVector2(
+        minX: 0.001f, maxX: 0.2f, stepX: 0.001f,
+        minY: 0.001f, maxY: 0.2f, stepY: 0.001f,
+        xLabel: "Width",
+        yLabel: "Height")]
+    public Vector2 GridSize = new Vector2(0.01f, 0.01f);
+    
+    [UiLabel("LifeTime")]
+    [UiRange(0f, 20f, 0.01f)]
+    public float LifeTime = 3f;
+
+    public StripSettings()
+    {
+    }
 }

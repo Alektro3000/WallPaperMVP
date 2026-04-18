@@ -44,7 +44,7 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
     {
         float initRegion = saturate((scaledAge - InitOffset) * InitRegion);
         p.Size = Size * (1 - initRegion);
-        p.Color = float4(0.4f, 0.9f * (1.2f - scaledAge), 1.f, scaledAge);
+        p.Color = float4(lerp(EndColor, BeginColor, scaledAge), scaledAge);
     }
 
     NextParticles[i] = updateParticleField(p);

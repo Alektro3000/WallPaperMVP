@@ -11,15 +11,11 @@ public class StripController
         ParticleSystem = partcileSystem;
     }
 
-    public void UpdateStaticResource(ref StripConstants constant, FrameMetric frameMetric)
+    public void UpdateStaticResource(ref StripConstants constant, FrameMetric frameMetric, SystemSettings systemSettings)
     {
         // Update static buffer
         constant.ParticleCount = ParticleSystem.particleCount;
-        constant.LifeTime = 3f;
-        constant.SpawnRate = 500f;
-        constant.Color  = new Vector3(0.2f, 0.9f, 1f);
-        constant.Size = 0.04f;
-        constant.GridSize = new Vector2(0.01f, 0.02f);
+        constant.stripSettings = systemSettings.stripSettings;
         constant.strip0 = CreateStrip(0.1f, 0f, 1f);
         constant.strip1 = CreateStrip(0.2f, -0.1f, 1.1f);
         constant.strip2 = CreateStrip(0.3f, +0.1f, 1.2f);

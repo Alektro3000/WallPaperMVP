@@ -72,7 +72,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
         float2 tangent = float2(-radial.y, radial.x);
 
         // choose random swirl direction per particle
-        float swirlSign = (WangHash(i ^ FrameIndex) & 1) ? 1.0f : -1.0f;
+        float swirlSign = (WangHash(i * 1664525u + 1013904223u) & 1) ? 1.0f : -1.0f;
 
         // stronger near cursor, weaker far away
         float nearMouse = saturate(1.0f - dist / 0.35f);
@@ -83,14 +83,18 @@ void main(uint3 dtid : SV_DispatchThreadID)
         float2 mouseDelta = Pos - Prev;
         float mouseDeltaLen = length(mouseDelta);
         float2 mouseDir = mouseDeltaLen > 0.0001f ? mouseDelta / mouseDeltaLen : 0;
+        
+        float mouseSpeed = mouseDeltaLen / max(DeltaTime, 0.0001f);
+        float swirlStrength = saturate(mouseSpeed * 20) * nearMouse;
 
         // desired velocity
         float2 desiredVel =
-            radial * 5 * nearMouseRadial + 
-            tangent * 0.9f * swirlSign * (nearMouse + p.CustomData1.x * 10) + 
+            radial * -0.35 * nearMouseRadial + 
+            tangent * 1.8f * swirlSign * swirlStrength * (nearMouse + p.CustomData1.x * 10) + 
             mouseDir * 0.5f * (1-p.CustomData1.x);
         // blend instead of overwrite
-        p.Velocity = lerp(desiredVel * Velocity, p.Velocity, Emitter[0].VelocityBlend);
+        p.Velocity += desiredVel * Velocity * DeltaTime;
+        p.Velocity *= Emitter[0].VelocityBlend; 
 
         // integrate
         p.Age -= DeltaTime;

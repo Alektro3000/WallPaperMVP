@@ -25,7 +25,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
             float2 rnd = normalize(Random2(seed)-0.5f);
 
             p.Position = sign(rnd) * (SpawnPosition-SpawnDistribution) + rnd * SpawnDistribution;
-            p.Velocity = rnd * (0.03f);
+            p.Velocity = rnd * (0.03f) * Velocity;
 
             // initial visible age/lifetime
             p.Age = LifeTime;

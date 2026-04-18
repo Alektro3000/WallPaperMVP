@@ -9,15 +9,15 @@ public class MouseSystem : ParticleSystem
     public MouseSystem(InitContext context)
     {
         ConstructRequiredFields(context, 4096 , "mouse/compute.hlsl", "mouse/precompute.hlsl");
-        ParticleSystemController = new MouseController(ParticleBuffers, context.systemSettings);
+        ParticleSystemController = new MouseController(ParticleBuffers);
         
         Serilog.Log.Information("Mouse System Initialized");
     }
-    public override void UpdateConstantBuffers(FrameResource currentResource)
+    public override void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings)
     {
         ParticleSystemController.UpdateStaticResource(
             ref currentResource.GetBufferConstantRef<MouseConstants>(ConstantKey),
-        currentResource.frameMetric);
+        currentResource.frameMetric, systemSettings);
     }
     public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
     {

@@ -2,7 +2,7 @@ using System.Numerics;
 
 public class CommonUpdater(CommonBuffers buffers) : IConstantUpdater
 {
-    public void UpdateConstants(FrameResource currentResource)
+    public void UpdateConstants(FrameResource currentResource, SystemSettings systemSettings)
     {
         UpdateConstant(currentResource, ref currentResource.GetBufferConstantRef<CommonConstantBuffer>(buffers.commonKey));
     }

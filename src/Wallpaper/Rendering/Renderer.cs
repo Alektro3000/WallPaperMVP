@@ -14,7 +14,7 @@ public sealed class Renderer : IDisposable
 
     private readonly DebugPass debugPass;
     public readonly ParticleSystem[] ParticleSystems;
-    public Renderer(IntPtr hwnd, int width, int height, SystemSettings systemSettings)
+    public Renderer(IntPtr hwnd, int width, int height)
     {
         Context = new GraphicsContext();
         using var commandList = new ImmediateCommandList(Context);
@@ -55,8 +55,7 @@ public sealed class Renderer : IDisposable
             HeapAllocator = HeapAllocator,
             FrameManager = FrameManager,
             commmonBuffers = common,
-            fieldBuffers = field,
-            systemSettings = systemSettings
+            fieldBuffers = field
         };
         
         ParticleSystems = [
@@ -79,17 +78,17 @@ public sealed class Renderer : IDisposable
         //renderer2D = new Renderer2DPass(Context.Device, Context.CommandQueue);
     }
 
-    public void Render()
+    public void Render(SystemSettings systemSettings)
     {
         var currentResource = FrameManager.BeginFrame();
 
         foreach (var item in constantUpdaters)
-            item.UpdateConstants(currentResource);
+            item.UpdateConstants(currentResource, systemSettings);
 
         fieldPass.UpdateField(currentResource);
 
         foreach (var item in ParticleSystems)
-            item.UpdateConstantBuffers(currentResource);
+            item.UpdateConstantBuffers(currentResource, systemSettings);
 
         foreach (var item in ParticleSystems)
             item.Dispatch(currentResource);

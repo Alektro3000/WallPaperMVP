@@ -4,16 +4,14 @@ using System.Numerics;
 public class TextController
 {
     private readonly ParticleBuffers ParticleSystem;
-    private SystemSettings systemSettings;
 
 
-    public TextController(ParticleBuffers partcileSystem, SystemSettings settings)
+    public TextController(ParticleBuffers partcileSystem)
     {
-        systemSettings = settings;
         ParticleSystem = partcileSystem;
     }
 
-    public void UpdateConstantBuffer(ref TextConstants constant, FrameMetric frameMetric)
+    public void UpdateConstantBuffer(ref TextConstants constant, FrameMetric frameMetric, SystemSettings systemSettings)
     {
         // Update static buffer
         constant.ParticleCount = ParticleSystem.particleCount;

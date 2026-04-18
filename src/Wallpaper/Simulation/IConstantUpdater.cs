@@ -1,5 +1,5 @@
 
 public interface IConstantUpdater
 {
-    void UpdateConstants(FrameResource currentResource);
+    void UpdateConstants(FrameResource currentResource, SystemSettings systemSettings);
 }

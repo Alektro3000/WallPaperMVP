@@ -53,14 +53,15 @@ class Program
         try
         {
 
-            var settings = new SystemSettings();
-            using var form = new SettingsForm(settings);
+            var store = new SettingsStore( new SystemSettings());
+
+            using var formHost = new SettingsFormHost(store);
+            formHost.Start();
             Log.Information("Form Settings initialized");
-            using var renderer = new Renderer(hwnd, width, height, settings);
+
+            using var renderer = new Renderer(hwnd, width, height);
             Log.Information("Renderer initialized");
 
-            using var icon = CreateTrayIcon(form);
-            Log.Information("Tray Icon Created");
 
 
 
@@ -74,18 +75,18 @@ class Program
 
                     if (msg.message == Win32.WM_HOTKEY && msg.wParam.ToInt32() == Win32.HOTKEY_ID)
                     {
-                        form.Show();
+                        formHost.ShowForm();
                     }
 
                     Win32.TranslateMessage(ref msg);
                     Win32.DispatchMessage(ref msg);
                 }
-                if (form.ShouldBeClosed)
+                if (formHost.ExitRequested)
                 {
                     Log.Information("Close via form");
                     return;
                 }
-                renderer.Render();
+                renderer.Render(store.GetSnapshot());
 
             }
         }
@@ -101,31 +102,4 @@ class Program
         }
     }
 
-    static NotifyIcon CreateTrayIcon(SettingsForm form)
-    {
-        var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
-        Log.Debug("Creating tray icon from {IconPath}", iconPath);
-        NotifyIcon trayIcon = new NotifyIcon
-        {
-            Icon = new Icon(iconPath),
-            Text = "Wallpaper",
-            Visible = true
-        };
-
-        // Optional context menu
-        ContextMenuStrip menu = new ContextMenuStrip();
-        menu.Items.Add("Settings", null, (s, e) =>
-        {
-            form.Show();
-        });
-
-        menu.Items.Add("Exit", null, (s, e) =>
-        {
-            form.ShouldBeClosed = true;
-            trayIcon.Visible = false;
-        });
-
-        trayIcon.ContextMenuStrip = menu;
-        return trayIcon;
-    }
 }
