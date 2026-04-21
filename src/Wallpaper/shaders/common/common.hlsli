@@ -34,7 +34,7 @@ struct EmitterData{
      uint SpawnCountThisFrame;
      uint ConsumedSpawns;
      uint SpawnAccumulator;
-     float VelocityBlend;
+     uint AliveCount;
 };
 
 uint WangHash(uint s)

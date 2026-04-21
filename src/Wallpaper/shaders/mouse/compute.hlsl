@@ -2,60 +2,67 @@
 
 StructuredBuffer<Particle> PrevParticles : register(t0);
 RWStructuredBuffer<Particle> NextParticles : register(u0);
+
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
+StructuredBuffer<GpuMouseBuffer> Counters : register(t3);
 
 // Uses CustomData.xy to store unsnapped position
-[numthreads(256, 1, 1)] 
-void main(uint3 dtid : SV_DispatchThreadID)
+[numthreads(256, 1, 1)] void main(uint3 dtid : SV_DispatchThreadID)
 {
     uint i = dtid.x;
     if (i >= ParticleCount)
         return;
 
-    Particle p = PrevParticles[i];
+
+    EmitterData emitter = Emitter[0];
+
+    uint aliveCount = emitter.AliveCount;
+    uint spawnCount = emitter.SpawnCountThisFrame;
+    uint totalCount = aliveCount + spawnCount;
+
+    if (i >= totalCount)
+        return;
 
     float2 Prev = mousePosPrev;
     float2 Pos = mousePos;
-
-    if (p.Age < 0)
+    
+    Particle p = PrevParticles[i];
+    
+    if (i >= aliveCount)
     {
-        uint spawnIndex;
-        InterlockedAdd(Emitter[0].ConsumedSpawns, 1, spawnIndex);
+        uint spawnIndex = i - aliveCount;
 
-        if (spawnIndex < Emitter[0].SpawnCountThisFrame)
-        {
-            uint seed = i + FrameIndex * 12345;
+        uint seed = i + FrameIndex * 12345;
 
-            // random direction + random radius
-            float angle = Random(seed) * PI2;
-            float speed = 0.08 * Random(seed * 3 + 1);
+        // random direction + random radius
+        float angle = Random(seed) * PI2;
+        float speed = 0.08 * Random(seed * 3 + 1);
 
-            float2 rnd = Rotate(speed, angle);
+        float2 rnd = Rotate(speed, angle);
 
-            float trailT = (float)spawnIndex / max(1.0f, (float)Emitter[0].SpawnCountThisFrame);
-            float2 loc = lerp(Prev, Pos, trailT);
+        float trailT = (float)spawnIndex / max(1.0f, spawnCount);
+        float2 loc = lerp(Prev, Pos, trailT);
 
-            float mouseSpeed = length(Prev - Pos) / max(DeltaTime, 0.0001f) * 0.2f + 0.001f;
+        float mouseSpeed = length(Prev - Pos) / max(DeltaTime, 0.0001f) * 0.2f + 0.001f;
 
-            // random offset around the trail
-            float offsetScale = min(1, max(4 / mouseSpeed, 0.2));
-            loc += rnd * offsetScale;
+        // random offset around the trail
+        float offsetScale = min(1, max(4 / mouseSpeed, 0.2));
+        loc += rnd * offsetScale;
 
-            p.CustomData.xy = loc;
-            p.Position = SnapToGrid(p.CustomData.xy, GridSize);
+        p.CustomData.xy = loc;
+        p.Position = SnapToGrid(loc, GridSize);
 
-            float r = Random(seed * 13 + 9);
-            bool isSpark = r > 0.9; // ~10% sparks
+        float r = Random(seed * 13 + 9);
+        bool isSpark = r > 0.9; // ~10% sparks
 
-            p.CustomData1.x = isSpark;
+        p.CustomData1.x = isSpark;
 
-            float2 VelDir = (Prev - Pos) / mouseSpeed;
-            float VelSpeedScale = min(1, max(4 / mouseSpeed, 0.2));
-            float VelSize = InitVelocity / VelSpeedScale * (1-isSpark);
-            p.Velocity = VelSize * VelDir;
-            // initial visible age/lifetime
-            p.Age = LifeTime * (0.9f - isSpark * 0.4 + 0.1f * Random(seed * 17 + 5));
-        }
+        float2 VelDir = (Prev - Pos) / mouseSpeed;
+        float VelSpeedScale = min(1, max(4 / mouseSpeed, 0.2));
+        float VelSize = InitVelocity / VelSpeedScale * (1 - isSpark);
+        p.Velocity = VelSize * VelDir;
+        // initial visible age/lifetime
+        p.Age = LifeTime * (0.9f - isSpark * 0.4 + 0.1f * Random(seed * 17 + 5));
     }
     else
     {
@@ -83,18 +90,18 @@ void main(uint3 dtid : SV_DispatchThreadID)
         float2 mouseDelta = Pos - Prev;
         float mouseDeltaLen = length(mouseDelta);
         float2 mouseDir = mouseDeltaLen > 0.0001f ? mouseDelta / mouseDeltaLen : 0;
-        
+
         float mouseSpeed = mouseDeltaLen / max(DeltaTime, 0.0001f);
         float swirlStrength = saturate(mouseSpeed * 20) * nearMouse;
 
         // desired velocity
         float2 desiredVel =
-            radial * -0.35 * nearMouseRadial + 
-            tangent * 1.8f * swirlSign * swirlStrength * (nearMouse + p.CustomData1.x * 10) + 
-            mouseDir * 0.5f * (1-p.CustomData1.x);
+            radial * -0.35 * nearMouseRadial +
+            tangent * 1.8f * swirlSign * swirlStrength * (nearMouse + p.CustomData1.x * 10) +
+            mouseDir * 0.5f * (1 - p.CustomData1.x);
         // blend instead of overwrite
         p.Velocity += desiredVel * Velocity * DeltaTime;
-        p.Velocity *= Emitter[0].VelocityBlend; 
+        p.Velocity *= Counters[0].VelocityBlend;
 
         // integrate
         p.Age -= DeltaTime;

@@ -7,7 +7,7 @@ using Vortice.DXGI;
 
 public class GeometryBuffers : IDisposable
 {
-    readonly public uint IndexCount = 6;
+    public const uint IndexCount = 6;
 
     public ID3D12Resource IndexBuffer  { get; }
     public ID3D12Resource VertexBuffer  { get; }

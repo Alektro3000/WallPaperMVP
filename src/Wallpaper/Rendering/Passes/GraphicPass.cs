@@ -7,6 +7,7 @@ public class GraphicPass : IDisposable
     // Graphigs Pipeline
     private ID3D12RootSignature _rootSignature;
     private ID3D12PipelineState _pipelineState ;
+    private ID3D12CommandSignature _drawCommandSignature;
 
 
     private ParticleBuffers ParticleBuffers;
@@ -23,12 +24,14 @@ public class GraphicPass : IDisposable
         ParticleBuffers = particleSystem;
         GeometryBuffers = geometryBuffers;
         CommonBuffers = commonBuffers;
+        CreateArgs(device);
         CreateGraphicPipeline(device, VertexShaderPath, PixelShaderPath);
     }
     public void Dispose()
     {
         _rootSignature?.Dispose();
         _pipelineState?.Dispose();
+        _drawCommandSignature?.Dispose();
     }
     
     private void CreateGraphicPipeline(
@@ -90,6 +93,23 @@ public class GraphicPass : IDisposable
         _pipelineState = device.CreateGraphicsPipelineState(pipelineStateDescription);
 
     }
+    private void CreateArgs(ID3D12Device device)
+    {
+        var argDescs = new[]
+        {
+            new IndirectArgumentDescription
+            {
+                Type = IndirectArgumentType.DrawIndexed
+            }
+        };
+
+        var cmdSigDesc = new CommandSignatureDescription(argDescs)
+        {
+            ByteStride = System.Runtime.InteropServices.Marshal.SizeOf<DrawIndexedArguments>(),
+        };
+
+        _drawCommandSignature = device.CreateCommandSignature<ID3D12CommandSignature>(cmdSigDesc, null);
+    }
 
     private InputLayoutDescription GetInputLayoutDescription()
     {
@@ -114,7 +134,7 @@ public class GraphicPass : IDisposable
                 0),
         
         ]);
-
+        
     }
 
     public void Render(FrameResource currentResource, FrameManager.ConstantKey key)
@@ -129,7 +149,7 @@ public class GraphicPass : IDisposable
             currentResource.GetGPUVirtualAddress(key));
         cmd.SetGraphicsRootDescriptorTable(
             1, 
-            ParticleBuffers.WriteBufferBinding.ParticleBufferSRVGpu);
+            ParticleBuffers.WriteBufferBinding.ParticleBufferSRV.Gpu);
         cmd.SetGraphicsRootConstantBufferView(
             2, 
             currentResource.GetGPUVirtualAddress(CommonBuffers.commonKey));
@@ -138,6 +158,7 @@ public class GraphicPass : IDisposable
         cmd.IASetVertexBuffers(0, [GeometryBuffers.VertexBufferView]);
         cmd.IASetIndexBuffer(GeometryBuffers.IndexBufferView);
         
-        cmd.DrawIndexedInstanced(GeometryBuffers.IndexCount, ParticleBuffers.particleCount, 0, 0, 0);
+        //cmd.DrawIndexedInstanced(GeometryBuffers.IndexCount, ParticleBuffers.particleCount, 0, 0, 0);
+        cmd.ExecuteIndirect(_drawCommandSignature, 1, ParticleBuffers.DrawArgs, 0, null, 0);
     }
 }

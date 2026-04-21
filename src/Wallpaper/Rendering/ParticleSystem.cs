@@ -16,7 +16,7 @@ public abstract class ParticleSystem : IDisposable
         public FieldBuffers fieldBuffers;
     }
     
-    protected ComputePass ComputePass;
+    protected IComputePass ComputePass;
 
     protected GraphicPass GraphicPass;
 
@@ -30,7 +30,7 @@ public abstract class ParticleSystem : IDisposable
         => GraphicPass.Render(currentResource, ConstantKey);
     
     public abstract void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings);
-    public void SwapBuffers()
+    public virtual void SwapBuffers()
         => ParticleBuffers.SwapBuffers();
 
     protected void ConstructRequiredFields(InitContext context, uint bufferSize, string compute, string precompute, string vertex = "vertex.hlsl", string pixel = "pixel.hlsl")

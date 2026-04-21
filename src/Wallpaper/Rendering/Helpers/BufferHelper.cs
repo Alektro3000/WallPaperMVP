@@ -3,9 +3,46 @@ using System.Drawing;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using Vortice.Direct3D12;
+using Vortice.DXGI;
 
 public static class BufferHelper
 {
+    public static UnorderedAccessViewDescription CreateStructuredBufferUavDesc<T>(uint numElements)
+        where T : unmanaged
+    {
+        return new UnorderedAccessViewDescription
+        {
+            ViewDimension = UnorderedAccessViewDimension.Buffer,
+            Format = Format.Unknown,
+            Buffer = new BufferUnorderedAccessView
+            {
+                FirstElement = 0,
+                NumElements = numElements,
+                StructureByteStride = (uint)Marshal.SizeOf<T>(),
+                CounterOffsetInBytes = 0,
+                Flags = BufferUnorderedAccessViewFlags.None
+            }
+        };
+    }
+    public static ShaderResourceViewDescription CreateStructuredBufferSrvDesc<T>(uint numElements)
+        where T : unmanaged
+    {
+        return new ShaderResourceViewDescription
+        {
+            ViewDimension = ShaderResourceViewDimension.Buffer,
+            Shader4ComponentMapping = ShaderConstants.Shader4ComponentMapping,
+            Format = Format.Unknown,
+            Buffer = new BufferShaderResourceView
+            {
+                FirstElement = 0,
+                NumElements = numElements,
+                StructureByteStride = (uint)Marshal.SizeOf<T>(),
+                Flags = BufferShaderResourceViewFlags.None
+            }
+        };
+
+    }
+    
     public static unsafe ID3D12Resource CreateUploadBuffer<T>(
         ID3D12Device device,
         ReadOnlySpan<T> data)
@@ -76,21 +113,36 @@ public static class BufferHelper
     }
 
     public unsafe static ID3D12Resource CreateStaticBuffer<T>(
-        ID3D12Device device, out T* mappedConstants)  where T : unmanaged
+        ID3D12Device device, out T* mappedConstants) where T : unmanaged
     {
         //constant Buffer size must be aligned to 256
         int constantBufferSize = (Marshal.SizeOf<T>() + 255) & ~255;
 
         ID3D12Resource _constantBuffer = CreateUploadBuffer(device, (ulong)constantBufferSize);
-        
+
         void* _mappedConstants;
         _constantBuffer.Map(0, null, &_mappedConstants).CheckError();
-        mappedConstants = (T*)_mappedConstants; 
-        
+        mappedConstants = (T*)_mappedConstants;
+
 
         return _constantBuffer;
     }
 
+    public static ID3D12Resource CreateDefaultBuffer<T>(
+    ID3D12Device device,
+    uint elementCount,
+        ResourceStates finalState = ResourceStates.VertexAndConstantBuffer,
+        ResourceFlags resourceFlags = ResourceFlags.None)
+    where T : unmanaged
+    {
+        ulong sizeInBytes = (ulong)Marshal.SizeOf<T>() * elementCount;
+
+        return device.CreateCommittedResource(
+            new HeapProperties(HeapType.Default),
+            HeapFlags.None,
+            ResourceDescription.Buffer(sizeInBytes, resourceFlags),
+            finalState);
+    }
 
     public static unsafe ID3D12Resource CreateDefaultBuffer<T>(
         ID3D12Device device,
@@ -107,9 +159,9 @@ public static class BufferHelper
         ID3D12Resource buffer = device.CreateCommittedResource(
             new HeapProperties(HeapType.Default),
             HeapFlags.None,
-            ResourceDescription.Buffer(sizeInBytes,resourceFlags),
+            ResourceDescription.Buffer(sizeInBytes, resourceFlags),
             ResourceStates.CopyDest);
-        
+
         commandList.ExecuteImmediate(list =>
         {
             list.CopyBufferRegion(
@@ -142,8 +194,8 @@ public static class BufferHelper
     }
     public static IndexBufferView CreateIndexBufferView(
         ID3D12Resource buffer, uint elementCount)
-        {
-        
+    {
+
         uint sizeInBytes = (uint)(elementCount * sizeof(ushort));
 
         return new IndexBufferView(

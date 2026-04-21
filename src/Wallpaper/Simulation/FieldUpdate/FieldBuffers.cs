@@ -40,7 +40,7 @@ public class FieldBuffers : IConstantBufferSet
         );
 
         //Creating Handler Uav
-        (var uavDescriptorHandle , UAVFieldDescriptor) = heap.Allocate();
+        (var uavDescriptorHandle, UAVFieldDescriptor) = heap.Allocate()[0];
         var uavDesc = new UnorderedAccessViewDescription
         {
             Format = Format.R32G32B32A32_Float,
@@ -56,7 +56,7 @@ public class FieldBuffers : IConstantBufferSet
         );
 
         //Creating Handler SRV
-        (var srcDescriptorHandle , SRVFieldDescriptor) = heap.Allocate();
+        (var srcDescriptorHandle , SRVFieldDescriptor) = heap.Allocate()[0];
         var srvDesc = new ShaderResourceViewDescription
         {
             Format = Format.R32G32B32A32_Float,

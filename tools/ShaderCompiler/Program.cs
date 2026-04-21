@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using Vortice.Dxc;
 using System.Reflection;
+using Serilog;
 
 internal static class Program
 {
@@ -22,12 +23,18 @@ internal static class Program
     private static void RunReflection(string[] args)
     {
         if (args.Length < 3)
-           throw new ArgumentException("Expected: <assemblyPath> <projectDir> <outputDir>");
+            throw new ArgumentException("Expected: <assemblyPath> <projectDir> <outputDir>");
+
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Console()
+            .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
+        .CreateLogger();
 
         string assemblyPath = Path.GetFullPath(args[0]);
         string projectDir = Path.GetFullPath(args[1]);
         string outputDir = Path.GetFullPath(args[2]);
-        
+
         // string assemblyPath = "G:\\projects\\mine\\WallPaperMVP\\src\\Wallpaper\\bin\\Debug\\net8.0-windows\\WallpaperMVP.dll" ;
         // string projectDir = "G:\\projects\\mine\\WallPaperMVP\\src\\Wallpaper" ;
         // string outputDir = "G:\\projects\\mine\\WallPaperMVP\\src\\Wallpaper\\bin\\Debug\\net8.0-windows\\" ;
@@ -64,10 +71,10 @@ internal static class Program
                 string stage = (string)attrData.ConstructorArguments[1].Value!;
                 string inputPath = Path.Combine(inputRoot, path);
                 string outputPath = Path.Combine(outputRoot,
-                    Path.ChangeExtension(path,".cso"));
+                    Path.ChangeExtension(path, ".cso"));
 
-                Console.WriteLine($"{type.FullName}: {path} [{stage}]");
-                Console.WriteLine($"{inputPath} to {outputPath}");
+                Log.Information($"{type.FullName}: {path} [{stage}]");
+                Log.Information($"{inputPath} to {outputPath}");
 
                 //if(File.GetLastWriteTimeUtc(inputPath) >= File.GetLastWriteTimeUtc(outputPath))
                 Compile(inputPath, inputRoot, outputPath, stage);
@@ -76,7 +83,7 @@ internal static class Program
     }
     private static void Compile(string inputPath, string inputRoot, string outputPath, string Stage)
     {
-        
+
         DxcShaderStage stage = Stage switch
         {
             "vs" => DxcShaderStage.Vertex,
@@ -101,7 +108,7 @@ internal static class Program
 
 class ShaderCompiler
 {
-    private ShaderCompiler(){}
+    private ShaderCompiler() { }
     public static DxcCompilerOptions GetOptions()
     {
         return new DxcCompilerOptions
@@ -127,9 +134,9 @@ class ShaderCompiler
 
         Console.WriteLine($"Compiling {path} as {stage}...");
 
-        var result = DxcCompiler.Compile(stage, 
-            source, 
-            "main", 
+        var result = DxcCompiler.Compile(stage,
+            source,
+            "main",
             GetOptions());
 
         // IMPORTANT: Always check for errors first
@@ -180,7 +187,7 @@ class ShaderCompiler
             );
         }
     }
-    
+
     private static string LoadShaderWithIncludes(
         string filePath,
         string shadersRoot,

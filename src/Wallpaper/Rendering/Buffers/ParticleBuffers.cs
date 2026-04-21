@@ -14,10 +14,8 @@ public class ParticleBuffers : IDisposable
 
     public struct ParticleBufferBinding
     {
-        public CpuDescriptorHandle ParticleBufferSRVCpu;
-        public GpuDescriptorHandle ParticleBufferSRVGpu;
-        public CpuDescriptorHandle ParticleBufferUAVCpu;
-        public GpuDescriptorHandle ParticleBufferUAVGPU;
+        public ResourceDescriptor ParticleBufferSRV;
+        public ResourceDescriptor ParticleBufferUAV;
         public ID3D12Resource ParticleBuffer;
     };
 
@@ -34,29 +32,37 @@ public class ParticleBuffers : IDisposable
     public ParticleBufferBinding WriteBufferBinding => Buffers[WriteIndex];
 
 
-    public List<ID3D12Resource> ComputeBuffers;
+    public ID3D12Resource EmitterBuffer;
+
+    public ID3D12Resource DrawArgs;
 
 
     public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, Particle[] initParticles)
     {
         particleCount = (uint)initParticles.Length;
-        ComputeBuffers = [];
-        InitEmitterBuffer(device, commandList);
+        EmitterBuffer = InitEmitterBuffer(device, commandList);
+        DrawArgs = InitDrawArgs(device, commandList, particleCount);
         InitPingPong(device, commandList, heapAllocator, initParticles);
     }
 
     public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, uint particleCount)
     {
         this.particleCount = particleCount;
-        ComputeBuffers = [];
-        InitEmitterBuffer(device, commandList);
+        EmitterBuffer = InitEmitterBuffer(device, commandList);
+        DrawArgs = InitDrawArgs(device, commandList, particleCount);
         InitPingPong(device, commandList, heapAllocator, generateParticles());
     }
-    private void InitEmitterBuffer(ID3D12Device device, ImmediateCommandList commandList)
+    private ID3D12Resource InitDrawArgs(ID3D12Device device, ImmediateCommandList commandList, uint particleCount)
     {
-        ComputeBuffers.Add(BufferHelper.CreateDefaultBuffer(device, [new Emitter()], commandList,
+        return BufferHelper.CreateDefaultBuffer(device, [new DrawIndexedArguments(GeometryBuffers.IndexCount, particleCount)], commandList,
+            ResourceStates.IndirectArgument,
+            ResourceFlags.AllowUnorderedAccess);
+    }
+    private ID3D12Resource InitEmitterBuffer(ID3D12Device device, ImmediateCommandList commandList)
+    {
+        return BufferHelper.CreateDefaultBuffer(device, [new Emitter()], commandList,
             ResourceStates.VertexAndConstantBuffer,
-            ResourceFlags.AllowUnorderedAccess));
+            ResourceFlags.AllowUnorderedAccess);
     }
     private Particle[] generateParticles()
     {
@@ -71,66 +77,30 @@ public class ParticleBuffers : IDisposable
     }
     private void InitPingPong(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, Particle[] initParticles)
     {
-        //
-        // 1. Descriptor heap for SRV/UAV
-        //
-
-        uint stride = (uint)Marshal.SizeOf<Particle>();
-
-
-        var srvDesc = new ShaderResourceViewDescription
-        {
-            ViewDimension = ShaderResourceViewDimension.Buffer,
-            Shader4ComponentMapping = ShaderConstants.Shader4ComponentMapping,
-            Format = Format.Unknown,
-            Buffer = new BufferShaderResourceView
-            {
-                FirstElement = 0,
-                NumElements = particleCount,
-                StructureByteStride = stride,
-                Flags = BufferShaderResourceViewFlags.None
-            }
-        };
-
-        var uavDesc = new UnorderedAccessViewDescription
-        {
-            ViewDimension = UnorderedAccessViewDimension.Buffer,
-            Format = Format.Unknown,
-            Buffer = new BufferUnorderedAccessView
-            {
-                FirstElement = 0,
-                NumElements = particleCount,
-                StructureByteStride = stride,
-                CounterOffsetInBytes = 0,
-                Flags = BufferUnorderedAccessViewFlags.None
-            }
-        };
-
+        
         for (int i = 0; i < particleBuffersLength; i++)
         {
-            (var _srvCpu, var _srvGpu) = heapAllocator.Allocate();
+            var srv = heapAllocator.Allocate()[0];
 
-            (var _uavCpu, var _uavGpu) = heapAllocator.Allocate(1 + (uint)ComputeBuffers.Count);
+            var uavRange = heapAllocator.Allocate(1 + 1);
 
             var buffer = BufferHelper.CreateDefaultBuffer<Particle>(device, initParticles, commandList,
                 ResourceStates.VertexAndConstantBuffer,
                 ResourceFlags.AllowUnorderedAccess);
 
-            device.CreateShaderResourceView(buffer, srvDesc, _srvCpu);
+            device.CreateShaderResourceView(buffer, BufferHelper.CreateStructuredBufferSrvDesc<Particle>(particleCount), srv.Cpu);
 
-            device.CreateUnorderedAccessView(buffer, null, uavDesc, _uavCpu);
+            device.CreateUnorderedAccessView(buffer, null, BufferHelper.CreateStructuredBufferUavDesc<Particle>(particleCount), uavRange[0].Cpu);
 
             var bufferBinding = new ParticleBufferBinding()
             {
-                ParticleBufferSRVCpu = _srvCpu,
-                ParticleBufferSRVGpu = _srvGpu,
+                ParticleBufferSRV = srv,
 
-                ParticleBufferUAVGPU = _uavGpu,
-                ParticleBufferUAVCpu = _uavCpu,
+                ParticleBufferUAV = uavRange[0],
                 ParticleBuffer = buffer,
             };
-            var EmitterBufferUAVCpu = new CpuDescriptorHandle(_uavCpu, 1, heapAllocator.DescriptorSize);
-            bindUAVResource(device, ComputeBuffers[0], EmitterBufferUAVCpu);
+
+            bindUAVResource(device, EmitterBuffer, uavRange[1].Cpu);
 
             Buffers[i] = bufferBinding;
         }
@@ -169,6 +139,7 @@ public class ParticleBuffers : IDisposable
     {
         for (int i = 0; i < Buffers.Length; i++)
             Buffers[i].ParticleBuffer.Dispose();
-        ComputeBuffers.ForEach(x=>x.Dispose());
+        EmitterBuffer?.Dispose();
+        DrawArgs?.Dispose();
     }
 }

@@ -1,5 +1,6 @@
 #include "../common/commonCompute.hlsli"
 
+
 cbuffer Constants : register(b0)
 {
     float2 mousePos;
@@ -18,4 +19,8 @@ cbuffer Constants : register(b0)
     float SpawnRate;
     float SpawnRatePerUnit;
     float InitVelocity;
+};
+
+struct GpuMouseBuffer{
+    float VelocityBlend;
 };

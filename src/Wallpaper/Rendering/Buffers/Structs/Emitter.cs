@@ -7,6 +7,9 @@ public struct Emitter
     public uint SpawnCountThisFrame;
     public uint ConsumedSpawns;
     public uint AccumulatedSpawns;
-    public float VelocityBlend;
+    public uint AliveCount = 0;
 
+    public Emitter()
+    {
+    }
 }

@@ -1,6 +1,6 @@
 using Vortice.Direct3D12;
 using static Vortice.Direct3D12.D3D12;
-sealed public class ComputePass : IDisposable
+public class ComputePass : IComputePass
 {
 
     //Compute
@@ -27,7 +27,7 @@ sealed public class ComputePass : IDisposable
         EmitterPSO.Dispose();
     }
 
-    private void CreateComputePipeline(ID3D12Device device, String ComputePath, String precomputePath)
+    protected virtual void CreateComputePipeline(ID3D12Device device, String ComputePath, String precomputePath)
     {
         var staticSampler = new StaticSamplerDescription(
             ShaderVisibility.All,
@@ -73,62 +73,23 @@ sealed public class ComputePass : IDisposable
             new RootParameter1(RootParameterType.ConstantBufferView, new RootDescriptor1(1,0), ShaderVisibility.All),
         };
 
-        var rootSigDesc = new VersionedRootSignatureDescription(
-            new RootSignatureDescription1(
-                RootSignatureFlags.None,
-                rootParams,
-                [staticSampler]));
+        RootSignature = ShaderHelper.CreateRootSignature(device, rootParams, [staticSampler]);
 
-        Vortice.Direct3D.Blob signatureBlob;
-        string error = D3D12SerializeVersionedRootSignature(rootSigDesc, out signatureBlob);
-
-        if (signatureBlob == null)
-        {
-            throw new InvalidOperationException(error);
-        }
-
-        RootSignature = device.CreateRootSignature(0, signatureBlob);
-
-        //
-        // 3. Compile shader
-        //
-        ReadOnlyMemory<byte> ParticleShader = ShaderHelper.GetShader(ComputePath);
 
         //
         // 4. Compute PSO
         //
-        var ParticleDesc = new ComputePipelineStateDescription
-        {
-            RootSignature = RootSignature,
-            ComputeShader = ParticleShader,
-            NodeMask = 0,
-            CachedPSO = default,
-            Flags = PipelineStateFlags.None
-        };
-        ParticlePSO = device.CreateComputePipelineState(ParticleDesc);
+        ParticlePSO = ShaderHelper.CreatePSO(device, RootSignature, ComputePath);
 
+        
         //
-        // 5. Compile shader
+        // 5. Emitter PSO
         //
-        ReadOnlyMemory<byte> EmitterShader = ShaderHelper.GetShader(precomputePath);
-
-        //
-        // 6. Compute PSO
-        //
-        var EmitterDesc = new ComputePipelineStateDescription
-        {
-            RootSignature = RootSignature,
-            ComputeShader = EmitterShader,
-            NodeMask = 0,
-            CachedPSO = default,
-            Flags = PipelineStateFlags.None
-        };
-
-        EmitterPSO = device.CreateComputePipelineState(EmitterDesc);
+        EmitterPSO = ShaderHelper.CreatePSO(device, RootSignature, precomputePath);
     }
 
 
-    public void DispatchParticles(FrameResource currentResource, FrameManager.ConstantKey key)
+    public virtual void DispatchParticles(FrameResource currentResource, FrameManager.ConstantKey key)
     {
         var read = ParticleBuffers.ReadBufferBinding;
         var write = ParticleBuffers.WriteBufferBinding;
@@ -147,10 +108,10 @@ sealed public class ComputePass : IDisposable
             currentResource.GetGPUVirtualAddress(key));
 
         // Root parameter 1 = SRV table(t0)
-        cmd.SetComputeRootDescriptorTable(1, read.ParticleBufferSRVGpu);
+        cmd.SetComputeRootDescriptorTable(1, read.ParticleBufferSRV.Gpu);
 
         // Root parameter 2 = UAV table(u0/u1)
-        cmd.SetComputeRootDescriptorTable(2, write.ParticleBufferUAVGPU);
+        cmd.SetComputeRootDescriptorTable(2, write.ParticleBufferUAV.Gpu);
 
         // Root parameter 3 = SRV table(t1)
         cmd.SetComputeRootDescriptorTable(3, FieldBuffers.SRVFieldDescriptor);
@@ -160,14 +121,14 @@ sealed public class ComputePass : IDisposable
                 currentResource.GetGPUVirtualAddress(CommonBuffers.commonKey));
 
         // Sync previous frame
-        cmd.ResourceBarrierUnorderedAccessView(ParticleBuffers.ComputeBuffers[0]);
+        cmd.ResourceBarrierUnorderedAccessView(ParticleBuffers.EmitterBuffer);
 
         // Emitter Update
         cmd.SetPipelineState(EmitterPSO);
         cmd.Dispatch(1, 1, 1);
 
         // Sync
-        cmd.ResourceBarrierUnorderedAccessView(ParticleBuffers.ComputeBuffers[0]);
+        cmd.ResourceBarrierUnorderedAccessView(ParticleBuffers.EmitterBuffer);
 
         //Particle Update
         cmd.SetPipelineState(ParticlePSO);

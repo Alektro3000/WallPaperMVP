@@ -44,8 +44,14 @@ public sealed class SettingsFormHost : IDisposable
         {
             Interlocked.Exchange(ref _exitRequested, 1);
         };
+        form.Load += (_, _) => form.Hide();
 
         _trayIcon = CreateTrayIcon(form);
+
+        // start hidden
+        form.ShowInTaskbar = false;
+        form.WindowState = FormWindowState.Minimized;
+        form.Hide();
 
         _formReady.Set();
         Application.Run(form);
