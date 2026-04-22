@@ -18,7 +18,7 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
 void main(uint3 tid : SV_DispatchThreadID)
 {
     uint i = tid.x;
-    if (i >= ParticleCount)
+    if(i >= Emitter[0].TotalCount)
         return;
 
     Particle p = SourceParticles[i];

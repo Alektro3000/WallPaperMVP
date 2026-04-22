@@ -59,6 +59,7 @@ class Program
             formHost.Start();
             Log.Information("Form Settings initialized");
 
+            Log.Debug("Renderer begin initialization");
             using var renderer = new Renderer(hwnd, width, height);
             Log.Information("Renderer initialized");
 

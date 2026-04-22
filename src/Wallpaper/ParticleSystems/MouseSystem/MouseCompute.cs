@@ -3,9 +3,11 @@ using Microsoft.VisualBasic.Devices;
 using Vortice.Direct3D12;
 
 [Shader("mouse\\compute.hlsl", "cs")]
-[Shader("mouse\\precompute.hlsl", "cs")]
+[Shader("mouse\\emitter.hlsl", "cs")]
 [Shader("mouse\\alive.hlsl", "cs")]
-[Shader("mouse\\prefix.hlsl", "cs")]
+[Shader("mouse\\prefix_local.hlsl", "cs")]
+[Shader("mouse\\prefix_block_sums.hlsl", "cs")]
+[Shader("mouse\\prefix_add_offset.hlsl", "cs")]
 [Shader("mouse\\copy.hlsl", "cs")]
 [Shader("mouse\\draw_count.hlsl", "cs")]
 public class MouseCompute : IComputePass
@@ -18,9 +20,12 @@ public class MouseCompute : IComputePass
     private ID3D12PipelineState ParticlePSO;
     private ID3D12PipelineState EmitterPSO;
     private ID3D12PipelineState MarkAlivePSO;
-    private ID3D12PipelineState PrefixSumPSO;
     private ID3D12PipelineState CopyPSO;
     private ID3D12PipelineState DrawCountPSO;
+    
+    private ID3D12PipelineState PrefixLocalPSO;
+    private ID3D12PipelineState PrefixGlobalPSO;
+    private ID3D12PipelineState PrefixAddOffsetPSO;
 
     private ParticleBuffers ParticleBuffers;
     private MouseBuffer MouseBuffer;
@@ -35,11 +40,15 @@ public class MouseCompute : IComputePass
         CommonBuffers = commonBuffers;
         RootSignature = CreateRootSignature(device);
         ParticlePSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/compute.hlsl");
-        EmitterPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/precompute.hlsl");
+        EmitterPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/emitter.hlsl");
         MarkAlivePSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/alive.hlsl");
-        PrefixSumPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/prefix.hlsl");
         CopyPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/copy.hlsl");
         DrawCountPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/draw_count.hlsl");
+
+        
+        PrefixLocalPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/prefix_local.hlsl");
+        PrefixGlobalPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/prefix_block_sums.hlsl");
+        PrefixAddOffsetPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/prefix_add_offset.hlsl");
 
 
         var commandSigDesc = new CommandSignatureDescription([new IndirectArgumentDescription
@@ -55,6 +64,12 @@ public class MouseCompute : IComputePass
 
     public void Dispose()
     {
+        MarkAlivePSO.Dispose();
+        CopyPSO.Dispose();
+        DrawCountPSO.Dispose();
+        PrefixLocalPSO.Dispose();
+        PrefixGlobalPSO.Dispose();
+        PrefixAddOffsetPSO.Dispose();
         RootSignature.Dispose();
         ParticlePSO.Dispose();
         EmitterPSO.Dispose();
@@ -73,13 +88,13 @@ public class MouseCompute : IComputePass
                 new DescriptorRange1(DescriptorRangeType.UnorderedAccessView, 1, 0)), ShaderVisibility.All), // u0 //CurrentParticles
 
             new RootParameter1(new RootDescriptorTable1(
-                new DescriptorRange1(DescriptorRangeType.UnorderedAccessView, 5, 1)), ShaderVisibility.All), // u1..u4
+                new DescriptorRange1(DescriptorRangeType.UnorderedAccessView, 6, 1)), ShaderVisibility.All), // u1..u4
 
             new RootParameter1(new RootDescriptorTable1(
                 new DescriptorRange1(DescriptorRangeType.ShaderResourceView, 1, 1)), ShaderVisibility.All), // t1 field SRV
 
             new RootParameter1(new RootDescriptorTable1(
-                new DescriptorRange1(DescriptorRangeType.ShaderResourceView, 2, 2)), ShaderVisibility.All), // t2..t3 helper SRVs
+                new DescriptorRange1(DescriptorRangeType.ShaderResourceView, 3, 2)), ShaderVisibility.All), // t2..t4 helper SRVs
 
             new RootParameter1(RootParameterType.ConstantBufferView, new RootDescriptor1(1, 0), ShaderVisibility.All), // b1 common
         };
@@ -186,14 +201,26 @@ public class MouseCompute : IComputePass
         TransitToUnordered(cmd, MouseBuffer.AliveList);
         cmd.SetPipelineState(MarkAlivePSO);
         ExecuteIndirect(cmd);
-        TransitToNonPixel(cmd, MouseBuffer.AliveList);
-
+        cmd.ResourceBarrierUnorderedAccessView(MouseBuffer.AliveList);
 
         // Prefix
-        TransitToUnordered(cmd, MouseBuffer.Counters);
-        cmd.SetPipelineState(PrefixSumPSO);
+        TransitToUnordered(cmd, MouseBuffer.BlockSum);
+        cmd.SetPipelineState(PrefixLocalPSO);
         ExecuteIndirect(cmd);
-        TransitToNonPixel(cmd, MouseBuffer.Counters);
+
+        cmd.ResourceBarrierUnorderedAccessView(MouseBuffer.AliveList);
+        cmd.ResourceBarrierUnorderedAccessView(MouseBuffer.BlockSum);
+
+        cmd.SetPipelineState(PrefixGlobalPSO);
+        cmd.Dispatch(1,1,1);
+
+        // global prefix записал BlockSum offsets
+        TransitToNonPixel(cmd, MouseBuffer.BlockSum);
+        
+        cmd.SetPipelineState(PrefixAddOffsetPSO);
+        ExecuteIndirect(cmd);
+
+        TransitToNonPixel(cmd, MouseBuffer.AliveList);
 
 
         // Copy

@@ -4,7 +4,7 @@ StructuredBuffer<Particle> PrevParticles : register(t0);
 RWStructuredBuffer<Particle> NextParticles : register(u0);
 
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
-StructuredBuffer<GpuMouseBuffer> Counters : register(t3);
+StructuredBuffer<GpuMouseBuffer> Counters : register(t4);
 
 // Uses CustomData.xy to store unsnapped position
 [numthreads(256, 1, 1)] void main(uint3 dtid : SV_DispatchThreadID)
@@ -13,26 +13,23 @@ StructuredBuffer<GpuMouseBuffer> Counters : register(t3);
     if (i >= ParticleCount)
         return;
 
-
     EmitterData emitter = Emitter[0];
-
+    uint totalCount = emitter.TotalCount;
     uint aliveCount = emitter.AliveCount;
-    uint spawnCount = emitter.SpawnCountThisFrame;
-    uint totalCount = aliveCount + spawnCount;
 
     if (i >= totalCount)
         return;
 
     float2 Prev = mousePosPrev;
     float2 Pos = mousePos;
-    
+
     Particle p = PrevParticles[i];
-    
+
     if (i >= aliveCount)
     {
         uint spawnIndex = i - aliveCount;
 
-        uint seed = i + FrameIndex * 12345;
+        uint seed = spawnIndex + FrameIndex * 12345;
 
         // random direction + random radius
         float angle = Random(seed) * PI2;
@@ -40,7 +37,7 @@ StructuredBuffer<GpuMouseBuffer> Counters : register(t3);
 
         float2 rnd = Rotate(speed, angle);
 
-        float trailT = (float)spawnIndex / max(1.0f, spawnCount);
+        float trailT = (float)spawnIndex / max(1.0f, emitter.SpawnCountThisFrame);
         float2 loc = lerp(Prev, Pos, trailT);
 
         float mouseSpeed = length(Prev - Pos) / max(DeltaTime, 0.0001f) * 0.2f + 0.001f;
@@ -56,6 +53,7 @@ StructuredBuffer<GpuMouseBuffer> Counters : register(t3);
         bool isSpark = r > 0.9; // ~10% sparks
 
         p.CustomData1.x = isSpark;
+        p.CustomData1.y = (Random(seed * 19u + 7u) > 0.5f) ? 1.0f : -1.0f;
 
         float2 VelDir = (Prev - Pos) / mouseSpeed;
         float VelSpeedScale = min(1, max(4 / mouseSpeed, 0.2));
@@ -63,6 +61,7 @@ StructuredBuffer<GpuMouseBuffer> Counters : register(t3);
         p.Velocity = VelSize * VelDir;
         // initial visible age/lifetime
         p.Age = LifeTime * (0.9f - isSpark * 0.4 + 0.1f * Random(seed * 17 + 5));
+        p.Color = float4(0, 1, 0, 1);
     }
     else
     {
@@ -79,7 +78,7 @@ StructuredBuffer<GpuMouseBuffer> Counters : register(t3);
         float2 tangent = float2(-radial.y, radial.x);
 
         // choose random swirl direction per particle
-        float swirlSign = (WangHash(i * 1664525u + 1013904223u) & 1) ? 1.0f : -1.0f;
+        float swirlSign = p.CustomData1.y;
 
         // stronger near cursor, weaker far away
         float nearMouse = saturate(1.0f - dist / 0.35f);
@@ -99,32 +98,26 @@ StructuredBuffer<GpuMouseBuffer> Counters : register(t3);
             radial * -0.35 * nearMouseRadial +
             tangent * 1.8f * swirlSign * swirlStrength * (nearMouse + p.CustomData1.x * 10) +
             mouseDir * 0.5f * (1 - p.CustomData1.x);
+
         // blend instead of overwrite
         p.Velocity += desiredVel * Velocity * DeltaTime;
         p.Velocity *= Counters[0].VelocityBlend;
 
         // integrate
         p.Age -= DeltaTime;
+        p.Color = float4(p.Age,1,1,1);
     }
 
     p.Position = SnapToGrid(p.CustomData.xy, GridSize);
 
-    if (p.Age < 0)
-    {
-        p.Size = 0;
-        p.Color = 0;
-    }
-    else
-    {
-        // velocity points away from current mouse position
-        float2 dir = p.CustomData.xy - Pos;
+    // velocity points away from current mouse position
+    float2 dir = p.CustomData.xy - Pos;
 
-        float dirLen = saturate(0.2 - length(dir)) + 0.05;
+    float dirLen = saturate(0.2 - length(dir)) + 0.05;
 
-        float scaledAge = saturate(p.Age / LifeTime);
-        p.Size = Size;
-        p.Color = float4(Color, (scaledAge + 0.3 * p.CustomData1.x) * dirLen * 20);
-    }
+    float scaledAge = saturate(p.Age / LifeTime);
+    p.Size = Size; 
+    //p.Color = float4(Color, (scaledAge + 0.3 * p.CustomData1.x) * dirLen * 20);
 
     NextParticles[i] = p;
 }

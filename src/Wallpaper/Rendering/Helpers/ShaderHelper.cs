@@ -21,7 +21,7 @@ class ShaderHelper
     public static ID3D12PipelineState CreatePSO(ID3D12Device device, ID3D12RootSignature RootSignature, string path)
     {
         var shader = GetShader(path);
-        return device.CreateComputePipelineState(new ComputePipelineStateDescription
+        var pipelineState = device.CreateComputePipelineState(new ComputePipelineStateDescription
         {
             RootSignature = RootSignature,
             ComputeShader = shader,
@@ -29,6 +29,8 @@ class ShaderHelper
             CachedPSO = default,
             Flags = PipelineStateFlags.None
         });
+        pipelineState.Name = path;
+        return pipelineState;
     }
 
     public static ID3D12RootSignature CreateRootSignature(ID3D12Device device, RootParameter1[] rootParams, StaticSamplerDescription[] staticSamplers)

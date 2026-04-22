@@ -31,7 +31,7 @@ public struct MouseSettings
 
     [UiLabel("Spawn Rate")]
     [UiRange(0f, 5000f, 10f)]
-    public float SpawnRate = 300f;
+    public float SpawnRate = 000f;
 
     [UiLabel("Spawn Rate Per Unit")]
     [UiRange(0f, 1000f, 5f)]

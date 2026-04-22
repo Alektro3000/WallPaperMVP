@@ -8,7 +8,7 @@ public class MouseSystem : ParticleSystem
     protected MouseBuffer mouseBuffer;
     public MouseSystem(InitContext context)
     {
-        uint particleCount = 4096;
+        uint particleCount = 4096 * 4;
 
         ParticleBuffers = new ParticleBuffers(context.device, context.commandList, context.HeapAllocator, particleCount);
         GraphicPass = new GraphicPass(context.device, ParticleBuffers, context.commmonBuffers, context.GeometryBuffers, "vertex.hlsl", "pixel.hlsl");

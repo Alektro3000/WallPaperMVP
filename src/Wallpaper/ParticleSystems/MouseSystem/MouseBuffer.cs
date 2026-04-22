@@ -5,11 +5,12 @@ using Vortice.DXGI;
 public sealed class MouseBuffer : IDisposable
 {
     public readonly ID3D12Resource AliveList;
+    public readonly ID3D12Resource BlockSum;
     public readonly ID3D12Resource Counters;
     public readonly ID3D12Resource DispatchArgs;
 
-    public readonly GpuDescriptorHandle UavsStart; // u1..u4
-    public readonly GpuDescriptorHandle SrvsStart; // t2..t4
+    public readonly GpuDescriptorHandle UavsStart; // u1..u5
+    public readonly GpuDescriptorHandle SrvsStart; // t2..t5
 
     public MouseBuffer(
         ID3D12Device device,
@@ -18,28 +19,33 @@ public sealed class MouseBuffer : IDisposable
         uint capacity)
     {
         AliveList = CreateActiveListBuffer(device, capacity);
+        AliveList.Name = "Mouse AliveList";
+        BlockSum = CreateBlockSumBuffer(device, capacity);
+        BlockSum.Name = "Mouse BlockList";
         Counters = CreateCountersBuffer(device);
         DispatchArgs = CreateDispatchArgsBuffer(device);
 
-        UavsStart = CreateMouseUavTable(device, heap, capacity, particleBuffers, AliveList, Counters, DispatchArgs);
-        SrvsStart = CreateMouseSrvTable(device, heap, capacity, AliveList, Counters);
+        UavsStart = CreateMouseUavTable(device, heap, capacity, particleBuffers);
+        SrvsStart = CreateMouseSrvTable(device, heap, capacity);
     }
-    private GpuDescriptorHandle CreateMouseUavTable(ID3D12Device device, HeapAllocator heap, uint capacity,  ParticleBuffers buffers, ID3D12Resource activeList, ID3D12Resource counters, ID3D12Resource dispatchArgs)
+    private GpuDescriptorHandle CreateMouseUavTable(ID3D12Device device, HeapAllocator heap, uint capacity,  ParticleBuffers buffers)
     {
-        var range = heap.Allocate(5);
+        var range = heap.Allocate(6);
         device.CreateUnorderedAccessView(buffers.EmitterBuffer, null, BufferHelper.CreateStructuredBufferUavDesc<Emitter>(1), range[0].Cpu);
-        device.CreateUnorderedAccessView(activeList, null, BufferHelper.CreateStructuredBufferUavDesc<uint>(capacity), range[1].Cpu);
-        device.CreateUnorderedAccessView(counters, null, BufferHelper.CreateStructuredBufferUavDesc<GpuMouseBuffer>(1), range[2].Cpu);
-        device.CreateUnorderedAccessView(dispatchArgs, null, BufferHelper.CreateStructuredBufferUavDesc<DispatchArgs>(1), range[3].Cpu);
-        device.CreateUnorderedAccessView(buffers.DrawArgs, null, BufferHelper.CreateStructuredBufferUavDesc<DrawIndexedArguments>(1), range[4].Cpu);
+        device.CreateUnorderedAccessView(AliveList, null, BufferHelper.CreateStructuredBufferUavDesc<uint>(capacity), range[1].Cpu);
+        device.CreateUnorderedAccessView(BlockSum, null, BufferHelper.CreateStructuredBufferUavDesc<uint>(BlockSumCapacity(capacity)), range[2].Cpu);
+        device.CreateUnorderedAccessView(Counters, null, BufferHelper.CreateStructuredBufferUavDesc<GpuMouseBuffer>(1), range[3].Cpu);
+        device.CreateUnorderedAccessView(DispatchArgs, null, BufferHelper.CreateStructuredBufferUavDesc<DispatchArgs>(1), range[4].Cpu);
+        device.CreateUnorderedAccessView(buffers.DrawArgs, null, BufferHelper.CreateStructuredBufferUavDesc<DrawIndexedArguments>(1), range[5].Cpu);
 
         return range[0].Gpu;
     }
-    private GpuDescriptorHandle CreateMouseSrvTable(ID3D12Device device, HeapAllocator heap, uint capacity, ID3D12Resource activeList, ID3D12Resource counters)
+    private GpuDescriptorHandle CreateMouseSrvTable(ID3D12Device device, HeapAllocator heap, uint capacity)
     {
-        var range = heap.Allocate(2);
-        device.CreateShaderResourceView(activeList, BufferHelper.CreateStructuredBufferSrvDesc<uint>(capacity), range[0].Cpu);
-        device.CreateShaderResourceView(counters, BufferHelper.CreateStructuredBufferSrvDesc<GpuMouseBuffer>(1), range[1].Cpu);
+        var range = heap.Allocate(3);
+        device.CreateShaderResourceView(AliveList, BufferHelper.CreateStructuredBufferSrvDesc<uint>(capacity), range[0].Cpu);
+        device.CreateShaderResourceView(BlockSum, BufferHelper.CreateStructuredBufferSrvDesc<uint>(BlockSumCapacity(capacity)), range[1].Cpu);
+        device.CreateShaderResourceView(Counters, BufferHelper.CreateStructuredBufferSrvDesc<GpuMouseBuffer>(1), range[2].Cpu);
 
         return range[0].Gpu;
     }
@@ -54,14 +60,24 @@ public sealed class MouseBuffer : IDisposable
     private ID3D12Resource CreateCountersBuffer(ID3D12Device device)
     {
         return BufferHelper.CreateDefaultBuffer<GpuMouseBuffer>(device, 1,
-            ResourceStates.UnorderedAccess,
+            ResourceStates.NonPixelShaderResource,
             ResourceFlags.AllowUnorderedAccess);
     }
 
     private ID3D12Resource CreateActiveListBuffer(ID3D12Device device, uint capacity)
     {
         return BufferHelper.CreateDefaultBuffer<uint>(device, capacity,
-            ResourceStates.UnorderedAccess,
+            ResourceStates.NonPixelShaderResource,
+            ResourceFlags.AllowUnorderedAccess);
+    }
+    private uint BlockSumCapacity(uint capacity)
+    {
+        return (capacity+255)/256;
+    }
+    private ID3D12Resource CreateBlockSumBuffer(ID3D12Device device, uint capacity)
+    {
+        return BufferHelper.CreateDefaultBuffer<uint>(device, BlockSumCapacity(capacity),
+            ResourceStates.NonPixelShaderResource,
             ResourceFlags.AllowUnorderedAccess);
     }
 
@@ -70,5 +86,6 @@ public sealed class MouseBuffer : IDisposable
         AliveList?.Release();
         Counters?.Release();
         DispatchArgs?.Release();
+        BlockSum?.Release();
     }
 }

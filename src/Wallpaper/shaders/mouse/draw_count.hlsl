@@ -18,8 +18,9 @@ struct DrawIndexedArgs
 
 StructuredBuffer<uint> ActiveList : register(t2);
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
-RWStructuredBuffer<DispatchArgs> Args : register(u4);
-RWStructuredBuffer<DrawIndexedArgs> DrawArgs : register(u5);
+
+RWStructuredBuffer<DispatchArgs> Args : register(u5);
+RWStructuredBuffer<DrawIndexedArgs> DrawArgs : register(u6);
 
 StructuredBuffer<Particle> SparseParticles : register(t0);
 
@@ -31,15 +32,14 @@ void main(uint3 tid : SV_DispatchThreadID)
     
     // Update emitter count
     EmitterData data = Emitter[0];
-    uint lastId = data.AliveCount + data.SpawnCountThisFrame - 1;
     uint aliveCount = 0;
     uint totalCount = min(data.AliveCount + data.SpawnCountThisFrame, ParticleCount);
     if (totalCount > 0)
     {
         uint lastId = totalCount - 1;
-        aliveCount = ActiveList[lastId] + (SparseParticles[lastId].Age >= 0 ? 1u : 0u);
+        aliveCount = ActiveList[lastId] + ((SparseParticles[lastId].Age >= 0) ? 1u : 0u);
     }
-    data.AliveCount = aliveCount;
+    data.AliveCount = min(aliveCount, ParticleCount);
     Emitter[0] = data;
 
 
@@ -47,6 +47,6 @@ void main(uint3 tid : SV_DispatchThreadID)
     Args[0].ThreadGroupCountY = 1;
     Args[0].ThreadGroupCountZ = 1;
     
-    DrawArgs[0].InstanceCount = aliveCount;
+    DrawArgs[0].InstanceCount = data.AliveCount;
 
 }

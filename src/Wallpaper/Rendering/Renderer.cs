@@ -1,4 +1,6 @@
 
+using Serilog;
+
 public sealed class Renderer : IDisposable
 {
     //SubClasses
@@ -17,7 +19,10 @@ public sealed class Renderer : IDisposable
     public Renderer(IntPtr hwnd, int width, int height)
     {
         Context = new GraphicsContext();
+        Log.Debug("Graphic Context initialized");
+
         using var commandList = new ImmediateCommandList(Context);
+        Log.Debug("CommandList initialized");
 
         HeapAllocator = new HeapAllocator(Context.Device);
 

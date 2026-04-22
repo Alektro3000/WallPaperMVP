@@ -16,18 +16,24 @@ public class GraphicsContext : IDisposable
     public GraphicsContext()
     {
 #if DEBUG
-        if (D3D12GetDebugInterface<ID3D12Debug1>() is ID3D12Debug1 debug)
+        if (D3D12GetDebugInterface(out ID3D12Debug debug).Success)
         {
             debug.EnableDebugLayer();
-            debug.SetEnableGPUBasedValidation(true);
+
+            var debug1 = debug.QueryInterfaceOrNull<ID3D12Debug1>();
+            debug1?.SetEnableGPUBasedValidation(true);
+            debug1?.SetEnableSynchronizedCommandQueueValidation(true);
+            debug1?.Dispose();
+
+            debug.Dispose();
         }
 
-        if (D3D12GetDebugInterface<ID3D12DeviceRemovedExtendedDataSettings>()
-            is ID3D12DeviceRemovedExtendedDataSettings dred)
+        if (D3D12GetDebugInterface(out ID3D12DeviceRemovedExtendedDataSettings dred).Success)
         {
             dred.SetAutoBreadcrumbsEnablement(DredEnablement.ForcedOn);
             dred.SetPageFaultEnablement(DredEnablement.ForcedOn);
             dred.SetWatsonDumpEnablement(DredEnablement.ForcedOn);
+            dred.Dispose();
         }
 #endif
         var hr = D3D12CreateDevice(null, FeatureLevel.Level_11_0, out _device!);
