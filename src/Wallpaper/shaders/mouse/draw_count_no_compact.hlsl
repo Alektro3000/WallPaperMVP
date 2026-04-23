@@ -16,14 +16,8 @@ void main(uint3 tid : SV_DispatchThreadID)
     
     // Update emitter count
     EmitterData data = Emitter[0];
-    uint aliveCount = 0;
-    uint totalCount = data.TotalCount;
-    if (totalCount > 0)
-    {
-        uint lastId = totalCount - 1;
-        aliveCount = ActiveList[lastId] + ((SparseParticles[lastId].Age >= 0) ? 1u : 0u);
-    }
-    data.AliveCount = min(aliveCount, ParticleCount);
+    uint aliveCount = data.TotalCount;
+    data.AliveCount = aliveCount;
     Emitter[0] = data;
 
     DrawArgs[0].InstanceCount = aliveCount;

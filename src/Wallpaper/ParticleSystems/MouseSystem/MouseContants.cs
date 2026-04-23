@@ -8,7 +8,8 @@ public struct MouseConstants
     public Vector2 mousePosPrev;
 
     public uint ParticleCount;
-    public Vector3 padding;
+    public float VelocityBlend;
+    public Vector2 padding;
 
     public MouseSettings mouseSettings;
 

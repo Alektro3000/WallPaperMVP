@@ -23,7 +23,7 @@ public abstract class ParticleSystem : IDisposable
     protected ParticleBuffers ParticleBuffers;
     protected FrameManager.ConstantKey ConstantKey;
 
-    public void Dispatch(FrameResource currentResource)
+    public virtual void Dispatch(FrameResource currentResource)
         => ComputePass.DispatchParticles(currentResource, ConstantKey);
     
     public void Render(FrameResource currentResource)

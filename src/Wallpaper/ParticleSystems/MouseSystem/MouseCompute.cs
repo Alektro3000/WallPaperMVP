@@ -10,7 +10,8 @@ using Vortice.Direct3D12;
 [Shader("mouse\\prefix_add_offset.hlsl", "cs")]
 [Shader("mouse\\copy.hlsl", "cs")]
 [Shader("mouse\\draw_count.hlsl", "cs")]
-public class MouseCompute : IComputePass
+[Shader("mouse\\draw_count_no_compact.hlsl", "cs")]
+public class MouseCompute : IDisposable
 {
 
     //Compute
@@ -22,7 +23,8 @@ public class MouseCompute : IComputePass
     private ID3D12PipelineState MarkAlivePSO;
     private ID3D12PipelineState CopyPSO;
     private ID3D12PipelineState DrawCountPSO;
-    
+    private ID3D12PipelineState DrawCountNoCompactPSO;
+
     private ID3D12PipelineState PrefixLocalPSO;
     private ID3D12PipelineState PrefixGlobalPSO;
     private ID3D12PipelineState PrefixAddOffsetPSO;
@@ -43,9 +45,11 @@ public class MouseCompute : IComputePass
         EmitterPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/emitter.hlsl");
         MarkAlivePSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/alive.hlsl");
         CopyPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/copy.hlsl");
-        DrawCountPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/draw_count.hlsl");
 
-        
+        DrawCountPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/draw_count.hlsl");
+        DrawCountNoCompactPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/draw_count_no_compact.hlsl");
+
+
         PrefixLocalPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/prefix_local.hlsl");
         PrefixGlobalPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/prefix_block_sums.hlsl");
         PrefixAddOffsetPSO = ShaderHelper.CreatePSO(device, RootSignature, "mouse/prefix_add_offset.hlsl");
@@ -56,7 +60,7 @@ public class MouseCompute : IComputePass
                 Type = IndirectArgumentType.Dispatch
             }])
         {
-            ByteStride = 12, 
+            ByteStride = 12,
         };
 
         DispatchCommandSignature = device.CreateCommandSignature<ID3D12CommandSignature>(commandSigDesc, null);
@@ -132,10 +136,9 @@ public class MouseCompute : IComputePass
     }
     private void ExecuteIndirect(ID3D12GraphicsCommandList cmd)
     {
-
         cmd.ExecuteIndirect(DispatchCommandSignature, 1, MouseBuffer.DispatchArgs, 0, null, 0);
     }
-    public virtual void DispatchParticles(FrameResource currentResource, FrameManager.ConstantKey key)
+    public void DispatchParticles(FrameResource currentResource, FrameManager.ConstantKey key, bool isCompactPass)
     {
         var compact = ParticleBuffers.WriteBufferBinding;
         var sparse = ParticleBuffers.ReadBufferBinding;
@@ -192,8 +195,20 @@ public class MouseCompute : IComputePass
         ExecuteIndirect(cmd);
         TransitToNonPixel(cmd, sparse.ParticleBuffer);
 
+        if (isCompactPass)
+        {
+            Compact(cmd, compact, sparse);
+        }
+        else
+        {
+            NoCompact(cmd, compact, sparse);
+        }
+    }
+
+    public void Compact(ID3D12GraphicsCommandList cmd, ParticleBuffers.ParticleBufferBinding compact, ParticleBuffers.ParticleBufferBinding sparse)
+    {
         // Root parameter 1 = SRV table(t0)
-        cmd.SetComputeRootDescriptorTable(1, sparse. ParticleBufferSRV.Gpu);
+        cmd.SetComputeRootDescriptorTable(1, sparse.ParticleBufferSRV.Gpu);
         // Root parameter 2 = UAV table(u0)
         cmd.SetComputeRootDescriptorTable(2, compact.ParticleBufferUAV.Gpu);
 
@@ -212,14 +227,15 @@ public class MouseCompute : IComputePass
         cmd.ResourceBarrierUnorderedAccessView(MouseBuffer.BlockSum);
 
         cmd.SetPipelineState(PrefixGlobalPSO);
-        cmd.Dispatch(1,1,1);
+        cmd.Dispatch(1, 1, 1);
 
         // global prefix записал BlockSum offsets
         TransitToNonPixel(cmd, MouseBuffer.BlockSum);
-        
+
         cmd.SetPipelineState(PrefixAddOffsetPSO);
         ExecuteIndirect(cmd);
 
+        cmd.ResourceBarrierUnorderedAccessView(MouseBuffer.AliveList);
         TransitToNonPixel(cmd, MouseBuffer.AliveList);
 
 
@@ -245,4 +261,21 @@ public class MouseCompute : IComputePass
             ResourceStates.IndirectArgument);
     }
 
+    public void NoCompact(ID3D12GraphicsCommandList cmd, ParticleBuffers.ParticleBufferBinding compact, ParticleBuffers.ParticleBufferBinding sparse)
+    {
+        //Present
+        cmd.ResourceBarrierUnorderedAccessView(ParticleBuffers.EmitterBuffer);
+        cmd.ResourceBarrierTransition(
+            ParticleBuffers.DrawArgs,
+            ResourceStates.IndirectArgument,
+            ResourceStates.UnorderedAccess);
+
+        cmd.SetPipelineState(DrawCountNoCompactPSO);
+        cmd.Dispatch(1, 1, 1);
+
+        cmd.ResourceBarrierTransition(
+            ParticleBuffers.DrawArgs,
+            ResourceStates.UnorderedAccess,
+            ResourceStates.IndirectArgument);
+    }
 }

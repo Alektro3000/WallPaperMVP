@@ -1,5 +1,6 @@
 #include "common.hlsli"
 
+RWStructuredBuffer<uint> ActiveList : register(u2);
 RWStructuredBuffer<uint> BlockSums : register(u3);
 
 

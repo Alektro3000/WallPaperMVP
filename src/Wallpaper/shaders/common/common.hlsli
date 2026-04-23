@@ -36,6 +36,7 @@ struct EmitterData{
      uint SpawnAccumulator;
      uint AliveCount;
      uint TotalCount;
+     uint AliveCountCheck;
 };
 
 uint WangHash(uint s)

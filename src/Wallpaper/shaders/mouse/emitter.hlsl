@@ -1,15 +1,7 @@
 #include "common.hlsli"
 
-struct DispatchArgs
-{
-    uint ThreadGroupCountX;
-    uint ThreadGroupCountY;
-    uint ThreadGroupCountZ;
-};
-
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
 
-RWStructuredBuffer<GpuMouseBuffer> Counters : register(u4);
 RWStructuredBuffer<DispatchArgs> Args : register(u5);
 
 // Invariant after EmitterPSO:
@@ -43,6 +35,4 @@ void main(uint3 tid : SV_DispatchThreadID)
     Args[0].ThreadGroupCountZ = 1;
 
     Emitter[0] = data;
-
-    Counters[0].VelocityBlend = exp(-10 * DeltaTime);
 }

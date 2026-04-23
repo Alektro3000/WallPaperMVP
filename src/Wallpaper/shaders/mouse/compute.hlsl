@@ -4,7 +4,6 @@ StructuredBuffer<Particle> PrevParticles : register(t0);
 RWStructuredBuffer<Particle> NextParticles : register(u0);
 
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
-StructuredBuffer<GpuMouseBuffer> Counters : register(t4);
 
 // Uses CustomData.xy to store unsnapped position
 [numthreads(256, 1, 1)] void main(uint3 dtid : SV_DispatchThreadID)
@@ -61,7 +60,6 @@ StructuredBuffer<GpuMouseBuffer> Counters : register(t4);
         p.Velocity = VelSize * VelDir;
         // initial visible age/lifetime
         p.Age = LifeTime * (0.9f - isSpark * 0.4 + 0.1f * Random(seed * 17 + 5));
-        p.Color = float4(0, 1, 0, 1);
     }
     else
     {
@@ -101,11 +99,10 @@ StructuredBuffer<GpuMouseBuffer> Counters : register(t4);
 
         // blend instead of overwrite
         p.Velocity += desiredVel * Velocity * DeltaTime;
-        p.Velocity *= Counters[0].VelocityBlend;
+        p.Velocity *= VelocityBlend;
 
         // integrate
         p.Age -= DeltaTime;
-        p.Color = float4(p.Age,1,1,1);
     }
 
     p.Position = SnapToGrid(p.CustomData.xy, GridSize);
@@ -116,8 +113,8 @@ StructuredBuffer<GpuMouseBuffer> Counters : register(t4);
     float dirLen = saturate(0.2 - length(dir)) + 0.05;
 
     float scaledAge = saturate(p.Age / LifeTime);
-    p.Size = Size; 
-    //p.Color = float4(Color, (scaledAge + 0.3 * p.CustomData1.x) * dirLen * 20);
-
+    p.Size = p.Age >=0 ? Size : 0; 
+    p.Color = float4(Color, (scaledAge + 0.3 * p.CustomData1.x) * dirLen * 20);
+    
     NextParticles[i] = p;
 }

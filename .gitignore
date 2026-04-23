@@ -4,3 +4,4 @@ dumps/**
 procdump.exe
 .vs/**
 .vscode/**
+src/Wallpaper/logs/**

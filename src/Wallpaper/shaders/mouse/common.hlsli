@@ -7,7 +7,8 @@ cbuffer Constants : register(b0)
     float2 mousePosPrev;
 
     uint ParticleCount;
-    int3 _padding;
+    float VelocityBlend;
+    int2 _padding;
     
     float3 Color;
     float Size;
@@ -19,8 +20,4 @@ cbuffer Constants : register(b0)
     float SpawnRate;
     float SpawnRatePerUnit;
     float InitVelocity;
-};
-
-struct GpuMouseBuffer{
-    float VelocityBlend;
 };

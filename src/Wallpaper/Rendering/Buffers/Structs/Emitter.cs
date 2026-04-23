@@ -9,6 +9,7 @@ public struct Emitter
     public uint AccumulatedSpawns;
     public uint AliveCount = 0;
     public uint TotalCount = 0;
+    public uint AliveCountCheck = 0;
 
     public Emitter()
     {

@@ -14,11 +14,14 @@ RWStructuredBuffer<Particle> DestParticles : register(u0);
 StructuredBuffer<uint> ActiveList : register(t2);
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
 
-[numthreads(256, 1, 1)]
-void main(uint3 tid : SV_DispatchThreadID)
+// At this point Emitter.AliveCount is still previous-frame count.
+// Current compacted destination index is defined only by:
+//  - particle alive test
+//  - ActiveList[i] exclusive prefix
+[numthreads(256, 1, 1)] void main(uint3 tid : SV_DispatchThreadID)
 {
     uint i = tid.x;
-    if(i >= Emitter[0].TotalCount)
+    if (i >= Emitter[0].TotalCount)
         return;
 
     Particle p = SourceParticles[i];
@@ -26,10 +29,5 @@ void main(uint3 tid : SV_DispatchThreadID)
     if (p.Age < 0.0f)
         return;
 
-    uint dst = ActiveList[i];
-
-    if (dst < Emitter[0].AliveCount)
-    {
-        DestParticles[dst] = p;
-    }
+    DestParticles[ActiveList[i]] = p;
 }

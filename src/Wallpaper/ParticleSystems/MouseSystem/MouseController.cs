@@ -14,14 +14,15 @@ public class MouseController
     public void UpdateStaticResource(ref MouseConstants constant, FrameMetric metric, SystemSettings systemSettings)
     {
         constant.ParticleCount = ParticleSystem.particleCount;
+        constant.VelocityBlend = (float)Math.Exp(-systemSettings.mouseSettings.VelocityFallof * metric.DeltaTime);
         constant.mouseSettings = systemSettings.mouseSettings;
         
         Win32.GetCursorPos(out Win32.POINT point);
         float ratio = (float)metric.height/metric.width;
-        var MousePos = new Vector2(((float)point.X) / metric.height, (metric.height - (float)point.Y) / metric.height) * 2 - new Vector2(1/ratio, 1);
+        var mousePos = new Vector2(((float)point.X) / metric.height, (metric.height - (float)point.Y) / metric.height) * 2 - new Vector2(1/ratio, 1);
 
-        constant.mousePos = MousePos;
+        constant.mousePos = mousePos;
         constant.mousePosPrev = prevMousePos;
-        prevMousePos = MousePos;
+        prevMousePos = mousePos;
     }
 }

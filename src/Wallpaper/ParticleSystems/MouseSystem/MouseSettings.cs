@@ -31,7 +31,7 @@ public struct MouseSettings
 
     [UiLabel("Spawn Rate")]
     [UiRange(0f, 5000f, 10f)]
-    public float SpawnRate = 000f;
+    public float SpawnRate = 300f;
 
     [UiLabel("Spawn Rate Per Unit")]
     [UiRange(0f, 1000f, 5f)]
@@ -40,6 +40,10 @@ public struct MouseSettings
     [UiLabel("Initial Speed")]
     [UiRange(-200f, 200f, 1f)]
     public float InitSpeed = 40f;
+    
+    [UiLabel("Velocity Fallof")]
+    [UiRange(-20f, 20f, 1f)]
+    public float VelocityFallof = 1f;
 
     public MouseSettings(float size = 0.016f) : this()
     {

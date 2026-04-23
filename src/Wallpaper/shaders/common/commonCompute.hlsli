@@ -15,3 +15,19 @@ Particle updateParticleField(Particle p)
     
     return p;
 };
+
+struct DispatchArgs
+{
+    uint ThreadGroupCountX;
+    uint ThreadGroupCountY;
+    uint ThreadGroupCountZ;
+};
+
+struct DrawIndexedArgs
+{
+    uint IndexCountPerInstance;
+    uint InstanceCount;
+    uint StartIndexLocation;
+    int  BaseVertexLocation;
+    uint StartInstanceLocation;
+};

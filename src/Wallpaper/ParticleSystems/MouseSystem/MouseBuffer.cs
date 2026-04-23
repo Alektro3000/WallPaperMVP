@@ -6,7 +6,6 @@ public sealed class MouseBuffer : IDisposable
 {
     public readonly ID3D12Resource AliveList;
     public readonly ID3D12Resource BlockSum;
-    public readonly ID3D12Resource Counters;
     public readonly ID3D12Resource DispatchArgs;
 
     public readonly GpuDescriptorHandle UavsStart; // u1..u5
@@ -22,7 +21,6 @@ public sealed class MouseBuffer : IDisposable
         AliveList.Name = "Mouse AliveList";
         BlockSum = CreateBlockSumBuffer(device, capacity);
         BlockSum.Name = "Mouse BlockList";
-        Counters = CreateCountersBuffer(device);
         DispatchArgs = CreateDispatchArgsBuffer(device);
 
         UavsStart = CreateMouseUavTable(device, heap, capacity, particleBuffers);
@@ -34,7 +32,7 @@ public sealed class MouseBuffer : IDisposable
         device.CreateUnorderedAccessView(buffers.EmitterBuffer, null, BufferHelper.CreateStructuredBufferUavDesc<Emitter>(1), range[0].Cpu);
         device.CreateUnorderedAccessView(AliveList, null, BufferHelper.CreateStructuredBufferUavDesc<uint>(capacity), range[1].Cpu);
         device.CreateUnorderedAccessView(BlockSum, null, BufferHelper.CreateStructuredBufferUavDesc<uint>(BlockSumCapacity(capacity)), range[2].Cpu);
-        device.CreateUnorderedAccessView(Counters, null, BufferHelper.CreateStructuredBufferUavDesc<GpuMouseBuffer>(1), range[3].Cpu);
+        //device.CreateUnorderedAccessView(Counters, null, BufferHelper.CreateStructuredBufferUavDesc<GpuMouseBuffer>(1), range[3].Cpu);
         device.CreateUnorderedAccessView(DispatchArgs, null, BufferHelper.CreateStructuredBufferUavDesc<DispatchArgs>(1), range[4].Cpu);
         device.CreateUnorderedAccessView(buffers.DrawArgs, null, BufferHelper.CreateStructuredBufferUavDesc<DrawIndexedArguments>(1), range[5].Cpu);
 
@@ -45,7 +43,7 @@ public sealed class MouseBuffer : IDisposable
         var range = heap.Allocate(3);
         device.CreateShaderResourceView(AliveList, BufferHelper.CreateStructuredBufferSrvDesc<uint>(capacity), range[0].Cpu);
         device.CreateShaderResourceView(BlockSum, BufferHelper.CreateStructuredBufferSrvDesc<uint>(BlockSumCapacity(capacity)), range[1].Cpu);
-        device.CreateShaderResourceView(Counters, BufferHelper.CreateStructuredBufferSrvDesc<GpuMouseBuffer>(1), range[2].Cpu);
+        //device.CreateShaderResourceView(Counters, BufferHelper.CreateStructuredBufferSrvDesc<GpuMouseBuffer>(1), range[2].Cpu);
 
         return range[0].Gpu;
     }
@@ -54,13 +52,6 @@ public sealed class MouseBuffer : IDisposable
     {
         return BufferHelper.CreateDefaultBuffer<DispatchArgs>(device, 1,
             ResourceStates.IndirectArgument,
-            ResourceFlags.AllowUnorderedAccess);
-    }
-
-    private ID3D12Resource CreateCountersBuffer(ID3D12Device device)
-    {
-        return BufferHelper.CreateDefaultBuffer<GpuMouseBuffer>(device, 1,
-            ResourceStates.NonPixelShaderResource,
             ResourceFlags.AllowUnorderedAccess);
     }
 
@@ -84,7 +75,6 @@ public sealed class MouseBuffer : IDisposable
     public void Dispose()
     {
         AliveList?.Release();
-        Counters?.Release();
         DispatchArgs?.Release();
         BlockSum?.Release();
     }
