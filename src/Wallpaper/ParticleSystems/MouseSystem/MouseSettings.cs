@@ -13,6 +13,8 @@ public struct MouseSettings
     [UiRange(0.001f, 0.2f, 0.001f)]
     public float Size = 0.016f;
 
+
+
     [UiLabel("Grid Size")]
     [UiVector2(
         minX: 0.001f, maxX: 0.2f, stepX: 0.001f,
@@ -21,9 +23,15 @@ public struct MouseSettings
         yLabel: "Height")]
     public Vector2 GridSize;
 
-    [UiLabel("Velocity")]
+    [UiLabel("Radial Speed")]
     [UiRange(-5f, 5f, 0.05f)]
-    public float Velocity = 0.5f;
+    public float Radial = 0.5f;
+    
+    [UiLabel("Tangent Speed")]
+    [UiRange(-5f, 5f, 0.05f)]
+    public float Tangent = 0.5f;
+
+
 
     [UiLabel("Life Time")]
     [UiRange(0.1f, 10f, 0.1f)]
@@ -38,12 +46,50 @@ public struct MouseSettings
     public float SpawnRatePerUnit = 100f;
 
     [UiLabel("Initial Speed")]
-    [UiRange(-200f, 200f, 1f)]
-    public float InitSpeed = 40f;
+    [UiRange(-20f, 20f, 0.01f)]
+    public float InitSpeed = 1f;
+    
+
+
+    [UiLabel("Stationary Lerp Start")]
+    [UiRange(0f, 100f, 0.1f)]
+    public float StationaryLerpStart = 0.2f;
+
+    [UiLabel("Stationary Lerp End")]
+    [UiRange(0f, 100f, 0.1f)]
+    public float StationaryLerpEnd = 3;
+
+    [UiLabel("Offset Lerp End")]
+    [UiRange(0f, 100f, 0.1f)]
+    public float OffsetLerpStart = 30;
+
+    [UiLabel("Offset Lerp End")]
+    [UiRange(0f, 100f, 0.1f)]
+    public float OffsetLerpEnd = 10;
+
+
+    [UiLabel("Strip Width")]
+    [UiRange(-1f, 1f, 0.001f)]
+    public float StripWidth = 0.05f;
+    
+    [UiLabel("Spark Percent")]
+    [UiRange(0f, 1f, 0.01f)]
+    public float SparkPercent = 0.05f;
+
+    [UiLabel("Stationary Velocity")]
+    [UiRange(0f, 10f, 0.01f)]
+    public float StationaryVelocity = 0.1f;
+
+
+
     
     [UiLabel("Velocity Fallof")]
     [UiRange(-20f, 20f, 1f)]
     public float VelocityFallof = 1f;
+
+    [UiLabel("Wave Length")]
+    [UiRange(-20f, 20f, 0.001f)]
+    public float WaveLength = 0.1f;
 
     public MouseSettings(float size = 0.016f) : this()
     {

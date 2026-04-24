@@ -1,13 +1,5 @@
 #include "common.hlsli"
 
-struct GpuCounters
-{
-    uint AliveCount;
-    uint Reserved0;
-    uint Reserved1;
-    uint Reserved2;
-};
-
 StructuredBuffer<Particle> SourceParticles : register(t0);
 RWStructuredBuffer<Particle> DestParticles : register(u0);
 

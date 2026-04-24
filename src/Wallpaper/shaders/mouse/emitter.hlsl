@@ -14,8 +14,7 @@ void main(uint3 tid : SV_DispatchThreadID)
     EmitterData data = Emitter[0];
     uint aliveCount = min(data.AliveCount, ParticleCount);
 
-    float dist = length(mousePos - mousePosPrev);
-    uint increment = (uint)( (SpawnRate * DeltaTime + SpawnRatePerUnit * dist ) * 65536.0) ;
+    uint increment = (uint)( (SpawnRate * DeltaTime + SpawnRatePerUnit * MouseFrameDistance ) * 65536.0) ;
 
     uint acc = data.SpawnAccumulator + increment;
     uint spawnCount = acc >> 16;

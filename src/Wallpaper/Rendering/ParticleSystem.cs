@@ -54,8 +54,8 @@ public abstract class ParticleSystem : IDisposable
     public abstract void InitBuffer(FrameResource frameResource, ID3D12Device device);
     public void Dispose()
     {
-        GraphicPass.Dispose();
-        ComputePass.Dispose();
-        ParticleBuffers.Dispose();
+        GraphicPass?.Dispose();
+        ComputePass?.Dispose();
+        ParticleBuffers?.Dispose();
     }
 }
