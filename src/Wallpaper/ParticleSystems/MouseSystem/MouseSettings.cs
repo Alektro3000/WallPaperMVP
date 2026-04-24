@@ -1,35 +1,18 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
+namespace MouseSystem;
 
 [StructLayout(LayoutKind.Sequential)]
-public struct MouseSettings
+public struct GpuSettings
 {
     [UiLabel("Color")]
     [UiColor(normalized: true)]
     public Vector3 Color = new Vector3(0.9f, 0.2f, 1f);
 
-    [UiLabel("Size")]
-    [UiRange(0.001f, 0.2f, 0.001f)]
-    public float Size = 0.016f;
-
-
-
-    [UiLabel("Grid Size")]
-    [UiVector2(
-        minX: 0.001f, maxX: 0.2f, stepX: 0.001f,
-        minY: 0.001f, maxY: 0.2f, stepY: 0.001f,
-        xLabel: "Width",
-        yLabel: "Height")]
-    public Vector2 GridSize;
-
     [UiLabel("Radial Speed")]
     [UiRange(-5f, 5f, 0.05f)]
     public float Radial = 0.5f;
-    
-    [UiLabel("Tangent Speed")]
-    [UiRange(-5f, 5f, 0.05f)]
-    public float Tangent = 0.5f;
 
 
 
@@ -38,17 +21,17 @@ public struct MouseSettings
     public float LifeTime = 1f;
 
     [UiLabel("Spawn Rate")]
-    [UiRange(0f, 5000f, 10f)]
+    [UiRange(0f, 50000f, 10f)]
     public float SpawnRate = 300f;
 
     [UiLabel("Spawn Rate Per Unit")]
-    [UiRange(0f, 1000f, 5f)]
+    [UiRange(0f, 10000f, 5f)]
     public float SpawnRatePerUnit = 100f;
 
     [UiLabel("Initial Speed")]
     [UiRange(-20f, 20f, 0.01f)]
     public float InitSpeed = 1f;
-    
+
 
 
     [UiLabel("Stationary Lerp Start")]
@@ -68,6 +51,7 @@ public struct MouseSettings
     public float OffsetLerpEnd = 10;
 
 
+
     [UiLabel("Strip Width")]
     [UiRange(-1f, 1f, 0.001f)]
     public float StripWidth = 0.05f;
@@ -77,23 +61,50 @@ public struct MouseSettings
     public float SparkPercent = 0.05f;
 
     [UiLabel("Stationary Velocity")]
-    [UiRange(0f, 10f, 0.01f)]
+    [UiRange(-10f, 10f, 0.01f)]
     public float StationaryVelocity = 0.1f;
 
 
+    public GpuSettings()
+    {
+        
+    }
+}
 
-    
+
+public struct CpuSettings
+{
+    [UiLabel("Size")]
+    [UiRange(1f, 1080f, 1f)]
+    public float Size = 13f;
+
+    [UiLabel("Grid Size")]
+    [UiVector2(
+        minX: 1f, maxX: 1080f, stepX: 1f,
+        minY: 1f, maxY: 1080f, stepY: 1f,
+        xLabel: "Width",
+        yLabel: "Height")]
+    public Vector2 GridSize = new Vector2(13, 13);
+
     [UiLabel("Velocity Fallof")]
-    [UiRange(-20f, 20f, 1f)]
+    [UiRange(-20f, 20f, 0.01f)]
     public float VelocityFallof = 1f;
 
     [UiLabel("Wave Length")]
-    [UiRange(-20f, 20f, 0.001f)]
-    public float WaveLength = 0.1f;
+    [UiRange(-20f, 20f, 0.01f)]
+    public float WaveLength = 1f;
 
-    public MouseSettings(float size = 0.016f) : this()
+    public CpuSettings()
     {
-        Size = size;
-        GridSize = new Vector2(size);
+    }
+}
+
+public struct Settings
+{
+    public GpuSettings gpuSettings = new GpuSettings();
+    public CpuSettings cpuSettings = new CpuSettings();
+    public Settings()
+    {
+        
     }
 }

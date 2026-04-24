@@ -35,11 +35,13 @@ internal static class Program
         string projectDir = Path.GetFullPath(args[1]);
         string outputDir = Path.GetFullPath(args[2]);
 
+        Log.Information("Begin Compilation");
+
         // string assemblyPath = "G:\\projects\\mine\\WallPaperMVP\\src\\Wallpaper\\bin\\Debug\\net8.0-windows\\WallpaperMVP.dll" ;
         // string projectDir = "G:\\projects\\mine\\WallPaperMVP\\src\\Wallpaper" ;
         // string outputDir = "G:\\projects\\mine\\WallPaperMVP\\src\\Wallpaper\\bin\\Debug\\net8.0-windows\\" ;
 
-        Console.WriteLine($"assemblyPath = {assemblyPath}");
+        Log.Information($"assemblyPath = {assemblyPath}");
 
         var runtimeAssemblies = Directory.GetFiles(
             Path.GetDirectoryName(typeof(object).Assembly.Location)!,
@@ -80,6 +82,8 @@ internal static class Program
                 Compile(inputPath, inputRoot, outputPath, stage);
             }
         }
+        Log.CloseAndFlush();
+        
     }
     private static void Compile(string inputPath, string inputRoot, string outputPath, string Stage)
     {

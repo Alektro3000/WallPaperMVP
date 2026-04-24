@@ -2,7 +2,9 @@ using System.Runtime.InteropServices;
 using Vortice.Direct3D12;
 using Vortice.DXGI;
 
-public sealed class MouseBuffer : IDisposable
+namespace MouseSystem;
+
+public sealed class Buffer : IDisposable
 {
     public readonly ID3D12Resource AliveList;
     public readonly ID3D12Resource BlockSum;
@@ -11,7 +13,7 @@ public sealed class MouseBuffer : IDisposable
     public readonly GpuDescriptorHandle UavsStart; // u1..u5
     public readonly GpuDescriptorHandle SrvsStart; // t2..t5
 
-    public MouseBuffer(
+    public Buffer(
         ID3D12Device device,
         HeapAllocator heap,
         ParticleBuffers particleBuffers,

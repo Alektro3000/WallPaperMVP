@@ -1,16 +1,18 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
+namespace CornerSystem;
+
 [StructLayout(LayoutKind.Sequential)]
-public struct CornerConstants
+public struct Constants
 {
     public uint ParticleCount;
     private Vector3 _padding;
-    public CornerSettings settings;
+    public Settings settings;
 }
 
 [StructLayout(LayoutKind.Sequential)]
-public struct CornerSettings
+public struct Settings
 {
     [UiLabel("Color")]
     [UiColor]
@@ -55,7 +57,7 @@ public struct CornerSettings
     [UiRange(0.01f, 100f, 0.01f)]
     public float Velocity = 1f;
 
-    public CornerSettings()
+    public Settings()
     {
     }
 }

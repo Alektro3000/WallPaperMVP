@@ -1,24 +1,24 @@
 
 using Vortice.Direct3D12;
 
+namespace MouseSystem;
 
-public class MouseSystem : ParticleSystem
+public class System : ParticleSystem
 {
-    protected MouseController ParticleSystemController;
-    protected MouseCompute mouseCompute;
-    protected MouseBuffer mouseBuffer;
-    public MouseSystem(InitContext context)
+    protected Controller ParticleSystemController;
+    protected Compute mouseCompute;
+    protected Buffer mouseBuffer;
+    public System(InitContext context)
     {
-        uint particleCount = 4096 * 16;
+        uint particleCount = 65536;
 
         ParticleBuffers = new ParticleBuffers(context.device, context.commandList, context.HeapAllocator, particleCount);
         GraphicPass = new GraphicPass(context.device, ParticleBuffers, context.commmonBuffers, context.GeometryBuffers, "vertex.hlsl", "pixel.hlsl");
-        mouseBuffer = new MouseBuffer(context.device, context.HeapAllocator, ParticleBuffers, particleCount);
-        mouseCompute = new MouseCompute(context.device, ParticleBuffers, mouseBuffer, context.commmonBuffers, context.fieldBuffers);
+        mouseBuffer = new Buffer(context.device, context.HeapAllocator, ParticleBuffers, particleCount);
+        mouseCompute = new Compute(context.device, ParticleBuffers, mouseBuffer, context.commmonBuffers, context.fieldBuffers);
         ConstantKey = context.FrameManager.ReserveBuffer();
 
-        //ParticleBuffers = new ParticleBuffers(context.device, context.commandList, context.HeapAllocator, initParticles);
-        ParticleSystemController = new MouseController(ParticleBuffers);
+        ParticleSystemController = new Controller(ParticleBuffers);
         
         Serilog.Log.Information("Mouse System Initialized");
     }
@@ -32,12 +32,12 @@ public class MouseSystem : ParticleSystem
     public override void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings)
     {
         ParticleSystemController.UpdateStaticResource(
-            ref currentResource.GetBufferConstantRef<MouseConstants>(ConstantKey),
+            ref currentResource.GetBufferConstantRef<Constants>(ConstantKey),
         currentResource.frameMetric, systemSettings);
     }
     public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
     {
-        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<MouseConstants>(device));
+        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<Constants>(device));
     }
     public override void SwapBuffers()
     {

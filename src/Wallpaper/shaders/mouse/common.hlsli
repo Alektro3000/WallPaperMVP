@@ -17,12 +17,12 @@ cbuffer Constants : register(b0)
     float WaveCyclesOnSegment;
     float MouseSpeed;
     
-    float3 Color;
     float Size;
-    
     float2 GridSize;
+    uint _padding = 0;
+
+    float3 Color;
     float Radial;
-    float Tangent;
 
     float LifeTime;
     float SpawnRate;

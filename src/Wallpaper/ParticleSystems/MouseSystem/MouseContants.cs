@@ -1,8 +1,10 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
+namespace MouseSystem;
+
 [StructLayout(LayoutKind.Sequential)]
-public struct MouseConstants
+public struct CpuGeneratedConstants
 {
     public Vector2 CatmulA;
     public Vector2 CatmulB;
@@ -15,10 +17,25 @@ public struct MouseConstants
 
     public float DistanceP1P2;
     public float PhaseShift;
-    public float WaveCyclesOnSegment;
+    public float WavePhaseOnSegment ;
     public float MouseSpeed;
+    
+    public float Size;
+    public Vector2 GridSize;
+    private uint _padding = 0;
 
+    public CpuGeneratedConstants()
+    {
+    }
+}
 
-    public MouseSettings mouseSettings;
+[StructLayout(LayoutKind.Sequential)]
+public struct Constants
+{
+    public CpuGeneratedConstants cpuGeneratedSettings = new CpuGeneratedConstants();
+    public GpuSettings settings = new GpuSettings();
 
+    public Constants()
+    {
+    }
 }

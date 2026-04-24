@@ -1,6 +1,8 @@
 using System.Numerics;
 
-public class MouseController
+namespace MouseSystem;
+
+public class Controller
 {
     private readonly ParticleBuffers ParticleSystem;
     private Vector2 MousePos0;
@@ -33,17 +35,20 @@ public class MouseController
 
         return len;
     }
-    public MouseController(ParticleBuffers partcileSystem)
+    private CpuSettings CpuSettings(SystemSettings system) => system.mouseSettings.cpuSettings;
+    public Controller(ParticleBuffers partcileSystem)
     {
         ParticleSystem = partcileSystem;
     }
 
-    public void UpdateStaticResource(ref MouseConstants constant, FrameMetric metric, SystemSettings systemSettings)
+    public void UpdateStaticResource(ref Constants GpuConstant, FrameMetric metric, SystemSettings systemSettings)
     {
-        constant.ParticleCount = ParticleSystem.particleCount;
-        constant.VelocityBlend = (float)Math.Exp(-systemSettings.mouseSettings.VelocityFallof * metric.DeltaTime);
-        constant.mouseSettings = systemSettings.mouseSettings;
-        
+        CpuGeneratedConstants constant = new()
+        {
+            ParticleCount = ParticleSystem.particleCount,
+            VelocityBlend = (float)Math.Exp(-CpuSettings(systemSettings).VelocityFallof * metric.DeltaTime)
+        };
+
         Win32.GetCursorPos(out Win32.POINT point);
         float ratio = (float)metric.height/metric.width;
         MousePos3 = MousePos2;
@@ -61,12 +66,15 @@ public class MouseController
             constant.CatmulC,
             constant.CatmulD
         );
-        float length = systemSettings.mouseSettings.WaveLength;
+        float waveLength = CpuSettings(systemSettings).WaveLength;
         constant.MousePos = MousePos0;
-        AccumulatedPhase += constant.DistanceP1P2;
-        AccumulatedPhase %= (float)(length * Math.PI * 2);
-        constant.PhaseShift = AccumulatedPhase / length;
-        constant.WaveCyclesOnSegment = constant.DistanceP1P2 / length;
+
+        float segmentPhase = constant.DistanceP1P2 / waveLength * MathF.Tau;
+        
+        constant.PhaseShift = AccumulatedPhase;
+        constant.WavePhaseOnSegment = segmentPhase;
+
+        AccumulatedPhase = (AccumulatedPhase + segmentPhase) % MathF.Tau;
 
         
         float rawSpeed = constant.DistanceP1P2 / MathF.Max(metric.DeltaTime, 0.0001f);
@@ -76,5 +84,12 @@ public class MouseController
         SmoothedSpeed =
             rawSpeed + (SmoothedSpeed - rawSpeed) * blend;
         constant.MouseSpeed = SmoothedSpeed;
+
+
+        constant.GridSize = CpuSettings(systemSettings).GridSize / metric.height;
+        constant.Size = CpuSettings(systemSettings).Size / metric.height;
+
+        GpuConstant.cpuGeneratedSettings = constant;
+        GpuConstant.settings = systemSettings.mouseSettings.gpuSettings;
     }
 }

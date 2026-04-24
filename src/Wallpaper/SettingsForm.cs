@@ -6,8 +6,44 @@ using System.Windows.Forms;
 
 public sealed class SettingsForm : Form
 {
+    private sealed record FieldPath(FieldInfo[] Fields)
+    {
+        public object? GetValue(SystemSettings root)
+        {
+            object? current = root;
+
+            foreach (var field in Fields)
+                current = field.GetValue(current);
+
+            return current;
+        }
+
+        public void SetValue(SystemSettings root, object? value)
+        {
+            SetValueRecursive(root, 0, value);
+        }
+
+        private void SetValueRecursive(object current, int index, object? value)
+        {
+            var field = Fields[index];
+
+            if (index == Fields.Length - 1)
+            {
+                field.SetValue(current, value);
+                return;
+            }
+
+            var child = field.GetValue(current)!;
+
+            SetValueRecursive(child, index + 1, value);
+
+            // Important for structs: write modified child back into parent
+            field.SetValue(current, child);
+        }
+    }
+
     private readonly SettingsStore _store;
-    
+
     public event EventHandler? ExitRequested;
     public SettingsForm(SettingsStore store)
     {
@@ -74,9 +110,10 @@ public sealed class SettingsForm : Form
     {
         var sectionFields = typeof(SystemSettings).GetFields(BindingFlags.Public | BindingFlags.Instance);
 
+        var systemValues = _store.GetSnapshot();
         foreach (var sectionField in sectionFields)
         {
-            var sectionValue = sectionField.GetValue(_store.GetSnapshot());
+            var sectionValue = sectionField.GetValue(systemValues);
             if (sectionValue == null)
                 continue;
 
@@ -91,39 +128,58 @@ public sealed class SettingsForm : Form
 
     private void BuildControlsForSection(FlowLayoutPanel panel, FieldInfo sectionField)
     {
-        var sectionType = sectionField.FieldType;
-        var childFields = sectionType.GetFields(BindingFlags.Public | BindingFlags.Instance);
-
         var settings = _store.GetSnapshot();
 
-        foreach (var childField in childFields)
+        AddFieldsRecursive(settings, panel,
+            sectionField.FieldType,
+            [sectionField]);
+    }
+
+    private void AddFieldsRecursive(
+        SystemSettings settings,
+        FlowLayoutPanel panel,
+        Type type,
+        List<FieldInfo> path)
+    {
+        foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Instance))
         {
-            var label = childField.GetCustomAttribute<UiLabelAttribute>()?.Label ?? ToDisplayName(childField.Name);
-            var fieldType = childField.FieldType;
+            var fieldType = field.FieldType;
+            var label = field.GetCustomAttribute<UiLabelAttribute>()?.Label
+                        ?? ToDisplayName(field.Name);
+
+            var currentPath = path.Append(field).ToArray();
+            var fieldPath = new FieldPath(currentPath);
 
             if (fieldType == typeof(float))
             {
-                AddFloatField(settings, panel, sectionField, childField, label);
+                AddFloatField(settings, panel, fieldPath, field, label);
             }
             else if (fieldType == typeof(Vector2))
             {
-                AddVector2Field(settings, panel, sectionField, childField, label);
+                AddVector2Field(settings, panel, fieldPath, field, label);
             }
-            else if (fieldType == typeof(Vector3) && childField.GetCustomAttribute<UiColorAttribute>() != null)
+            else if (fieldType == typeof(Vector3) &&
+                    field.GetCustomAttribute<UiColorAttribute>() != null)
             {
-                AddColor3Field(settings, panel, sectionField, childField, label);
+                AddColor3Field(settings, panel, fieldPath, field, label);
             }
-            else if (fieldType == typeof(Vector4) && childField.GetCustomAttribute<UiColorAttribute>() != null)
+            else if (fieldType == typeof(Vector4) &&
+                    field.GetCustomAttribute<UiColorAttribute>() != null)
             {
-                AddColor4Field(settings, panel, sectionField, childField, label);
+                AddColor4Field(settings, panel, fieldPath, field, label);
+            }
+            else if (!fieldType.IsPrimitive &&
+                    !fieldType.IsEnum &&
+                    fieldType != typeof(string))
+            {
+                AddFieldsRecursive(settings, panel, fieldType, currentPath.ToList());
             }
         }
     }
 
-    private void AddFloatField(SystemSettings settings, FlowLayoutPanel panel, FieldInfo sectionField, FieldInfo childField, string label)
+    private void AddFloatField(SystemSettings settings, FlowLayoutPanel panel, FieldPath path, FieldInfo childField, string label)
     {
-        var sectionValue = sectionField.GetValue(settings)!;
-        float value = (float)childField.GetValue(sectionValue)!;
+        float value = (float)path.GetValue(settings)!;
 
         var range = childField.GetCustomAttribute<UiRangeAttribute>();
         decimal min = range != null ? (decimal)range.Min : -100000m;
@@ -132,16 +188,13 @@ public sealed class SettingsForm : Form
 
         AddFloat(panel, label, value, min, max, step, (v, root) =>
         {
-            var section = sectionField.GetValue(root)!;
-            childField.SetValue(section, v);
-            sectionField.SetValue(root, section);
+            path.SetValue(root, v);
         });
     }
 
-    private void AddVector2Field(SystemSettings settings, FlowLayoutPanel panel, FieldInfo sectionField, FieldInfo childField, string label)
+    private void AddVector2Field(SystemSettings settings, FlowLayoutPanel panel, FieldPath path, FieldInfo childField, string label)
     {
-        var sectionValue = sectionField.GetValue(settings)!;
-        Vector2 value = (Vector2)childField.GetValue(sectionValue)!;
+        Vector2 value = (Vector2)path.GetValue(settings)!;
 
         var meta = childField.GetCustomAttribute<UiVector2Attribute>();
 
@@ -158,28 +211,21 @@ public sealed class SettingsForm : Form
 
         AddFloat(panel, $"{label} {xLabel}", value.X, minX, maxX, stepX, (v, root) =>
         {
-            var section = sectionField.GetValue(root)!;
-
-            var cur = (Vector2)childField.GetValue(section)!;
+            var cur = (Vector2)path.GetValue(root)!;
             cur.X = v;
-            childField.SetValue(section, cur);
-
-            sectionField.SetValue(root, section);
+            path.SetValue(root, cur);
         });
 
         AddFloat(panel, $"{label} {yLabel}", value.Y, minY, maxY, stepY, (v, root) =>
         {
-            var section = sectionField.GetValue(root)!;
-            var cur = (Vector2)childField.GetValue(section)!;
+            var cur = (Vector2)path.GetValue(root)!;
             cur.Y = v;
-            childField.SetValue(section, cur);
-            sectionField.SetValue(root, section);
+            path.SetValue(root, cur);
         });
     }
-    private void AddColor3Field(SystemSettings settings, FlowLayoutPanel panel, FieldInfo sectionField, FieldInfo childField, string label)
+    private void AddColor3Field(SystemSettings settings, FlowLayoutPanel panel, FieldPath path, FieldInfo childField, string label)
     {
-        var sectionValue = sectionField.GetValue(settings)!;
-        Vector3 value = (Vector3)childField.GetValue(sectionValue)!;
+        Vector3 value = (Vector3)path.GetValue(settings)!;
 
         var meta = childField.GetCustomAttribute<UiColorAttribute>();
         bool normalized = meta?.Normalized ?? true;
@@ -219,7 +265,7 @@ public sealed class SettingsForm : Form
 
         button.Click += (_, _) =>
         {
-            var section = sectionField.GetValue(_store.GetSnapshot())!;
+            var section = path.GetValue(settings)!;
             var current = (Vector3)childField.GetValue(section)!;
 
             using var dlg = new ColorDialog
@@ -232,13 +278,10 @@ public sealed class SettingsForm : Form
 
             if (dlg.ShowDialog(this) == DialogResult.OK)
             {
-                _store.Update( set =>
+                _store.Update(set =>
                 {
-                    var section = sectionField.GetValue(set)!;
-
                     var newValue = FromColor(dlg.Color, normalized);
-                    childField.SetValue(section, newValue);
-                    sectionField.SetValue(set, section);
+                    path.SetValue(set, newValue);
                 });
 
                 preview.BackColor = dlg.Color;
@@ -251,13 +294,16 @@ public sealed class SettingsForm : Form
 
         panel.Controls.Add(row);
     }
-
-    private void AddColor4Field(SystemSettings settings, FlowLayoutPanel panel, FieldInfo sectionField, FieldInfo childField, string label)
+    private void AddColor4Field(
+        SystemSettings settings,
+        FlowLayoutPanel panel,
+        FieldPath path,
+        FieldInfo field,
+        string label)
     {
-        var sectionValue = sectionField.GetValue(settings)!;
-        Vector4 value = (Vector4)childField.GetValue(sectionValue)!;
+        Vector4 value = (Vector4)path.GetValue(settings)!;
 
-        var meta = childField.GetCustomAttribute<UiColorAttribute>();
+        var meta = field.GetCustomAttribute<UiColorAttribute>();
         bool normalized = meta?.Normalized ?? true;
 
         decimal min = 0m;
@@ -266,38 +312,30 @@ public sealed class SettingsForm : Form
 
         AddFloat(panel, $"{label} R", value.X, min, max, step, (v, root) =>
         {
-            var section = sectionField.GetValue(root)!;
-            var cur = (Vector4)childField.GetValue(section)!;
+            var cur = (Vector4)path.GetValue(root)!;
             cur.X = v;
-            childField.SetValue(section, cur);
-            sectionField.SetValue(root, section);
+            path.SetValue(root, cur);
         });
 
         AddFloat(panel, $"{label} G", value.Y, min, max, step, (v, root) =>
         {
-            var section = sectionField.GetValue(root)!;
-            var cur = (Vector4)childField.GetValue(section)!;
+            var cur = (Vector4)path.GetValue(root)!;
             cur.Y = v;
-            childField.SetValue(section, cur);
-            sectionField.SetValue(root, section);
+            path.SetValue(root, cur);
         });
 
         AddFloat(panel, $"{label} B", value.Z, min, max, step, (v, root) =>
         {
-            var section = sectionField.GetValue(root)!;
-            var cur = (Vector4)childField.GetValue(section)!;
+            var cur = (Vector4)path.GetValue(root)!;
             cur.Z = v;
-            childField.SetValue(section, cur);
-            sectionField.SetValue(root, section);
+            path.SetValue(root, cur);
         });
 
         AddFloat(panel, $"{label} A", value.W, min, max, step, (v, root) =>
         {
-            var section = sectionField.GetValue(root)!;
-            var cur = (Vector4)childField.GetValue(section)!;
+            var cur = (Vector4)path.GetValue(root)!;
             cur.W = v;
-            childField.SetValue(section, cur);
-            sectionField.SetValue(root, section);
+            path.SetValue(root, cur);
         });
     }
 

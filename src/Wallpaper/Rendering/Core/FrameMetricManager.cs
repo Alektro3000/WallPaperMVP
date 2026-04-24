@@ -1,11 +1,15 @@
 
 using System.Diagnostics;
+using System.Numerics;
 
-    public struct FrameMetric {
+public struct FrameMetric {
         public float DeltaTime;
         public uint FrameIndex;
         public int width;
         public int height;
+        public Vector2 size {
+            get => new Vector2(width, height);
+        }
     }
 public class FrameMetricManager
 {

@@ -1,11 +1,11 @@
 public class SystemSettings
 {
-    public MouseSettings mouseSettings = new MouseSettings(0.016f);
+    public MouseSystem.Settings mouseSettings = new MouseSystem.Settings();
     public TextSettings textSettings = new TextSettings();
     public WhirlSettings whirlSettings = new WhirlSettings();
 
     public StripSettings stripSettings = new StripSettings();
-    public CornerSettings cornerSettings = new CornerSettings();
+    public CornerSystem.Settings cornerSettings = new CornerSystem.Settings();
     public SystemSettings Clone()
     {
         return new SystemSettings

@@ -2,6 +2,8 @@ using System.Xml.Serialization;
 using Microsoft.VisualBasic.Devices;
 using Vortice.Direct3D12;
 
+namespace MouseSystem;
+
 [Shader("mouse\\compute.hlsl", "cs")]
 [Shader("mouse\\emitter.hlsl", "cs")]
 [Shader("mouse\\alive.hlsl", "cs")]
@@ -11,7 +13,7 @@ using Vortice.Direct3D12;
 [Shader("mouse\\copy.hlsl", "cs")]
 [Shader("mouse\\draw_count.hlsl", "cs")]
 [Shader("mouse\\draw_count_no_compact.hlsl", "cs")]
-public class MouseCompute : IDisposable
+public class Compute : IDisposable
 {
 
     //Compute
@@ -30,11 +32,11 @@ public class MouseCompute : IDisposable
     private ID3D12PipelineState PrefixAddOffsetPSO;
 
     private ParticleBuffers ParticleBuffers;
-    private MouseBuffer MouseBuffer;
+    private Buffer MouseBuffer;
     private CommonBuffers CommonBuffers;
     private FieldBuffers FieldBuffers;
 
-    public MouseCompute(ID3D12Device device, ParticleBuffers particleSystem, MouseBuffer mouseBuffer, CommonBuffers commonBuffers, FieldBuffers fieldBuffers)
+    public Compute(ID3D12Device device, ParticleBuffers particleSystem, Buffer mouseBuffer, CommonBuffers commonBuffers, FieldBuffers fieldBuffers)
     {
         ParticleBuffers = particleSystem;
         FieldBuffers = fieldBuffers;

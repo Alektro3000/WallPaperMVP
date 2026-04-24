@@ -1,16 +1,18 @@
 using System.Diagnostics;
 using System.Numerics;
 
-public class CornerController
+namespace CornerSystem;
+
+public class Controller
 {
     private readonly ParticleBuffers ParticleSystem;
 
-    public CornerController(ParticleBuffers partcileSystem)
+    public Controller(ParticleBuffers partcileSystem)
     {
         ParticleSystem = partcileSystem;
     }
 
-    public void UpdateStaticResource(ref CornerConstants constant, FrameMetric frameMetric, SystemSettings systemSettings)
+    public void UpdateStaticResource(ref Constants constant, FrameMetric frameMetric, SystemSettings systemSettings)
     {
         // Update static buffer
         float scale = frameMetric.width/(float)frameMetric.height;
