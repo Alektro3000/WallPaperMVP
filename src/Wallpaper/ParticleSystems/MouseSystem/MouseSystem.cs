@@ -12,7 +12,7 @@ public class MouseSystem : ParticleSystem
     {
         uint particleCount = 65536;
 
-        ParticleBuffers = new ParticleBuffers(context.device, context.commandList, context.HeapAllocator, particleCount);
+        ParticleBuffers = new ParticleBuffers(context.device, context.commandList, context.HeapAllocator, "MouseSystem", particleCount);
         GraphicPass = new GraphicPass(context.device, ParticleBuffers, context.commmonBuffers, context.GeometryBuffers, "vertex.hlsl", "pixel.hlsl");
         mouseBuffer = new Buffer(context.device, context.HeapAllocator, ParticleBuffers, particleCount);
         mouseCompute = new Compute(context.device, ParticleBuffers, mouseBuffer, context.commmonBuffers, context.fieldBuffers);
@@ -24,7 +24,7 @@ public class MouseSystem : ParticleSystem
     }
     public override void Dispatch(FrameResource currentResource)
     {
-        bool compact = currentResource.FrameIndex % 10 == 0;
+        bool compact = currentResource.FrameIndex % 1 == 0;
         mouseCompute.DispatchParticles(currentResource, ConstantKey, compact);
         if(!compact)
             ParticleBuffers.SwapBuffers();
@@ -37,7 +37,7 @@ public class MouseSystem : ParticleSystem
     }
     public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
     {
-        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<Constants>(device));
+        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<Constants>(device, "MouseSystem_Constant"));
     }
     public override void SwapBuffers()
     {

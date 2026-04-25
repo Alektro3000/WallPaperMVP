@@ -14,6 +14,13 @@
     <DefineConstants>$(DefineConstants);TRANSPARENT</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PublishSingleFile>true</PublishSingleFile>
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Serilog" Version="4.3.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
@@ -26,7 +33,9 @@
     <PackageReference Include="Vortice.DirectComposition" Version="3.8.3" />
     <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
   </ItemGroup>
-
+  <Target Name="CompileShaders" AfterTargets="Build">
+    <Exec Command="dotnet run --project &quot;$(MSBuildProjectDirectory)\..\..\tools\ShaderCompiler\ShaderCompiler.csproj&quot; -- &quot;$(TargetPath)&quot; &quot;$(MSBuildProjectDirectory)&quot; &quot;$([System.IO.Path]::GetDirectoryName($(TargetPath)))&quot;" />
+  </Target>
 	<ItemGroup>
 		<None Update="readme.txt">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

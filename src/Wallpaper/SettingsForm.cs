@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Windows.Forms;
 
 public sealed class SettingsForm : Form
@@ -43,6 +45,7 @@ public sealed class SettingsForm : Form
     }
 
     private readonly SettingsStore _store;
+    private readonly string _path;
 
     public event EventHandler? ExitRequested;
     protected override void OnResizeBegin(EventArgs e)
@@ -239,7 +242,6 @@ public sealed class SettingsForm : Form
         Vector3 value = (Vector3)path.GetValue(settings)!;
 
         var meta = childField.GetCustomAttribute<UiColorAttribute>();
-        bool normalized = meta?.Normalized ?? true;
 
         var row = new Panel
         {
@@ -262,7 +264,7 @@ public sealed class SettingsForm : Form
             Width = 40,
             Height = 24,
             BorderStyle = BorderStyle.FixedSingle,
-            BackColor = ToColor(value, normalized)
+            BackColor = ToColor(value)
         };
 
         var button = new Button
@@ -276,26 +278,27 @@ public sealed class SettingsForm : Form
 
         button.Click += (_, _) =>
         {
-            var section = path.GetValue(settings)!;
-            var current = (Vector3)childField.GetValue(section)!;
+            var current = (Vector3)path.GetValue(_store.GetSnapshot())!;
 
             using var dlg = new ColorDialog
             {
                 AllowFullOpen = true,
                 FullOpen = true,
                 SolidColorOnly = false,
-                Color = ToColor(current, normalized)
+                Color = ToColor(current)
             };
 
             if (dlg.ShowDialog(this) == DialogResult.OK)
             {
                 _store.Update(set =>
                 {
-                    var newValue = FromColor(dlg.Color, normalized);
+                    var newValue = FromColor(dlg.Color);
                     path.SetValue(set, newValue);
                 });
 
                 preview.BackColor = dlg.Color;
+
+                _store.Save();
             }
         };
 
@@ -405,6 +408,7 @@ public sealed class SettingsForm : Form
             {
                 setter((float)box.Value, root);
             });
+            _store.Save();
         };
 
         row.Controls.Add(text);
@@ -431,37 +435,23 @@ public sealed class SettingsForm : Form
             i > 0 && char.IsUpper(c) ? " " + c : c.ToString()));
     }
 
-    private static Color ToColor(Vector3 value, bool normalized)
+    private static Color ToColor(Vector3 value)
     {
         int r, g, b;
 
-        if (normalized)
-        {
-            r = FloatToByte(value.X);
-            g = FloatToByte(value.Y);
-            b = FloatToByte(value.Z);
-        }
-        else
-        {
-            r = ClampByte((int)MathF.Round(value.X));
-            g = ClampByte((int)MathF.Round(value.Y));
-            b = ClampByte((int)MathF.Round(value.Z));
-        }
+        r = FloatToByte(value.X);
+        g = FloatToByte(value.Y);
+        b = FloatToByte(value.Z);
 
         return Color.FromArgb(r, g, b);
     }
 
-    private static Vector3 FromColor(Color color, bool normalized)
+    private static Vector3 FromColor(Color color)
     {
-        if (normalized)
-        {
-            return new Vector3(
-                color.R / 255f,
-                color.G / 255f,
-                color.B / 255f);
-        }
-
-        return new Vector3(color.R, color.G, color.B);
+        return new Vector3(
+            color.R / 255f,
+            color.G / 255f,
+            color.B / 255f);
     }
 
     private static int FloatToByte(float x)

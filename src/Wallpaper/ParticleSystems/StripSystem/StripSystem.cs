@@ -10,7 +10,7 @@ public class StripSystem : ParticleSystem
     protected Controller ParticleSystemController;
     public StripSystem(InitContext context)
     {
-        ConstructRequiredFields(context, 2048 * 2, "strip/compute.hlsl", "strip/precompute.hlsl");
+        ConstructRequiredFields(context, 2048 * 2, "StripSystem", "strip/compute.hlsl", "strip/precompute.hlsl");
         ParticleSystemController = new Controller(ParticleBuffers);
     }
 
@@ -22,6 +22,6 @@ public class StripSystem : ParticleSystem
     }
     public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
     {
-        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<Constants>(device));
+        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<Constants>(device, "StripSystem_Constant"));
     }
 }

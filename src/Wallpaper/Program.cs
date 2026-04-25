@@ -24,7 +24,7 @@ class Program
         Win32.SetProcessDpiAwarenessContext(Win32.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
+            .MinimumLevel.Information()
             .WriteTo.Console()
             .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
         .CreateLogger();
@@ -41,7 +41,7 @@ class Program
         {
             Win32.AttachToWallpaper(hwnd);
         }
-        catch (InvalidOperationException _)
+        catch (InvalidOperationException)
         {
         }
         Win32.RegisterHotKey(
@@ -52,8 +52,10 @@ class Program
 
         try
         {
-
-            var store = new SettingsStore( new SystemSettings());
+            var settingsPath = Path.Combine(
+                AppContext.BaseDirectory,
+                "settings.json");
+            var store = new SettingsStore(settingsPath, new SystemSettings());
 
             using var formHost = new SettingsFormHost(store);
             formHost.Start();

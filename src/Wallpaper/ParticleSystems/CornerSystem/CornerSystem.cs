@@ -11,7 +11,7 @@ public class CornerSystem : ParticleSystem
     public CornerSystem(
         InitContext context)
     {
-        ConstructRequiredFields(context, 1024, "corner/compute.hlsl", "corner/precompute.hlsl");
+        ConstructRequiredFields(context, 1024, "CornerSystem", "corner/compute.hlsl", "corner/precompute.hlsl");
         ParticleSystemController = new Controller(ParticleBuffers);
     }
 
@@ -23,6 +23,6 @@ public class CornerSystem : ParticleSystem
     }
     public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
     {
-        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<Constants>(device));
+        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<Constants>(device, "CornerSystem_Constant"));
     }
 }

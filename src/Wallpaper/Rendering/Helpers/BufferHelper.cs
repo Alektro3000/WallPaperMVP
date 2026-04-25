@@ -102,9 +102,10 @@ public static class BufferHelper
         return buffer;
     }
 
-    public unsafe static ConstantBinding CreateConstantBuffer<T>(ID3D12Device device) where T : unmanaged
+    public unsafe static ConstantBinding CreateConstantBuffer<T>(ID3D12Device device, String Name) where T : unmanaged
     {
         var constant = CreateStaticBuffer<T>(device, out var mappedConstants);
+        constant.Name = Name;
         return new ConstantBinding()
         {
             ConstantBuffer = constant,

@@ -19,22 +19,26 @@ cbuffer Constants : register(b0)
     
     float Size;
     float2 GridSize;
-    uint _padding = 0;
+    uint _padding;
 
-    float3 Color;
-    float Radial;
+    float3 BeginColor;
+    uint _padding1;
+
+    float3 EndColor;
+    float InitVelocity;
 
     float LifeTime;
     float SpawnRate;
     float SpawnRatePerUnit;
-    float InitVelocity;
+    float SparkPercent;
+
+    float OffsetLerpStart;
+    float OffsetLerpEnd;
+    float StripWidth;
+    uint _padding2;
 
     float StationaryLerpStart;
     float StationaryLerpEnd;
-    float OffsetLerpStart;
-    float OffsetLerpEnd;
-
-    float StripWidth;
-    float SparkPercent;
     float StationaryVelocity;
+    float StationaryOffset;
 };

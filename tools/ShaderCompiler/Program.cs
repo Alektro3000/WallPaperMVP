@@ -119,7 +119,8 @@ class ShaderCompiler
         {
             ShaderModel = DxcShaderModel.Model6_0,
             OptimizationLevel = 3,  // -O3 optimization
-            EnableDebugInfo = false
+            EnableDebugInfo = false,
+            
         };
     }
     public static ReadOnlyMemory<byte> PreCompile(string path, string root, DxcShaderStage stage)

@@ -1,11 +1,15 @@
+using static SettingsForm;
+
 public sealed class SettingsStore
 {
     private readonly object _lock = new();
     private SystemSettings _settings;
+    private readonly string _path;
 
-    public SettingsStore(SystemSettings initialSettings)
+    public SettingsStore(string path, SystemSettings defaults)
     {
-        _settings = initialSettings.Clone();
+        _path = path;
+        _settings = SystemSettingsJson.LoadOrDefault(path, defaults);
     }
     
     public SystemSettings GetSnapshot()
@@ -22,5 +26,17 @@ public sealed class SettingsStore
         {
             update(_settings);
         }
+    }
+
+    public void Save()
+    {
+        lock (_lock)
+            SystemSettingsJson.Save(_path, _settings);
+    }
+
+    public void Load()
+    {
+        lock (_lock)
+            _settings = SystemSettingsJson.LoadOrDefault(_path, _settings);
     }
 }

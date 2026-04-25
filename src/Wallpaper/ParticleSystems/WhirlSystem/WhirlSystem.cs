@@ -11,7 +11,7 @@ public class WhirlSystem : ParticleSystem
     public WhirlSystem(
         InitContext context)
     {
-        ConstructRequiredFields(context, 2048, "whirl/compute.hlsl", "whirl/precompute.hlsl");
+        ConstructRequiredFields(context, 2048, "WhirlSystem", "whirl/compute.hlsl", "whirl/precompute.hlsl");
         ParticleSystemController = new Controller(ParticleBuffers);
     }
 
@@ -23,6 +23,6 @@ public class WhirlSystem : ParticleSystem
     }
     public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
     {
-        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<Constants>(device));
+        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<Constants>(device, "WhirlSystem_Constant"));
     }
 }

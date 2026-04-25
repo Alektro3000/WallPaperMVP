@@ -24,6 +24,7 @@ public sealed class Buffer : IDisposable
         BlockSum = CreateBlockSumBuffer(device, capacity);
         BlockSum.Name = "Mouse BlockList";
         DispatchArgs = CreateDispatchArgsBuffer(device);
+        DispatchArgs.Name = "Mouse Compute Dispatch Args";
 
         UavsStart = CreateMouseUavTable(device, heap, capacity, particleBuffers);
         SrvsStart = CreateMouseSrvTable(device, heap, capacity);

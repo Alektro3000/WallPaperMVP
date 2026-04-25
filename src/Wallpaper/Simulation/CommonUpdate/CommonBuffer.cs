@@ -15,6 +15,6 @@ public class CommonBuffers : IConstantBufferSet
 
     public void InitBuffers(FrameResource frameResource, ID3D12Device device)
     {
-        frameResource.AddBuffer(commonKey,BufferHelper.CreateConstantBuffer<CommonConstantBuffer>(device));
+        frameResource.AddBuffer(commonKey,BufferHelper.CreateConstantBuffer<CommonConstantBuffer>(device, "CommonBuffer"));
     }
 }

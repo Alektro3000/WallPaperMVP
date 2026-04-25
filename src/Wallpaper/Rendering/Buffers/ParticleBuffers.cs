@@ -37,32 +37,36 @@ public class ParticleBuffers : IDisposable
     public ID3D12Resource DrawArgs;
 
 
-    public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, Particle[] initParticles)
+    public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, string name, Particle[] initParticles)
     {
         particleCount = (uint)initParticles.Length;
-        EmitterBuffer = InitEmitterBuffer(device, commandList);
-        DrawArgs = InitDrawArgs(device, commandList, particleCount);
-        InitPingPong(device, commandList, heapAllocator, initParticles);
+        EmitterBuffer = InitEmitterBuffer(device, commandList, name);
+        DrawArgs = InitDrawArgs(device, commandList, particleCount, name);
+        InitPingPong(device, commandList, heapAllocator, initParticles, name);
     }
 
-    public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, uint particleCount)
+    public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, string name, uint particleCount)
     {
         this.particleCount = particleCount;
-        EmitterBuffer = InitEmitterBuffer(device, commandList);
-        DrawArgs = InitDrawArgs(device, commandList, particleCount);
-        InitPingPong(device, commandList, heapAllocator, generateParticles());
+        EmitterBuffer = InitEmitterBuffer(device, commandList, name);
+        DrawArgs = InitDrawArgs(device, commandList, particleCount, name);
+        InitPingPong(device, commandList, heapAllocator, generateParticles(), name);
     }
-    private ID3D12Resource InitDrawArgs(ID3D12Device device, ImmediateCommandList commandList, uint particleCount)
+    private ID3D12Resource InitDrawArgs(ID3D12Device device, ImmediateCommandList commandList, uint particleCount, string name)
     {
-        return BufferHelper.CreateDefaultBuffer(device, [new DrawIndexedArguments(GeometryBuffers.IndexCount, particleCount)], commandList,
+        var buf = BufferHelper.CreateDefaultBuffer(device, [new DrawIndexedArguments(GeometryBuffers.IndexCount, particleCount)], commandList,
             ResourceStates.IndirectArgument,
             ResourceFlags.AllowUnorderedAccess);
+        buf.Name = name + "_DrawArgs";
+        return buf;
     }
-    private ID3D12Resource InitEmitterBuffer(ID3D12Device device, ImmediateCommandList commandList)
+    private ID3D12Resource InitEmitterBuffer(ID3D12Device device, ImmediateCommandList commandList, string name)
     {
-        return BufferHelper.CreateDefaultBuffer(device, [new Emitter()], commandList,
+        var buf = BufferHelper.CreateDefaultBuffer(device, [new Emitter()], commandList,
             ResourceStates.VertexAndConstantBuffer,
             ResourceFlags.AllowUnorderedAccess);
+        buf.Name = name + "_EmitterBuffer";
+        return buf;
     }
     private Particle[] generateParticles()
     {
@@ -75,9 +79,9 @@ public class ParticleBuffers : IDisposable
                           .ToArray();
 
     }
-    private void InitPingPong(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, Particle[] initParticles)
+    private void InitPingPong(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, Particle[] initParticles, string name)
     {
-        
+
         for (int i = 0; i < particleBuffersLength; i++)
         {
             var srv = heapAllocator.Allocate()[0];
@@ -87,6 +91,7 @@ public class ParticleBuffers : IDisposable
             var buffer = BufferHelper.CreateDefaultBuffer<Particle>(device, initParticles, commandList,
                 ResourceStates.VertexAndConstantBuffer,
                 ResourceFlags.AllowUnorderedAccess);
+            buffer.Name = name + "_ParticleBuffer" + i; 
 
             device.CreateShaderResourceView(buffer, BufferHelper.CreateStructuredBufferSrvDesc<Particle>(particleCount), srv.Cpu);
 

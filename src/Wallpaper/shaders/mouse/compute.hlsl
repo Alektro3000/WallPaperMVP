@@ -55,8 +55,10 @@ float map01(float x, float minValue, float maxValue)
 
         // random offset around the trail
         float phase = PhaseShift + trailT * WaveCyclesOnSegment;
-        float offsetSize =  sin(phase) * StripWidth * OffsetScale;
-        loc += (WangHash(seed * 3 + 1) % 2 ? -1 : 1) * offsetSize * lerp(RndUnit, normal, MouseSpeedLerp);
+        float offsetSize = StripWidth * OffsetScale;
+        float2 trailOffset = (WangHash(seed * 3 + 1) % 2 ? -1 : 1) * sin(phase) * normal * offsetSize;
+        float2 stationaryOffset = RndUnit * StationaryOffset;
+        loc += lerp(stationaryOffset, trailOffset, MouseSpeedLerp);
 
         p.CustomData.xy = loc;
         p.Position = SnapToGrid(loc, GridSize);
@@ -66,12 +68,11 @@ float map01(float x, float minValue, float maxValue)
         p.CustomData1.x = isSpark;
         p.CustomData1.y = (WangHash(seed * 5  + 3) % 2 ) ? 1 : -1;
 
-        float ClampedSpeed = min(length(vel) * MouseSpeed, 1);
-        float VelSize = InitVelocity * ClampedSpeed * (1 - isSpark);
-        float2 TrailVelocity = velDir * VelSize;
+        float VelSize = InitVelocity * (1 - isSpark);
+        float2 trailVelocity = velDir * VelSize;
 
         float2 stationaryVelocity = RndUnit * StationaryVelocity * (1-MouseSpeedLerp);
-        p.Velocity = stationaryVelocity + TrailVelocity;
+        p.Velocity = lerp(stationaryVelocity, trailVelocity, MouseSpeedLerp);
         
         // initial visible age/lifetime
         p.Age = LifeTime * (0.9f - isSpark * 0.4 + 0.1f * Random(seed));
@@ -91,13 +92,9 @@ float map01(float x, float minValue, float maxValue)
     p.Position = SnapToGrid(p.CustomData.xy, GridSize);
 
     // velocity points away from current mouse position
-    float2 dir = p.CustomData.xy - MousePos;
-
-    float dirLen = saturate(0.2 - length(dir)) + 0.05;
-
     float scaledAge = saturate(p.Age / LifeTime);
     p.Size = (p.Age >= 0) * Size; 
-    p.Color = float4(Color, (scaledAge + 0.3 * p.CustomData1.x) * dirLen * 20);
+    p.Color = float4(lerp(EndColor, BeginColor, scaledAge), (scaledAge + 0.3 * p.CustomData1.x) );
     
     NextParticles[i] = p;
 }

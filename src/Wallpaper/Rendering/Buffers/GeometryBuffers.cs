@@ -27,12 +27,14 @@ public class GeometryBuffers : IDisposable
         ];
 
         VertexBuffer = BufferHelper.CreateDefaultBuffer<QuadVertex>(device, quadVertices, commandList);
+        VertexBuffer.Name = "VertexBuffer";
         VertexBufferView = BufferHelper.CreateVertexBufferView<QuadVertex>(VertexBuffer, (uint)quadVertices.Length);
         
 
 
         ushort[] quadIndices = [0, 1, 2, 0, 2, 3];
         IndexBuffer = BufferHelper.CreateDefaultBuffer<ushort>(device, quadIndices, commandList);
+        IndexBuffer.Name = "IndexBuffer";
         IndexBufferView = BufferHelper.CreateIndexBufferView(IndexBuffer, (uint)quadIndices.Length);
 
 

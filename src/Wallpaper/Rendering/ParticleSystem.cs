@@ -33,21 +33,21 @@ public abstract class ParticleSystem : IDisposable
     public virtual void SwapBuffers()
         => ParticleBuffers.SwapBuffers();
 
-    protected void ConstructRequiredFields(InitContext context, uint bufferSize, string compute, string precompute, string vertex = "vertex.hlsl", string pixel = "pixel.hlsl")
+    protected void ConstructRequiredFields(InitContext context, uint bufferSize, string name, string compute, string precompute, string vertex = "vertex.hlsl", string pixel = "pixel.hlsl")
     {
-        ParticleBuffers = new ParticleBuffers(context.device, context.commandList, context.HeapAllocator, bufferSize);
-        ConstructPass(context, compute, precompute, vertex, pixel);
+        ParticleBuffers = new ParticleBuffers(context.device, context.commandList, context.HeapAllocator, name, bufferSize);
+        ConstructPass(context, name, compute, precompute, vertex, pixel);
     }
-    protected void ConstructRequiredFields(InitContext context, Particle[] initParticles, string compute, string precompute, string vertex = "vertex.hlsl", string pixel = "pixel.hlsl")
+    protected void ConstructRequiredFields(InitContext context, Particle[] initParticles, string name, string compute, string precompute, string vertex = "vertex.hlsl", string pixel = "pixel.hlsl")
     {
-        ParticleBuffers = new ParticleBuffers(context.device, context.commandList, context.HeapAllocator, initParticles);
-        ConstructPass(context, compute, precompute, vertex, pixel);
+        ParticleBuffers = new ParticleBuffers(context.device, context.commandList, context.HeapAllocator, name, initParticles);
+        ConstructPass(context, name, compute, precompute, vertex, pixel);
     }
 
-    private void ConstructPass(InitContext context, string compute, string precompute, string vertex = "vertex.hlsl", string pixel = "pixel.hlsl")
+    private void ConstructPass(InitContext context, string name, string compute, string precompute, string vertex = "vertex.hlsl", string pixel = "pixel.hlsl")
     {
         GraphicPass = new GraphicPass(context.device, ParticleBuffers, context.commmonBuffers, context.GeometryBuffers, vertex, pixel);
-        ComputePass = new ComputePass(context.device, ParticleBuffers,  context.commmonBuffers, context.fieldBuffers, compute, precompute);
+        ComputePass = new ComputePass(context.device, ParticleBuffers, context.commmonBuffers, context.fieldBuffers, compute, precompute);
         ConstantKey = context.FrameManager.ReserveBuffer();
     }
     

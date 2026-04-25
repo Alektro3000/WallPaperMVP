@@ -13,7 +13,7 @@ public class TextSystem : ParticleSystem
     public TextSystem(
         InitContext context)
     {
-        ConstructRequiredFields(context, generateParticles(), "text/compute.hlsl", "text/precompute.hlsl");
+        ConstructRequiredFields(context, generateParticles(), "TextSystem", "text/compute.hlsl", "text/precompute.hlsl");
         Controller = new Controller(ParticleBuffers);
     }
 
@@ -25,7 +25,7 @@ public class TextSystem : ParticleSystem
     }
     public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
     {
-        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<Constants>(device));
+        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<Constants>(device, "TextSystem_Constant"));
     }
     private Point GetRandomWhitePixelWeightedTop(Bitmap bitmap)
     {

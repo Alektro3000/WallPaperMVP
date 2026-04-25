@@ -38,6 +38,7 @@ public class FieldBuffers : IConstantBufferSet
             textureDesc,
             ResourceStates.AllShaderResource
         );
+        FieldResource.Name = "Field_Texture";
 
         //Creating Handler Uav
         (var uavDescriptorHandle, UAVFieldDescriptor) = heap.Allocate()[0];
@@ -80,7 +81,7 @@ public class FieldBuffers : IConstantBufferSet
 
     public void InitBuffers(FrameResource frameResource, ID3D12Device device)
     {
-        frameResource.AddBuffer(fieldKey,BufferHelper.CreateConstantBuffer<FieldConstantBuffer>(device));
+        frameResource.AddBuffer(fieldKey,BufferHelper.CreateConstantBuffer<FieldConstantBuffer>(device, "Field Constants"));
     }
 
     public void Dispose()
