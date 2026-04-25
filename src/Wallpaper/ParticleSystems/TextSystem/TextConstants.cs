@@ -2,16 +2,18 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
+namespace TextSystem;
+
 [StructLayout(LayoutKind.Sequential)]
-public struct TextConstants
+public struct Constants
 {
     public uint ParticleCount;
     public Vector3 padding;
-    public TextSettings Settings;
+    public Settings Settings;
 }
 
 [StructLayout(LayoutKind.Sequential)]
-public struct TextSettings
+public struct Settings
 {
     
     [UiLabel("Begin Color")]
@@ -47,7 +49,7 @@ public struct TextSettings
     [UiRange(0f, 1f, 0.01f)]
     public float InitOffset = 0.5f;
 
-    public TextSettings()
+    public Settings()
     {
     }
 }

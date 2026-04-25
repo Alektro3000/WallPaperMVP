@@ -5,10 +5,10 @@ namespace CornerSystem;
 
 [Shader("corner\\compute.hlsl", "cs")]
 [Shader("corner\\precompute.hlsl", "cs")]
-public class System : ParticleSystem
+public class CornerSystem : ParticleSystem
 {
     protected Controller ParticleSystemController;
-    public System(
+    public CornerSystem(
         InitContext context)
     {
         ConstructRequiredFields(context, 1024, "corner/compute.hlsl", "corner/precompute.hlsl");

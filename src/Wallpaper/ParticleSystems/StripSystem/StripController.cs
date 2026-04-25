@@ -1,17 +1,18 @@
 using System.Diagnostics;
 using System.Numerics;
 
-public class StripController
+namespace StripSystem;
+public class Controller
 {
     private readonly ParticleBuffers ParticleSystem;
 
 
-    public StripController(ParticleBuffers partcileSystem)
+    public Controller(ParticleBuffers partcileSystem)
     {
         ParticleSystem = partcileSystem;
     }
 
-    public void UpdateStaticResource(ref StripConstants constant, FrameMetric frameMetric, SystemSettings systemSettings)
+    public void UpdateStaticResource(ref Constants constant, FrameMetric frameMetric, SystemSettings systemSettings)
     {
         // Update static buffer
         constant.ParticleCount = ParticleSystem.particleCount;
@@ -23,8 +24,8 @@ public class StripController
         constant.strip4 = CreateStrip(0.5f, +0.2f, 1.3f);
     }
 
-    public StripConstants.StripDescription CreateStrip(float x, float y, float ys)
+    public Constants.StripDescription CreateStrip(float x, float y, float ys)
     {
-        return new StripConstants.StripDescription(x+1,y,0.05f,ys);
+        return new Constants.StripDescription(x+1,y,0.05f,ys);
     }
 }

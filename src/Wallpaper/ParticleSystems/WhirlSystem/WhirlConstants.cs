@@ -2,21 +2,24 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
+
+namespace WhirlSystem;
+
 [StructLayout(LayoutKind.Sequential)]
-public struct WhirlConstants
+public struct Constants
 {
     public uint ParticleCount;
     public Vector3 _padding;
-    public WhirlSettings WhirlSettings = new WhirlSettings();
+    public Settings WhirlSettings = new Settings();
 
-    public WhirlConstants()
+    public Constants()
     {
     }
 }
 
 
 [StructLayout(LayoutKind.Sequential)]
-public struct WhirlSettings
+public struct Settings
 {
 
     [UiLabel("Begin Color")]
@@ -69,7 +72,7 @@ public struct WhirlSettings
     [UiRange(0f, 1f, 0.01f)]
     public float InitOffset = 0.4f;
 
-    public WhirlSettings()
+    public Settings()
     {
     }
 }

@@ -3,12 +3,12 @@ using Vortice.Direct3D12;
 
 namespace MouseSystem;
 
-public class System : ParticleSystem
+public class MouseSystem : ParticleSystem
 {
     protected Controller ParticleSystemController;
     protected Compute mouseCompute;
     protected Buffer mouseBuffer;
-    public System(InitContext context)
+    public MouseSystem(InitContext context)
     {
         uint particleCount = 65536;
 

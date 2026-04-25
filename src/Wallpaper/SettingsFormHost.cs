@@ -25,7 +25,8 @@ public sealed class SettingsFormHost : IDisposable
         _thread = new Thread(ThreadMain)
         {
             IsBackground = true,
-            Name = "Settings UI"
+            Name = "Settings UI",
+            Priority = ThreadPriority.BelowNormal
         };
         _thread.SetApartmentState(ApartmentState.STA);
         _thread.Start();

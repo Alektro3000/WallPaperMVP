@@ -1,17 +1,19 @@
 using System.Diagnostics;
 using System.Numerics;
 
-public class TextController
+namespace TextSystem;
+
+public class Controller
 {
     private readonly ParticleBuffers ParticleSystem;
 
 
-    public TextController(ParticleBuffers partcileSystem)
+    public Controller(ParticleBuffers partcileSystem)
     {
         ParticleSystem = partcileSystem;
     }
 
-    public void UpdateConstantBuffer(ref TextConstants constant, FrameMetric frameMetric, SystemSettings systemSettings)
+    public void UpdateConstantBuffer(ref Constants constant, FrameMetric frameMetric, SystemSettings systemSettings)
     {
         // Update static buffer
         constant.ParticleCount = ParticleSystem.particleCount;

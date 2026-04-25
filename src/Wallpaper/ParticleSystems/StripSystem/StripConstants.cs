@@ -2,8 +2,10 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
+namespace StripSystem;
+
 [StructLayout(LayoutKind.Sequential)]
-public struct StripConstants
+public struct Constants
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct StripDescription
@@ -24,10 +26,10 @@ public struct StripConstants
     public StripDescription strip2;
     public StripDescription strip3;
     public StripDescription strip4;
-    public StripSettings stripSettings;
+    public Settings stripSettings;
 }
 
-public struct StripSettings
+public struct Settings
 {
     [UiLabel("Color")]
     [UiColor(normalized: true)]
@@ -56,7 +58,7 @@ public struct StripSettings
     [UiRange(0f, 20f, 0.01f)]
     public float LifeTime = 3f;
 
-    public StripSettings()
+    public Settings()
     {
     }
 }

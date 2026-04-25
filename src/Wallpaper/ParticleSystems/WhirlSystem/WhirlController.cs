@@ -1,17 +1,19 @@
 using System.Diagnostics;
 using System.Numerics;
 
-public class WhirlController
+namespace WhirlSystem;
+
+public class Controller
 {
     private readonly ParticleBuffers ParticleSystem;
 
 
-    public WhirlController(ParticleBuffers partcileSystem)
+    public Controller(ParticleBuffers partcileSystem)
     {
         ParticleSystem = partcileSystem;
     }
 
-    public void UpdateStaticResource(ref WhirlConstants constant, FrameMetric frameMetric, SystemSettings systemSettings)
+    public void UpdateStaticResource(ref Constants constant, FrameMetric frameMetric, SystemSettings systemSettings)
     {
         // Update static buffer
         constant.ParticleCount = ParticleSystem.particleCount;

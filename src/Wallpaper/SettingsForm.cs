@@ -45,6 +45,17 @@ public sealed class SettingsForm : Form
     private readonly SettingsStore _store;
 
     public event EventHandler? ExitRequested;
+    protected override void OnResizeBegin(EventArgs e)
+    {
+        base.OnResizeBegin(e);
+        SuspendLayout();
+    }
+
+    protected override void OnResizeEnd(EventArgs e)
+    {
+        ResumeLayout(true);
+        base.OnResizeEnd(e);
+    }
     public SettingsForm(SettingsStore store)
     {
         _store = store;

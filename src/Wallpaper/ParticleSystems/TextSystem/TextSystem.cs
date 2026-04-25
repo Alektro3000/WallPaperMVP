@@ -2,29 +2,31 @@
 using System.Numerics;
 using Vortice.Direct3D12;
 
+namespace TextSystem;
+
 [Shader("text\\compute.hlsl", "cs")]
 [Shader("text\\precompute.hlsl", "cs")]
 public class TextSystem : ParticleSystem
 {
-    protected TextController ParticleSystemController;
+    protected Controller Controller;
+    Random random = new Random();
     public TextSystem(
         InitContext context)
     {
         ConstructRequiredFields(context, generateParticles(), "text/compute.hlsl", "text/precompute.hlsl");
-        ParticleSystemController = new TextController(ParticleBuffers);
+        Controller = new Controller(ParticleBuffers);
     }
 
     public override void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings)
     {
-        ParticleSystemController.UpdateConstantBuffer(
-            ref currentResource.GetBufferConstantRef<TextConstants>(ConstantKey),
+        Controller.UpdateConstantBuffer(
+            ref currentResource.GetBufferConstantRef<Constants>(ConstantKey),
             currentResource.frameMetric, systemSettings);
     }
     public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
     {
-        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<TextConstants>(device));
+        frameResource.AddBuffer(ConstantKey,BufferHelper.CreateConstantBuffer<Constants>(device));
     }
-    Random random = new Random();
     private Point GetRandomWhitePixelWeightedTop(Bitmap bitmap)
     {
         const int MaxAttempts = 100;
