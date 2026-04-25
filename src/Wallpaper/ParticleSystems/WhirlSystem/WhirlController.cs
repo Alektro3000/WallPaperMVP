@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Numerics;
 
-namespace WhirlSystem;
+namespace ParticleSystems.Whirl;
 
 public class Controller
 {
@@ -17,6 +17,6 @@ public class Controller
     {
         // Update static buffer
         constant.ParticleCount = ParticleSystem.particleCount;
-        constant.WhirlSettings = systemSettings.whirlSettings;
+        constant.Settings = systemSettings.GetSettings<Settings>().gpuSettings;
     }
 }

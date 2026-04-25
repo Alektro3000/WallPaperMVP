@@ -1,18 +1,18 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace CornerSystem;
+namespace ParticleSystems.Corner;
 
 [StructLayout(LayoutKind.Sequential)]
 public struct Constants
 {
     public uint ParticleCount;
     private Vector3 _padding;
-    public Settings settings;
+    public GpuSettings Settings;
 }
 
 [StructLayout(LayoutKind.Sequential)]
-public struct Settings
+public struct GpuSettings
 {
     [UiLabel("Color")]
     [UiColor]
@@ -57,7 +57,18 @@ public struct Settings
     [UiRange(0.01f, 100f, 0.01f)]
     public float Velocity = 1f;
 
-    public Settings()
+    public GpuSettings()
     {
     }
+}
+
+public struct Settings : ISettings
+{
+    public CommonInitSettings initSettings = new CommonInitSettings(1024);
+    public GpuSettings gpuSettings = new GpuSettings();
+    public Settings()
+    {
+        
+    }
+
 }

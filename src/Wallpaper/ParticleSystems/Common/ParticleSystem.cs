@@ -1,6 +1,7 @@
 using System.Reflection.Metadata;
 using Vortice.Direct3D12;
 
+
 [Shader("vertex.hlsl", "vs")]
 [Shader("pixel.hlsl", "ps")]
 public abstract class ParticleSystem : IDisposable
@@ -9,13 +10,13 @@ public abstract class ParticleSystem : IDisposable
     {
         public ID3D12Device device;
         public ImmediateCommandList commandList;
-        public GeometryBuffers GeometryBuffers;
-        public HeapAllocator HeapAllocator; 
-        public FrameManager FrameManager;
+        public GeometryBuffers geometryBuffers;
+        public HeapAllocator heapAllocator; 
+        public FrameManager frameManager;
         public CommonBuffers commmonBuffers;
         public FieldBuffers fieldBuffers;
     }
-    
+    protected bool Active;
     protected IComputePass ComputePass;
 
     protected GraphicPass GraphicPass;
@@ -29,26 +30,26 @@ public abstract class ParticleSystem : IDisposable
     public void Render(FrameResource currentResource)
         => GraphicPass.Render(currentResource, ConstantKey);
     
-    public abstract void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings);
+    public abstract void UpdateConstantBuffers(FrameResource currentResource, ParticleSystems.SystemSettings systemSettings);
     public virtual void SwapBuffers()
         => ParticleBuffers.SwapBuffers();
 
     protected void ConstructRequiredFields(InitContext context, uint bufferSize, string name, string compute, string precompute, string vertex = "vertex.hlsl", string pixel = "pixel.hlsl")
     {
-        ParticleBuffers = new ParticleBuffers(context.device, context.commandList, context.HeapAllocator, name, bufferSize);
+        ParticleBuffers = new ParticleBuffers(context.device, context.commandList, context.heapAllocator, name, bufferSize);
         ConstructPass(context, name, compute, precompute, vertex, pixel);
     }
     protected void ConstructRequiredFields(InitContext context, Particle[] initParticles, string name, string compute, string precompute, string vertex = "vertex.hlsl", string pixel = "pixel.hlsl")
     {
-        ParticleBuffers = new ParticleBuffers(context.device, context.commandList, context.HeapAllocator, name, initParticles);
+        ParticleBuffers = new ParticleBuffers(context.device, context.commandList, context.heapAllocator, name, initParticles);
         ConstructPass(context, name, compute, precompute, vertex, pixel);
     }
 
     private void ConstructPass(InitContext context, string name, string compute, string precompute, string vertex = "vertex.hlsl", string pixel = "pixel.hlsl")
     {
-        GraphicPass = new GraphicPass(context.device, ParticleBuffers, context.commmonBuffers, context.GeometryBuffers, vertex, pixel);
+        GraphicPass = new GraphicPass(context.device, ParticleBuffers, context.commmonBuffers, context.geometryBuffers, vertex, pixel);
         ComputePass = new ComputePass(context.device, ParticleBuffers, context.commmonBuffers, context.fieldBuffers, compute, precompute);
-        ConstantKey = context.FrameManager.ReserveBuffer();
+        ConstantKey = context.frameManager.ReserveBuffer();
     }
     
     public abstract void InitBuffer(FrameResource frameResource, ID3D12Device device);

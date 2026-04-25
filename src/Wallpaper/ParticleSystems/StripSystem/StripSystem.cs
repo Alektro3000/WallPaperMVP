@@ -1,17 +1,25 @@
 
 using Vortice.Direct3D12;
 
-namespace StripSystem;
+namespace ParticleSystems.Strip;
 
 [Shader("strip\\compute.hlsl", "cs")]
 [Shader("strip\\precompute.hlsl", "cs")]
-public class StripSystem : ParticleSystem
+public class System : ParticleSystem, IParticleSystem<Settings>
 {
     protected Controller ParticleSystemController;
-    public StripSystem(InitContext context)
+    public System(InitContext context, Settings settings)
     {
-        ConstructRequiredFields(context, 2048 * 2, "StripSystem", "strip/compute.hlsl", "strip/precompute.hlsl");
+        ConstructRequiredFields(context, (uint)settings.initSettings.MaxParticleAmount, "StripSystem", "strip/compute.hlsl", "strip/precompute.hlsl");
         ParticleSystemController = new Controller(ParticleBuffers);
+    }
+    
+    [SystemBuilder]
+    public static System? Create(InitContext context, Settings settings)
+    {
+        if(settings.initSettings.MaxParticleAmount <= 0)
+            return null;
+        return new System(context, settings);
     }
 
     public override void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings)

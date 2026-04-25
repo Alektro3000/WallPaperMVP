@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using Vortice.Direct3D12;
 using Vortice.DXGI;
 
-namespace MouseSystem;
+namespace ParticleSystems.Mouse;
 
 public sealed class Buffer : IDisposable
 {

@@ -3,14 +3,14 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 
 
-namespace WhirlSystem;
+namespace ParticleSystems.Whirl;
 
 [StructLayout(LayoutKind.Sequential)]
 public struct Constants
 {
     public uint ParticleCount;
     public Vector3 _padding;
-    public Settings WhirlSettings = new Settings();
+    public GpuSettings Settings = new GpuSettings();
 
     public Constants()
     {
@@ -19,7 +19,7 @@ public struct Constants
 
 
 [StructLayout(LayoutKind.Sequential)]
-public struct Settings
+public struct GpuSettings
 {
 
     [UiLabel("Begin Color")]
@@ -72,7 +72,19 @@ public struct Settings
     [UiRange(0f, 1f, 0.01f)]
     public float InitOffset = 0.4f;
 
-    public Settings()
+    public GpuSettings()
     {
     }
+}
+
+
+public struct Settings : ISettings
+{
+    public CommonInitSettings initSettings = new CommonInitSettings(2048);
+    public GpuSettings gpuSettings = new GpuSettings();
+    public Settings()
+    {
+        
+    }
+
 }

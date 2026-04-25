@@ -2,7 +2,7 @@ using System.Xml.Serialization;
 using Microsoft.VisualBasic.Devices;
 using Vortice.Direct3D12;
 
-namespace MouseSystem;
+namespace ParticleSystems.Mouse;
 
 [Shader("mouse\\compute.hlsl", "cs")]
 [Shader("mouse\\emitter.hlsl", "cs")]

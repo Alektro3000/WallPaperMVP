@@ -1,7 +1,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace MouseSystem;
+namespace ParticleSystems.Mouse;
 
 [StructLayout(LayoutKind.Sequential)]
 public struct CpuGeneratedConstants
@@ -33,7 +33,7 @@ public struct CpuGeneratedConstants
 public struct Constants
 {
     public CpuGeneratedConstants cpuGeneratedSettings = new CpuGeneratedConstants();
-    public GpuSettings settings = new GpuSettings();
+    public GpuSettings Settings = new GpuSettings();
 
     public Constants()
     {

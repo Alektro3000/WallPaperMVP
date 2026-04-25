@@ -1,4 +1,5 @@
 
+using ParticleSystems;
 using Serilog;
 
 public sealed class Renderer : IDisposable
@@ -16,7 +17,7 @@ public sealed class Renderer : IDisposable
 
     private readonly DebugPass debugPass;
     public readonly ParticleSystem[] ParticleSystems;
-    public Renderer(IntPtr hwnd, int width, int height)
+    public Renderer(SystemSettings systemSettings, IntPtr hwnd, int width, int height)
     {
         Context = new GraphicsContext();
         Log.Debug("Graphic Context initialized");
@@ -56,21 +57,15 @@ public sealed class Renderer : IDisposable
         {
             device = Context.Device,
             commandList = commandList,
-            GeometryBuffers = GeometryBuffers,
-            HeapAllocator = HeapAllocator,
-            FrameManager = FrameManager,
+            geometryBuffers = GeometryBuffers,
+            heapAllocator = HeapAllocator,
+            frameManager = FrameManager,
             commmonBuffers = common,
-            fieldBuffers = field
+            fieldBuffers = field,
         };
         
-        ParticleSystems = [
+        ParticleSystems = ParticleSystemReflection.CreateParticleSystems(systemSettings, context).ToArray();
         
-            new TextSystem.TextSystem(context),
-            new WhirlSystem.WhirlSystem(context),
-            new StripSystem.StripSystem(context),
-            new CornerSystem.CornerSystem(context),
-            new MouseSystem.MouseSystem(context),
-        ];
         FrameManager.PopulateConstantBuffers();
         FrameManager.ExecuteForEachFrame(x =>
         {

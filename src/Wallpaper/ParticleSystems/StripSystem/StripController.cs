@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Numerics;
 
-namespace StripSystem;
+namespace ParticleSystems.Strip;
 public class Controller
 {
     private readonly ParticleBuffers ParticleSystem;
@@ -16,7 +16,7 @@ public class Controller
     {
         // Update static buffer
         constant.ParticleCount = ParticleSystem.particleCount;
-        constant.stripSettings = systemSettings.stripSettings;
+        constant.Settings = systemSettings.GetSettings<Settings>().gpuSettings;
         constant.strip0 = CreateStrip(0.1f, 0f, 1f);
         constant.strip1 = CreateStrip(0.2f, -0.1f, 1.1f);
         constant.strip2 = CreateStrip(0.3f, +0.1f, 1.2f);

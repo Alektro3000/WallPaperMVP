@@ -1,18 +1,26 @@
 
 using Vortice.Direct3D12;
 
-namespace CornerSystem;
+namespace ParticleSystems.Corner;
 
 [Shader("corner\\compute.hlsl", "cs")]
 [Shader("corner\\precompute.hlsl", "cs")]
-public class CornerSystem : ParticleSystem
+public class System : ParticleSystem, IParticleSystem<Settings>
 {
     protected Controller ParticleSystemController;
-    public CornerSystem(
-        InitContext context)
+    public System(
+        InitContext context, Settings settings)
     {
-        ConstructRequiredFields(context, 1024, "CornerSystem", "corner/compute.hlsl", "corner/precompute.hlsl");
+        ConstructRequiredFields(context, (uint)settings.initSettings.MaxParticleAmount, "CornerSystem", "corner/compute.hlsl", "corner/precompute.hlsl");
         ParticleSystemController = new Controller(ParticleBuffers);
+    }
+    
+    [SystemBuilder]
+    public static System? Create(InitContext context, Settings settings)
+    {
+        if(settings.initSettings.MaxParticleAmount <= 0)
+            return null;
+        return new System(context, settings);
     }
 
     public override void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings)

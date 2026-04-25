@@ -5,14 +5,15 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows.Forms;
+using ParticleSystems;
 
 public sealed class SettingsForm : Form
 {
-    private sealed record FieldPath(FieldInfo[] Fields)
+    private sealed record FieldPath(Type InitType, FieldInfo[] Fields)
     {
         public object? GetValue(SystemSettings root)
         {
-            object? current = root;
+            object? current = root.GetSettings(InitType);
 
             foreach (var field in Fields)
                 current = field.GetValue(current);
@@ -22,7 +23,7 @@ public sealed class SettingsForm : Form
 
         public void SetValue(SystemSettings root, object? value)
         {
-            SetValueRecursive(root, 0, value);
+            SetValueRecursive(root.GetSettings(InitType), 0, value);
         }
 
         private void SetValueRecursive(object current, int index, object? value)
@@ -122,36 +123,29 @@ public sealed class SettingsForm : Form
 
     private void BuildTabsFromSystemSettings(TabControl tabs)
     {
-        var sectionFields = typeof(SystemSettings).GetFields(BindingFlags.Public | BindingFlags.Instance);
-
         var systemValues = _store.GetSnapshot();
-        foreach (var sectionField in sectionFields)
+        foreach (var settingsTypes in systemValues.GetSavedTypes())
         {
-            var sectionValue = sectionField.GetValue(systemValues);
-            if (sectionValue == null)
-                continue;
-
-            var tab = new TabPage(ToDisplayName(sectionField.Name));
+            var tab = new TabPage(ToDisplayName(settingsTypes.FullName));
             var panel = CreatePanel(tab);
 
-            BuildControlsForSection(panel, sectionField);
+            BuildControlsForSection(panel, systemValues, settingsTypes);
 
             tabs.TabPages.Add(tab);
         }
     }
 
-    private void BuildControlsForSection(FlowLayoutPanel panel, FieldInfo sectionField)
+    private void BuildControlsForSection(FlowLayoutPanel panel, SystemSettings settings, Type FieldType)
     {
-        var settings = _store.GetSnapshot();
+        AddFieldsRecursive(settings, panel, FieldType,
+            FieldType,
 
-        AddFieldsRecursive(settings, panel,
-            sectionField.FieldType,
-            [sectionField]);
+            []);
     }
 
     private void AddFieldsRecursive(
         SystemSettings settings,
-        FlowLayoutPanel panel,
+        FlowLayoutPanel panel, Type initType,
         Type type,
         List<FieldInfo> path)
     {
@@ -162,7 +156,7 @@ public sealed class SettingsForm : Form
                         ?? ToDisplayName(field.Name);
 
             var currentPath = path.Append(field).ToArray();
-            var fieldPath = new FieldPath(currentPath);
+            var fieldPath = new FieldPath(initType, currentPath);
 
             if (fieldType == typeof(float))
             {
@@ -182,15 +176,63 @@ public sealed class SettingsForm : Form
             {
                 AddColor4Field(settings, panel, fieldPath, field, label);
             }
+            else if (fieldType == typeof(string))
+            {
+                AddStringField(settings, panel, fieldPath, field, label);
+            }
             else if (!fieldType.IsPrimitive &&
                     !fieldType.IsEnum &&
                     fieldType != typeof(string))
             {
-                AddFieldsRecursive(settings, panel, fieldType, currentPath.ToList());
+                AddFieldsRecursive(settings, panel, initType, fieldType, currentPath.ToList());
             }
         }
     }
+    private void AddStringField(
+        SystemSettings settings,
+        FlowLayoutPanel panel,
+        FieldPath path,
+        FieldInfo childField,
+        string label)
+    {
+        string value = (string?)path.GetValue(settings) ?? "";
 
+        var row = new Panel
+        {
+            Width = 340,
+            Height = 32
+        };
+
+        var text = new Label
+        {
+            Text = label,
+            Left = 0,
+            Top = 8,
+            Width = 150
+        };
+
+        var box = new TextBox
+        {
+            Left = 160,
+            Top = 4,
+            Width = 160,
+            Text = value
+        };
+
+        box.TextChanged += (_, _) =>
+        {
+            _store.Update(root =>
+            {
+                path.SetValue(root, box.Text);
+            });
+
+            _store.Save();
+        };
+
+        row.Controls.Add(text);
+        row.Controls.Add(box);
+        panel.Controls.Add(row);
+    }
     private void AddFloatField(SystemSettings settings, FlowLayoutPanel panel, FieldPath path, FieldInfo childField, string label)
     {
         float value = (float)path.GetValue(settings)!;
@@ -428,8 +470,11 @@ public sealed class SettingsForm : Form
         if (string.IsNullOrWhiteSpace(name))
             return name;
 
-        if (name.EndsWith("Settings", StringComparison.Ordinal))
-            name = name[..^"Settings".Length];
+        if (name.EndsWith(".Settings", StringComparison.Ordinal))
+            name = name[..^".Settings".Length];
+
+        if (name.StartsWith("ParticleSystems.", StringComparison.Ordinal))
+            name = name["ParticleSystems.".Length..];
 
         return string.Concat(name.Select((c, i) =>
             i > 0 && char.IsUpper(c) ? " " + c : c.ToString()));

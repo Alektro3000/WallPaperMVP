@@ -2,19 +2,28 @@
 using System.Numerics;
 using Vortice.Direct3D12;
 
-namespace TextSystem;
+namespace ParticleSystems.Text;
+
 
 [Shader("text\\compute.hlsl", "cs")]
 [Shader("text\\precompute.hlsl", "cs")]
-public class TextSystem : ParticleSystem
+public class System : ParticleSystem, IParticleSystem<Settings>
 {
     protected Controller Controller;
     Random random = new Random();
-    public TextSystem(
-        InitContext context)
+    public System(
+        InitContext context, Settings settings)
     {
-        ConstructRequiredFields(context, generateParticles(), "TextSystem", "text/compute.hlsl", "text/precompute.hlsl");
+        ConstructRequiredFields(context, generateParticles(settings.initSettings), "TextSystem", "text/compute.hlsl", "text/precompute.hlsl");
         Controller = new Controller(ParticleBuffers);
+    }
+
+    [SystemBuilder]
+    public static System? Create(InitContext context, Settings settings)
+    {
+        if(settings.initSettings.MaxParticleAmount <= 0)
+            return null;
+        return new System(context, settings);
     }
 
     public override void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings)
@@ -80,16 +89,16 @@ public class TextSystem : ParticleSystem
 
         return candidates[^1].point;
     }
-    private Bitmap GenerateBitmap()
+    private Bitmap GenerateBitmap(InitSettings settings)
     {
-        string text = "Встречая страх, создавай будущее";
+        string text = settings.Text;
 
-        var bitmap = new Bitmap(900, 120);
+        var bitmap = new Bitmap((int)settings.Resolution.X, (int)settings.Resolution.Y);
         using var g = Graphics.FromImage(bitmap);
 
         g.Clear(Color.Black);
 
-        using var font = new Font("Arial", 24, FontStyle.Bold);
+        using var font = new Font(settings.Font, settings.TextSize, FontStyle.Bold);
         using var brush = new SolidBrush(Color.White);
         var format = new StringFormat()
         {
@@ -97,20 +106,20 @@ public class TextSystem : ParticleSystem
             LineAlignment = StringAlignment.Center
         };
 
-        g.DrawString(text, font, brush, new RectangleF(0,0,bitmap.Width,bitmap.Height),  format);
+        g.DrawString(text, font, brush, new RectangleF(0,0,bitmap.Width,bitmap.Height), format);
         return bitmap;
     }
-    private Particle[] generateParticles()
+    private Particle[] generateParticles(InitSettings settings)
     {
-        using var text = GenerateBitmap();
-        float size = 0.0028f;
-        Vector2 centerPos = new Vector2(0f, -0.4f);
+        using var text = GenerateBitmap(settings);
+        float size = settings.PixelSize;
+        Vector2 centerPos = settings.CenterPos;
 
         Vector2 bitmapSize = new Vector2(text.Width, text.Height); 
         Vector2 size2d = size * bitmapSize;
         Vector2 StartPos = centerPos - size2d*0.5f;
         Vector2 ParticleScaling = new Vector2(size,-size);
-        return Enumerable.Range(0, 4096)
+        return Enumerable.Range(0, (int)settings.MaxParticleAmount)
                 .Select( x => GetRandomWhitePixelWeightedTop(text))
                 .Select( pos => 
             new Particle()

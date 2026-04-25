@@ -1,5 +1,5 @@
 
 public interface IConstantUpdater
 {
-    void UpdateConstants(FrameResource currentResource, SystemSettings systemSettings);
+    void UpdateConstants(FrameResource currentResource, ParticleSystems.SystemSettings systemSettings);
 }

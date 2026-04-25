@@ -1,3 +1,7 @@
+
+
+namespace ParticleSystems;
+
 [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
 public sealed class UiVector2Attribute : Attribute
 {

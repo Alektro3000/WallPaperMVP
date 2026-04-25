@@ -2,18 +2,19 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace TextSystem;
+namespace ParticleSystems.Text;
+
 
 [StructLayout(LayoutKind.Sequential)]
 public struct Constants
 {
     public uint ParticleCount;
     public Vector3 padding;
-    public Settings Settings;
+    public GpuSettings Settings;
 }
 
 [StructLayout(LayoutKind.Sequential)]
-public struct Settings
+public struct GpuSettings
 {
     
     [UiLabel("Begin Color")]
@@ -49,7 +50,58 @@ public struct Settings
     [UiRange(0f, 1f, 0.01f)]
     public float InitOffset = 0.5f;
 
-    public Settings()
+    public GpuSettings()
     {
     }
+}
+
+public struct InitSettings
+{
+    [UiLabel("Max Particle Amount")]
+    [UiRange(0f, 65536f, 1f)]
+    public float MaxParticleAmount = 4096;
+
+
+    public string Text = "Встречая страх, создавай будущее";
+
+    [UiLabel("Resolution")]
+    [UiVector2(
+        minX: 1f, maxX: 4096f, stepX: 1f,
+        minY: 1f, maxY: 4096f, stepY: 1f,
+        xLabel: "Width",
+        yLabel: "Height")]
+    public Vector2 Resolution = new Vector2(900, 120);
+    
+    [UiLabel("Text Size")]
+    [UiRange(0f, 300f, 0.1f)]
+    public float TextSize = 24;
+    public string Font = "Arial";
+    
+    [UiLabel("Text Size")]
+    [UiRange(0f, 1f, 0.000001f)]
+    internal float PixelSize =  0.0028f;
+    
+    [UiLabel("Text Position")]
+    [UiVector2(
+        minX: -10f, maxX: 10f, stepX: 0.001f,
+        minY: -10f, maxY: 10f, stepY: 0.001f,
+        xLabel: "Width",
+        yLabel: "Height")]
+    internal Vector2 CenterPos = new Vector2(0f, -0.4f);
+
+    public InitSettings()
+    {
+    }
+
+}
+
+public struct Settings : ISettings
+{
+    public InitSettings initSettings = new InitSettings();
+    public GpuSettings gpuSettings = new GpuSettings();
+    public Settings()
+    {
+        
+    }
+
 }

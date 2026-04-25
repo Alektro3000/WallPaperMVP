@@ -1,7 +1,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace MouseSystem;
+namespace ParticleSystems.Mouse;
 
 [StructLayout(LayoutKind.Sequential)]
 public struct GpuSettings
@@ -107,12 +107,15 @@ public struct CpuSettings
     }
 }
 
-public struct Settings
+public struct Settings : ISettings
 {
+    public CommonInitSettings initSettings = new CommonInitSettings(65536);
     public GpuSettings gpuSettings = new GpuSettings();
     public CpuSettings cpuSettings = new CpuSettings();
     public Settings()
     {
         
     }
+
+    public CommonInitSettings GetInitSettings() => initSettings;
 }

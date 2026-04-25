@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Numerics;
 
-namespace MouseSystem;
+namespace ParticleSystems.Mouse;
 
 public class Controller
 {
@@ -36,7 +36,7 @@ public class Controller
 
         return len;
     }
-    private CpuSettings CpuSettings(SystemSettings system) => system.mouseSettings.cpuSettings;
+    private CpuSettings CpuSettings(SystemSettings system) => system.GetSettings<Settings>().cpuSettings;
     public Controller(ParticleBuffers partcileSystem)
     {
         ParticleSystem = partcileSystem;
@@ -91,6 +91,6 @@ public class Controller
         constant.Size = CpuSettings(systemSettings).Size / metric.height;
 
         GpuConstant.cpuGeneratedSettings = constant;
-        GpuConstant.settings = systemSettings.mouseSettings.gpuSettings;
+        GpuConstant.Settings = systemSettings.GetSettings<Settings>().gpuSettings;
     }
 }

@@ -2,7 +2,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace StripSystem;
+namespace ParticleSystems.Strip;
 
 [StructLayout(LayoutKind.Sequential)]
 public struct Constants
@@ -26,10 +26,10 @@ public struct Constants
     public StripDescription strip2;
     public StripDescription strip3;
     public StripDescription strip4;
-    public Settings stripSettings;
+    public GpuSettings Settings;
 }
 
-public struct Settings
+public struct GpuSettings
 {
     [UiLabel("Color")]
     [UiColor(normalized: true)]
@@ -58,7 +58,19 @@ public struct Settings
     [UiRange(0f, 20f, 0.01f)]
     public float LifeTime = 3f;
 
-    public Settings()
+    public GpuSettings()
     {
     }
+}
+
+
+public struct Settings : ISettings
+{
+    public CommonInitSettings initSettings = new CommonInitSettings(4096);
+    public GpuSettings gpuSettings = new GpuSettings();
+    public Settings()
+    {
+        
+    }
+
 }

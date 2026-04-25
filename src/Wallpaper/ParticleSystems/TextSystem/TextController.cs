@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Numerics;
 
-namespace TextSystem;
+namespace ParticleSystems.Text;
 
 public class Controller
 {
@@ -17,6 +17,6 @@ public class Controller
     {
         // Update static buffer
         constant.ParticleCount = ParticleSystem.particleCount;
-        constant.Settings = systemSettings.textSettings;
+        constant.Settings = systemSettings.GetSettings<Settings>().gpuSettings;
     }
 }

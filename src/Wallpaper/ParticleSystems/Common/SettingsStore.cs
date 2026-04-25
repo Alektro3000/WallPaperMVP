@@ -1,5 +1,5 @@
 using static SettingsForm;
-
+namespace ParticleSystems;
 public sealed class SettingsStore
 {
     private readonly object _lock = new();

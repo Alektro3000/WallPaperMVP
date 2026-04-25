@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Numerics;
 
-namespace CornerSystem;
+namespace ParticleSystems.Corner;
 
 public class Controller
 {
@@ -17,8 +17,8 @@ public class Controller
         // Update static buffer
         float scale = frameMetric.width/(float)frameMetric.height;
         constant.ParticleCount = ParticleSystem.particleCount;
-        constant.settings = systemSettings.cornerSettings;
-        constant.settings.SpawnPosition += new Vector2(scale,1);
-        constant.settings.RemoveBox += constant.settings.SpawnPosition;
+        constant.Settings = systemSettings.GetSettings<Settings>().gpuSettings;
+        constant.Settings.SpawnPosition += new Vector2(scale,1);
+        constant.Settings.RemoveBox += constant.Settings.SpawnPosition;
     }
 }
