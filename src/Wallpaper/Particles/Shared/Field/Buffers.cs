@@ -21,12 +21,12 @@ public class Buffers : IConstantBufferSet
     public ID3D12Resource FieldResource;
     public GpuDescriptorHandle UAVFieldDescriptor;
     public GpuDescriptorHandle SRVFieldDescriptor;    
-    public FrameManager.ConstantKey fieldKey;
+    public ConstantBufferKey fieldKey;
     public const int width = 192;
     public const int height = 108;
-    public Buffers(ID3D12Device device, FrameManager manager, HeapAllocator heap)
+    public Buffers(ID3D12Device device, ConstantBufferRegistry registry, HeapAllocator heap)
     {
-        fieldKey = manager.ReserveBuffer();
+        fieldKey = registry.Reserve(device => BufferFactory.CreateConstantBuffer<FieldConstantBuffer>(device, "Field Constants"));
 
         //Creating Buffer
         var textureDesc = ResourceDescription.Texture2D(
@@ -87,10 +87,6 @@ public class Buffers : IConstantBufferSet
         );
     }
 
-    public void InitBuffers(FrameResource frameResource, ID3D12Device device)
-    {
-        frameResource.AddBuffer(fieldKey,BufferFactory.CreateConstantBuffer<FieldConstantBuffer>(device, "Field Constants"));
-    }
 
     public void Dispose()
     {

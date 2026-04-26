@@ -24,7 +24,9 @@ public abstract class BaseParticleSystem : IDisposable
 
     protected ParticleBuffers ParticleBuffers;
     
-    protected FrameManager.ConstantKey ConstantKey;
+    protected ConstantBufferKey ConstantKey;
+
+    
 
     public virtual void Dispatch(FrameResource currentResource)
         => ComputePass.DispatchParticles(currentResource, ConstantKey);
@@ -51,11 +53,9 @@ public abstract class BaseParticleSystem : IDisposable
     {
         GraphicPass = new Graphic(context.Device, ParticleBuffers, context.CommonBuffers, context.GeometryBuffers, vertex, pixel);
         ComputePass = new Compute(context.Device, ParticleBuffers, context.CommonBuffers, context.FieldBuffers, compute, precompute);
-        ConstantKey = context.FrameManager.ReserveBuffer();
         Serilog.Log.Information("Particle system {ParticleSystem} with name {name} initialized ", this, name);
     }
     
-    public abstract void InitBuffer(FrameResource frameResource, ID3D12Device device);
     public void Dispose()
     {
         GraphicPass?.Dispose();

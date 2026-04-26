@@ -6,14 +6,14 @@ namespace Renderer.FrameManagement;
 public sealed class FrameResource : IDisposable
 {
     public uint FrameIndex;
-    
+
     public required ID3D12Resource RenderTarget;
     public required CpuDescriptorHandle RenderTargetHandle;
 
     public ID3D12CommandAllocator CommandAllocator;
     public ID3D12GraphicsCommandList CommandList;
 
-    public ConstantBinding[]? ConstantBindings;
+    public required ConstantBinding[] ConstantBindings;
 
     public FrameMetric frameMetric;
 
@@ -33,19 +33,18 @@ public sealed class FrameResource : IDisposable
         CommandList.Close();
     }
 
-    public void AddBuffer(FrameManager.ConstantKey key, ConstantBinding binding)
-        => ConstantBindings![key.key] = binding;
-    
-    public ref T GetBufferConstantRef<T>(FrameManager.ConstantKey key) where T : unmanaged
-        => ref ConstantBindings![key.key].Constants<T>();
-    public ulong GetGPUVirtualAddress(FrameManager.ConstantKey key)
-        => ConstantBindings![key.key].ConstantBuffer.GPUVirtualAddress;
+    public void AddBuffer(ConstantBufferKey key, ConstantBinding binding)
+        => ConstantBindings[key.Key] = binding;
+
+    public ref T GetBufferConstantRef<T>(ConstantBufferKey key) where T : unmanaged
+        => ref ConstantBindings[key.Key].Constants<T>();
+    public ulong GetGPUVirtualAddress(ConstantBufferKey key)
+        => ConstantBindings[key.Key].ConstantBuffer.GPUVirtualAddress;
 
     public void Dispose()
     {
-        if(ConstantBindings is not null)
-            foreach(var bind in ConstantBindings)
-                bind.ConstantBuffer?.Dispose();
+        foreach (var bind in ConstantBindings)
+            bind.ConstantBuffer?.Dispose();
 
         CommandList?.Dispose();
         CommandAllocator?.Dispose();

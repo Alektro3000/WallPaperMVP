@@ -23,7 +23,7 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
         GraphicPass = new Passes.Graphic(context.Device, ParticleBuffers, context.CommonBuffers, context.GeometryBuffers, "vertex.hlsl", "pixel.hlsl");
         mouseBuffer = new Buffer(context.Device, context.HeapAllocator, ParticleBuffers, particleCount);
         mouseCompute = new Compute(context.Device, ParticleBuffers, mouseBuffer, context.CommonBuffers, context.FieldBuffers);
-        ConstantKey = context.FrameManager.ReserveBuffer();
+        ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "MouseSystem_Constant"));
 
         ParticleSystemController = new Controller(ParticleBuffers);
         
@@ -49,10 +49,6 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
         ParticleSystemController.UpdateStaticResource(
             ref currentResource.GetBufferConstantRef<Constants>(ConstantKey),
         currentResource.frameMetric, systemSettings);
-    }
-    public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
-    {
-        frameResource.AddBuffer(ConstantKey,BufferFactory.CreateConstantBuffer<Constants>(device, "MouseSystem_Constant"));
     }
     public override void SwapBuffers()
     {

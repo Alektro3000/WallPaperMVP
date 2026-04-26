@@ -7,5 +7,5 @@ namespace Renderer.Passes;
 
 public interface ICompute : IDisposable
 {
-    void DispatchParticles(FrameResource currentResource, FrameManager.ConstantKey key);
+    void DispatchParticles(FrameResource currentResource, ConstantBufferKey key);
 }

@@ -15,7 +15,7 @@ public sealed record ParticleSystemInitContext
     public required ImmediateCommandList CommandList;
     public required GeometryBuffers GeometryBuffers;
     public required HeapAllocator HeapAllocator;
-    public required FrameManager FrameManager;
     public required SharedCommon.Buffers CommonBuffers;
     public required SharedField.Buffers FieldBuffers;
+    public required ConstantBufferRegistry Registry;
 }

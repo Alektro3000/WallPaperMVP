@@ -8,10 +8,10 @@ namespace Particles.Shared.Global;
 
 public class Buffers : IConstantBufferSet
 {
-    public FrameManager.ConstantKey commonKey;
-    public Buffers(FrameManager manager)
+    public ConstantBufferKey commonKey;
+    public Buffers(ConstantBufferRegistry registry)
     {
-        commonKey = manager.ReserveBuffer();
+        commonKey = registry.Reserve(device => BufferFactory.CreateConstantBuffer<ConstantBuffer>(device, "CommonBuffer"));
     }
 
     public void Dispose()
@@ -19,8 +19,4 @@ public class Buffers : IConstantBufferSet
         
     }
 
-    public void InitBuffers(FrameResource frameResource, ID3D12Device device)
-    {
-        frameResource.AddBuffer(commonKey,BufferFactory.CreateConstantBuffer<ConstantBuffer>(device, "CommonBuffer"));
-    }
 }

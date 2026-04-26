@@ -20,66 +20,57 @@ namespace Renderer.FrameManagement;
 //Class which manage Frame work flow
 public sealed class FrameManager : IDisposable
 {
-    private const int FrameCount = 2;
-    private const bool Transparent = false;
+    private const int frameCount = 2;
 
     // D3D12
-    private IDXGISwapChain3 _swapChain;
-    private ID3D12DescriptorHeap _rtvHeap;
+    private readonly IDXGISwapChain3 swapChain;
+    private readonly ID3D12DescriptorHeap rtvHeap;
 
 
     //Frame Resource
-    private FrameResource[] FrameResources = new FrameResource[FrameCount];
-
-    public struct ConstantKey
-    {
-        internal readonly int key;
-
-        internal ConstantKey(int key) : this()
-        {
-            this.key = key;
-        }
-    }
+    private FrameResource[] frameResources = new FrameResource[frameCount];
 
     // Synchronization
-    private ID3D12Fence Fence;
-    private ulong FenceValue;
-    private readonly AutoResetEvent FenceEvent = new(false);
+    private readonly ID3D12Fence fence;
+    private ulong fenceValue;
+    private readonly AutoResetEvent fenceEvent = new(false);
 
-    private GraphicsContext Context;
+    private readonly GraphicsContext context;
 
-    private readonly IntPtr HWND;
-    private readonly int Width;
-    private readonly int Height;
+    private readonly IntPtr hwnd;
+    private readonly int width;
+    private readonly int height;
 
-    private Viewport Viewport;
-    private RectI Scissor;
-    private HeapAllocator Heap;
-    private FrameMetricManager Manager;
+    private readonly Viewport viewport;
+    private readonly RectI scissor;
+    private readonly HeapAllocator heap;
+    private readonly FrameMetricManager manager;
+    private readonly ConstantBufferRegistry constantBufferRegistry;
 
-    public FrameManager(GraphicsContext context, IntPtr hwnd, int width, int height, HeapAllocator heap)
+    public FrameManager(GraphicsContext context, IntPtr hwnd, int width, int height, HeapAllocator heap, ConstantBufferRegistry constantBufferRegistry)
     {
-        HWND = hwnd;
-        Width = width;
-        Height = height;
-        Heap = heap;
+        this.hwnd = hwnd;
+        this.width = width;
+        this.height = height;
+        this.heap = heap;
 
-        Context = context;
+        this.context = context;
         var device = context.Device;
 
-        Manager = new FrameMetricManager(width, height);
+        manager = new FrameMetricManager(width, height);
+        this.constantBufferRegistry = constantBufferRegistry;
 
-        _swapChain = CreateSwapChain();
+        swapChain = CreateSwapChain();
         
-        Fence = device.CreateFence(0);
-        FenceValue = 1;
+        fence = device.CreateFence(0);
+        fenceValue = 1;
         
-        _rtvHeap = CreateRTVHeap(device);
+        rtvHeap = CreateRTVHeap(device);
 
         CreateFrameResources(device);
 
-        Viewport = new Viewport(0, 0, Width, Height, 0.0f, 1.0f);
-        Scissor = new RectI(0, 0, Width, Height);
+        viewport = new Viewport(0, 0, this.width, this.height, 0.0f, 1.0f);
+        scissor = new RectI(0, 0, this.width, this.height);
     }
 
     private IDXGISwapChain3 CreateSwapChain()
@@ -146,41 +137,31 @@ public sealed class FrameManager : IDisposable
         
             var swapChainDesc = new SwapChainDescription1
             {
-                Width = (uint)Width,
-                Height = (uint)Height,
+                Width = (uint)width,
+                Height = (uint)height,
                 Format = Format.B8G8R8A8_UNorm,
                 Stereo = false,
                 SampleDescription = SampleDescription.Default,
                 BufferUsage = Usage.RenderTargetOutput,
-                BufferCount = FrameCount,
+                BufferCount = frameCount,
                 Scaling = Scaling.Stretch,
                 SwapEffect = SwapEffect.FlipDiscard,
                 AlphaMode = AlphaMode.Ignore
             };
             using IDXGISwapChain1 tempSwapChain = factory.CreateSwapChainForHwnd(
-                Context.CommandQueue,
-                HWND,
+                context.CommandQueue,
+                hwnd,
                 swapChainDesc);
             return tempSwapChain.QueryInterface<IDXGISwapChain3>();
        
 #endif 
-    }
-    int constantBufferSize = 0;
-    public ConstantKey ReserveBuffer()
-    {
-        return new ConstantKey(constantBufferSize++);
-    }
-    public void PopulateConstantBuffers()
-    {
-        foreach (var frame in FrameResources)
-            frame.ConstantBindings = [.. Enumerable.Range(0, constantBufferSize).Select(x => new ConstantBinding())];
-    }
 
-    private ID3D12DescriptorHeap  CreateRTVHeap(ID3D12Device device)
+    }
+    private ID3D12DescriptorHeap CreateRTVHeap(ID3D12Device device)
     {
         return device.CreateDescriptorHeap(new DescriptorHeapDescription(
             DescriptorHeapType.RenderTargetView,
-            FrameCount,
+            frameCount,
             DescriptorHeapFlags.None,
             0));
     }
@@ -188,24 +169,24 @@ public sealed class FrameManager : IDisposable
     private void CreateFrameResources(ID3D12Device device)
     {
         var _rtvDescriptorSize = device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
-        CpuDescriptorHandle rtvHeapStart = _rtvHeap.GetCPUDescriptorHandleForHeapStart();
+        CpuDescriptorHandle rtvHeapStart = rtvHeap.GetCPUDescriptorHandleForHeapStart();
 
-        for (uint i = 0; i < FrameCount; i++)
+        for (uint i = 0; i < frameCount; i++)
         {
             CpuDescriptorHandle rtvHandle = new CpuDescriptorHandle(in rtvHeapStart, (int)i, _rtvDescriptorSize);
 
-            var renderTarget = _swapChain.GetBuffer<ID3D12Resource>(i);
+            var renderTarget = swapChain.GetBuffer<ID3D12Resource>(i);
             device.CreateRenderTargetView(renderTarget, null, rtvHandle);
 
             unsafe
             {
 
-                FrameResources[i] = new FrameResource(i, device)
+                frameResources[i] = new FrameResource(i, device)
                 {
 
                     RenderTargetHandle = rtvHandle,
                     RenderTarget = renderTarget,
-
+                    ConstantBindings = constantBufferRegistry.CreateFrameBindings(device)
                 };
             }
         }
@@ -213,9 +194,9 @@ public sealed class FrameManager : IDisposable
 
     public FrameResource BeginFrame()
     {
-        var currentResource = FrameResources[_swapChain.CurrentBackBufferIndex];
+        var currentResource = frameResources[swapChain.CurrentBackBufferIndex];
         WaitForFrame(currentResource);
-        currentResource.frameMetric = Manager.Update();
+        currentResource.frameMetric = manager.Update();
         currentResource.CommandAllocator.Reset();
 
         var cmd = currentResource.CommandList;
@@ -227,85 +208,63 @@ public sealed class FrameManager : IDisposable
             ResourceStates.Present,
             ResourceStates.RenderTarget);
 
-        cmd.RSSetViewport(Viewport);
-        cmd.RSSetScissorRect(Scissor);
-        cmd.SetDescriptorHeaps(Heap.Heap);
+        cmd.RSSetViewport(viewport);
+        cmd.RSSetScissorRect(scissor);
+        cmd.SetDescriptorHeaps(heap.Heap);
 
         cmd.OMSetRenderTargets(currentResource.RenderTargetHandle);
         cmd.ClearRenderTargetView(currentResource.RenderTargetHandle, new Color4(0.0f, 0.0f, 0.0f, 0.0f));
         return currentResource;
     }
 
-    public void ExecuteFrame(FrameResource currentResource)
-    {
-        // RENDER_TARGET -> PRESENT
-        currentResource.CommandList.Close();
-
-        Context.CommandQueue.ExecuteCommandList(currentResource.CommandList);
-    }
-    public void SwitchFrameResource(FrameResource currentResource)
+    public void EndFrame(FrameResource currentResource)
     {
         currentResource.CommandList.ResourceBarrierTransition(
             currentResource.RenderTarget,
             ResourceStates.RenderTarget,
             ResourceStates.Present);
-    }
-    public void EndFrame(FrameResource currentResource)
-    {
-        SwitchFrameResource(currentResource);
-        ExecuteFrame(currentResource);
+            
+        // RENDER_TARGET -> PRESENT
+        currentResource.CommandList.Close();
 
-        PresentFrame(currentResource);
-    }
-    public void PresentFrame(FrameResource currentResource)
-    {
-        _swapChain.Present(1, PresentFlags.None);
+        context.CommandQueue.ExecuteCommandList(currentResource.CommandList);
 
-        ulong fenceValue = FenceValue;
-        Context.CommandQueue.Signal(Fence, fenceValue);
+
+        swapChain.Present(1, PresentFlags.None);
+
+        ulong fenceValue = this.fenceValue;
+        context.CommandQueue.Signal(fence, fenceValue);
         currentResource.FenceValue = fenceValue;
-        FenceValue++;
-    }
-
-    public void ExecuteForEachFrame(Action<FrameResource> action)
-    {
-        for (int i = 0; i < FrameResources.Length; i++)
-            action(FrameResources[i]);
+        this.fenceValue++;
     }
 
     private void WaitForFrame(FrameResource frame)
     {
-        if (frame.FenceValue != 0 && Fence.CompletedValue < frame.FenceValue)
+        if (frame.FenceValue != 0 && fence.CompletedValue < frame.FenceValue)
         {
-            Fence.SetEventOnCompletion(
+            fence.SetEventOnCompletion(
                 frame.FenceValue,
-                FenceEvent.SafeWaitHandle.DangerousGetHandle());
+                fenceEvent.SafeWaitHandle.DangerousGetHandle());
 
-            FenceEvent.WaitOne();
+            fenceEvent.WaitOne();
         }
     }
     public void WaitForAllFrames()
     {
-        for (int i = 0; i < FrameCount; i++)
-            WaitForFrame(FrameResources[i]);
+        for (int i = 0; i < frameCount; i++)
+            WaitForFrame(frameResources[i]);
     }
 
     public void Dispose()
     {
-        for (int i = 0; i < FrameCount; i++)
+        for (int i = 0; i < frameCount; i++)
         {
-            FrameResources[i].Dispose();
+            frameResources[i].Dispose();
         }
-        Fence?.Dispose();
-        FenceEvent?.Dispose();
+        fence?.Dispose();
+        fenceEvent?.Dispose();
 
-        _rtvHeap?.Dispose();
-        _swapChain?.Dispose();
-    }
-    public void DrawFrame(Action<FrameResource> draw)
-    {
-        var frame = BeginFrame();
-        draw(frame);
-        PresentFrame(frame);
+        rtvHeap?.Dispose();
+        swapChain?.Dispose();
     }
 }

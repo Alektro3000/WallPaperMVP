@@ -19,6 +19,7 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
     public ParticleSystem(
         ParticleSystemInitContext context, Settings settings)
     {
+        ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "TextSystem_Constant"));
         ConstructRequiredFields(context, generateParticles(settings.initSettings), "TextSystem", "text/compute.hlsl", "text/precompute.hlsl");
         Controller = new Controller(ParticleBuffers);
     }
@@ -36,10 +37,6 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
         Controller.UpdateConstantBuffer(
             ref currentResource.GetBufferConstantRef<Constants>(ConstantKey),
             currentResource.frameMetric, systemSettings);
-    }
-    public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
-    {
-        frameResource.AddBuffer(ConstantKey,BufferFactory.CreateConstantBuffer<Constants>(device, "TextSystem_Constant"));
     }
     private Point GetRandomWhitePixelWeightedTop(Bitmap bitmap)
     {

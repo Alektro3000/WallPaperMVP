@@ -16,6 +16,8 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
     public ParticleSystem(
         ParticleSystemInitContext context, Settings settings)
     {
+        
+        ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "WhirlSystem_Constant"));
         ConstructRequiredFields(context, (uint)settings.initSettings.MaxParticleAmount, "WhirlSystem", "whirl/compute.hlsl", "whirl/precompute.hlsl");
         ParticleSystemController = new Controller(ParticleBuffers);
     }
@@ -33,9 +35,5 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
         ParticleSystemController.UpdateStaticResource(
             ref currentResource.GetBufferConstantRef<Constants>(ConstantKey),
             currentResource.frameMetric, systemSettings);
-    }
-    public override void InitBuffer(FrameResource frameResource, ID3D12Device device)
-    {
-        frameResource.AddBuffer(ConstantKey, BufferFactory.CreateConstantBuffer<Constants>(device, "WhirlSystem_Constant"));
     }
 }

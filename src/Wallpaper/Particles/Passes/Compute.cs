@@ -92,7 +92,7 @@ public class Compute : ICompute
     }
 
 
-    public virtual void DispatchParticles(FrameResource currentResource, FrameManager.ConstantKey key)
+    public virtual void DispatchParticles(FrameResource currentResource, ConstantBufferKey key)
     {
         var read = ParticleBuffers.ReadBufferBinding;
         var write = ParticleBuffers.WriteBufferBinding;

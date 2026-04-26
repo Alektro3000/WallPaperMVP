@@ -141,7 +141,7 @@ public class Compute : IDisposable
     {
         cmd.ExecuteIndirect(DispatchCommandSignature, 1, MouseBuffer.DispatchArgs, 0, null, 0);
     }
-    public void DispatchParticles(FrameResource currentResource, FrameManager.ConstantKey key, bool isCompactPass)
+    public void DispatchParticles(FrameResource currentResource, ConstantBufferKey key, bool isCompactPass)
     {
         var compact = ParticleBuffers.WriteBufferBinding;
         var sparse = ParticleBuffers.ReadBufferBinding;

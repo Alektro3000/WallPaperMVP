@@ -21,7 +21,7 @@ public sealed class Orchestrator : IDisposable
     private readonly FrameManager FrameManager;
     private readonly HeapAllocator HeapAllocator;
     private readonly GeometryBuffers GeometryBuffers;
-
+    private readonly ConstantBufferRegistry ConstantBufferRegistry;
     private readonly IConstantBufferSet[] constantBufferSets;
     private readonly IConstantUpdater[] constantUpdaters;
 
@@ -37,15 +37,15 @@ public sealed class Orchestrator : IDisposable
         Log.Debug("CommandList initialized");
 
         HeapAllocator = new HeapAllocator(Context.Device);
-
-        FrameManager = new FrameManager(Context, hwnd, width, height, HeapAllocator);
-        Log.Information("FrameManager Initialized {@FrameManager}", FrameManager);
-
         GeometryBuffers = new GeometryBuffers(Context.Device, commandList, HeapAllocator);
+
+
+        ConstantBufferRegistry = new ConstantBufferRegistry();
+
         var field = 
-            new SharedField.Buffers(Context.Device, FrameManager, HeapAllocator);
+            new SharedField.Buffers(Context.Device, ConstantBufferRegistry , HeapAllocator);
         var common = 
-            new SharedCommon.Buffers(FrameManager);
+            new SharedCommon.Buffers(ConstantBufferRegistry );
         
         constantBufferSets = [
             field,
@@ -67,22 +67,17 @@ public sealed class Orchestrator : IDisposable
             CommandList = commandList,
             GeometryBuffers = GeometryBuffers,
             HeapAllocator = HeapAllocator,
-            FrameManager = FrameManager,
             CommonBuffers = common,
             FieldBuffers = field,
+            Registry = ConstantBufferRegistry
         };
         
         ParticleSystems = ParticleSystemReflection.CreateParticleSystems(systemSettings, context).ToArray();
         
-        FrameManager.PopulateConstantBuffers();
-        FrameManager.ExecuteForEachFrame(x =>
-        {
-            foreach (var item in constantBufferSets)
-                item.InitBuffers(x, Context.Device);
-
-            foreach (var item in ParticleSystems)
-                item.InitBuffer(x, Context.Device);
-        });
+        
+        FrameManager = new FrameManager(Context, hwnd, width, height, HeapAllocator, ConstantBufferRegistry);
+        Log.Information("FrameManager Initialized {@FrameManager}", FrameManager);
+        
 
         //renderer2D = new Renderer2DPass(Context.Device, Context.CommandQueue);
     }
