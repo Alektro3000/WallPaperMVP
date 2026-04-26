@@ -1,7 +1,8 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using ParticleSystems;
+using Particles.Settings;
+using Particles.Systems;
 using Serilog;
 
 class Program
@@ -63,7 +64,7 @@ class Program
             Log.Information("Form Settings initialized");
 
             Log.Debug("Renderer begin initialization");
-            using var renderer = new Renderer(store.GetSnapshot(), hwnd, width, height);
+            using var renderer = new Renderer.Orchestrator(store.GetSnapshot(), hwnd, width, height);
             Log.Information("Renderer initialized");
 
 

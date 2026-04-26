@@ -3,22 +3,22 @@ using Vortice.Direct3D12;
 using Vortice.Direct3D12.Debug;
 using static Vortice.Direct3D12.D3D12;
 
+namespace Renderer.Core;
+
 public class GraphicsContext : IDisposable
 {
 
-    private static ID3D12Device _device;
-    private ID3D12CommandQueue _commandQueue;
-    public ID3D12Device Device { get => _device; }
-    public ID3D12CommandQueue CommandQueue { get => _commandQueue; }
+    public readonly ID3D12Device Device;
+    public readonly ID3D12CommandQueue CommandQueue;
 
 
 
     public GraphicsContext()
     {
 #if DEBUG
-        if (D3D12GetDebugInterface(out ID3D12Debug debug).Success)
+        if (D3D12GetDebugInterface(out ID3D12Debug? debug).Success)
         {
-            debug.EnableDebugLayer();
+            debug!.EnableDebugLayer();
 
             var debug1 = debug.QueryInterfaceOrNull<ID3D12Debug1>();
             debug1?.SetEnableGPUBasedValidation(true);
@@ -28,36 +28,36 @@ public class GraphicsContext : IDisposable
             debug.Dispose();
         }
 
-        if (D3D12GetDebugInterface(out ID3D12DeviceRemovedExtendedDataSettings dred).Success)
+        if (D3D12GetDebugInterface(out ID3D12DeviceRemovedExtendedDataSettings? dred).Success)
         {
-            dred.SetAutoBreadcrumbsEnablement(DredEnablement.ForcedOn);
+            dred!.SetAutoBreadcrumbsEnablement(DredEnablement.ForcedOn);
             dred.SetPageFaultEnablement(DredEnablement.ForcedOn);
             dred.SetWatsonDumpEnablement(DredEnablement.ForcedOn);
             dred.Dispose();
         }
 #endif
-        var hr = D3D12CreateDevice(null, FeatureLevel.Level_11_0, out _device!);
-        if (hr.Failure || _device == null)
+        var hr = D3D12CreateDevice(null, FeatureLevel.Level_11_0, out Device!);
+        if (hr.Failure || Device == null)
             throw new NotSupportedException("Failed to create D3D12 device.");
 
 #if DEBUG
-        if (_device.QueryInterfaceOrNull<ID3D12InfoQueue>() is ID3D12InfoQueue infoQueue)
+        if (Device.QueryInterfaceOrNull<ID3D12InfoQueue>() is ID3D12InfoQueue infoQueue)
         {
             infoQueue.SetBreakOnSeverity(MessageSeverity.Corruption, false);
             infoQueue.SetBreakOnSeverity(MessageSeverity.Error, false);
             infoQueue.SetBreakOnSeverity(MessageSeverity.Warning, false);
         }
 #endif
-        _commandQueue = _device!.CreateCommandQueue(new CommandQueueDescription(CommandListType.Direct));
+        CommandQueue = Device!.CreateCommandQueue(new CommandQueueDescription(CommandListType.Direct));
 
     }
 
     public void Dispose()
     {
-        var reason = _device.DeviceRemovedReason;
+        var reason = Device.DeviceRemovedReason;
         Console.WriteLine($"DeviceRemovedReason: 0x{reason.Code:X}");
 
-        var dred = _device.QueryInterfaceOrNull<ID3D12DeviceRemovedExtendedData>();
+        var dred = Device.QueryInterfaceOrNull<ID3D12DeviceRemovedExtendedData>();
         if (dred == null)
         {
             Console.WriteLine("DRED interface not available.");
@@ -104,13 +104,13 @@ public class GraphicsContext : IDisposable
 
         }
 
-        _commandQueue?.Dispose();
-        _device?.Dispose();
+        CommandQueue?.Dispose();
+        Device?.Dispose();
     }
 
-    public static void DumpInfoQueue()
+    public void DumpInfoQueue()
     {
-        var queue = _device.QueryInterfaceOrNull<ID3D12InfoQueue>();
+        var queue = Device.QueryInterfaceOrNull<ID3D12InfoQueue>();
         if (queue == null)
             return;
 

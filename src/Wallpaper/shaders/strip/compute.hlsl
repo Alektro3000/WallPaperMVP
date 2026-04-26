@@ -27,9 +27,9 @@ void main(uint3 dtid : SV_DispatchThreadID)
             uint stripId = WangHash(seed)%5;
             int leftRight = (WangHash(seed+1)%2) * 2 - 1;
             float2 rnd = Random2(seed)-0.5f;
-            p.Position = SnapToGrid(Strips[stripId].Position + Strips[stripId].Size * rnd, GridSize);
-            p.Position.x = leftRight*p.Position.x;
-            p.Velocity = p.Position * 0.01f;
+            p.CustomData = Strips[stripId].Position + Strips[stripId].Size * rnd;
+            p.CustomData.x = leftRight*p.CustomData.x;
+            p.Velocity = p.CustomData * Acceleration;
 
             // initial visible age/lifetime
             p.Age = LifeTime * (0.9f + 0.1f * Random(seed * 17 + 5));
@@ -38,10 +38,12 @@ void main(uint3 dtid : SV_DispatchThreadID)
     else
     {
         // move using previous velocity
-        p.Position += p.Velocity * DeltaTime;
+        p.CustomData += p.Velocity * DeltaTime;
 
         p.Age -= DeltaTime;
     }
+
+    p.Position = SnapToGrid(p.CustomData, GridSize);
 
     if (p.Age < 0)
     {

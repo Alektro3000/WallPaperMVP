@@ -9,7 +9,8 @@ struct StripDescription
 cbuffer StripConstants : register(b0)
 {
     uint ParticleCount;
-    int3 padding;
+    float Size;
+    float2 GridSize;
 
     StripDescription Strips[5];
 
@@ -17,8 +18,5 @@ cbuffer StripConstants : register(b0)
     float SpawnRate;
     
     float Acceleration;
-    float Size;
-    float2 GridSize;
-    
     float LifeTime;
 };

@@ -1,9 +1,11 @@
 
+using Renderer.Core;
+using Renderer.FrameManagement;
 using Vortice.Direct3D12;
 
-public interface IComputePass : IDisposable
+namespace Renderer.Passes;
+
+public interface ICompute : IDisposable
 {
     void DispatchParticles(FrameResource currentResource, FrameManager.ConstantKey key);
-
-
 }

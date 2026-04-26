@@ -1,7 +1,8 @@
 using System;
 using System.Threading;
 using System.Windows.Forms;
-using ParticleSystems;
+using Particles.Systems;
+using Particles.Settings;
 
 public sealed class SettingsFormHost : IDisposable
 {

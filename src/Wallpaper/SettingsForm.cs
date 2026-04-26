@@ -5,7 +5,8 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows.Forms;
-using ParticleSystems;
+using Particles.Systems;
+using Particles.Settings;
 
 public sealed class SettingsForm : Form
 {
@@ -46,7 +47,6 @@ public sealed class SettingsForm : Form
     }
 
     private readonly SettingsStore _store;
-    private readonly string _path;
 
     public event EventHandler? ExitRequested;
     protected override void OnResizeBegin(EventArgs e)
@@ -126,7 +126,7 @@ public sealed class SettingsForm : Form
         var systemValues = _store.GetSnapshot();
         foreach (var settingsTypes in systemValues.GetSavedTypes())
         {
-            var tab = new TabPage(ToDisplayName(settingsTypes.FullName));
+            var tab = new TabPage(ToDisplayName(settingsTypes.FullName ?? settingsTypes.Name));
             var panel = CreatePanel(tab);
 
             BuildControlsForSection(panel, systemValues, settingsTypes);
@@ -473,8 +473,8 @@ public sealed class SettingsForm : Form
         if (name.EndsWith(".Settings", StringComparison.Ordinal))
             name = name[..^".Settings".Length];
 
-        if (name.StartsWith("ParticleSystems.", StringComparison.Ordinal))
-            name = name["ParticleSystems.".Length..];
+        if (name.StartsWith("Particles.Systems.", StringComparison.Ordinal))
+            name = name["Particles.Systems.".Length..];
 
         return string.Concat(name.Select((c, i) =>
             i > 0 && char.IsUpper(c) ? " " + c : c.ToString()));
