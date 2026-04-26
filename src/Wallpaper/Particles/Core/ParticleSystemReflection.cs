@@ -12,7 +12,7 @@ public static class ParticleSystemReflection
             .GetInterfaces()
             .Where(i =>
                 i.IsGenericType &&
-                i.GetGenericTypeDefinition() == typeof(IParticleSystem<>))
+                i.GetGenericTypeDefinition() == typeof(IParticleSystemFor<>))
             .Select(i => i.GetGenericArguments().First())
             .First();
     }

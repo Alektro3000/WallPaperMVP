@@ -12,7 +12,7 @@ namespace Particles.Systems.Text;
 
 [Shader("text\\compute.hlsl", "cs")]
 [Shader("text\\precompute.hlsl", "cs")]
-public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
+public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller Controller;
     static Random random = new Random();

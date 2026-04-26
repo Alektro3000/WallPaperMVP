@@ -10,7 +10,7 @@ namespace Particles.Systems.Corner;
 
 [Shader("corner\\compute.hlsl", "cs")]
 [Shader("corner\\precompute.hlsl", "cs")]
-public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
+public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller ParticleSystemController;
     public ParticleSystem(

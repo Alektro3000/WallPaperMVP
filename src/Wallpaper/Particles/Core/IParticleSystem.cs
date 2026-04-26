@@ -11,6 +11,6 @@ public interface IParticleSystem : IDisposable
     void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings);
     void SwapBuffers();
 };
-public interface IParticleSystem<TSettings> where TSettings : ISettings
+public interface IParticleSystemFor<TSettings> where TSettings : ISettings
 {
 }

@@ -10,7 +10,7 @@ namespace Particles.Systems.Strip;
 
 [Shader("strip\\compute.hlsl", "cs")]
 [Shader("strip\\precompute.hlsl", "cs")]
-public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
+public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller ParticleSystemController;
     public ParticleSystem(ParticleSystemInitContext context, Settings settings) : 

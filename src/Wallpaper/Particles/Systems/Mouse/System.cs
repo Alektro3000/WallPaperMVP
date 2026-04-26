@@ -12,7 +12,7 @@ using Vortice.Direct3D12;
 
 
 namespace Particles.Systems.Mouse;
-public sealed class ParticleSystem : IParticleSystem, IParticleSystem<Settings>
+public sealed class ParticleSystem : IParticleSystem, IParticleSystemFor<Settings>
 {
     private Controller ParticleSystemController;
     private Compute mouseCompute;
