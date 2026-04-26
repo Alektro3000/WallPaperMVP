@@ -1,11 +1,16 @@
 using Particles.Settings;
+using Renderer.FrameManagement;
 
 namespace Particles.Core;
 
-public interface IParticleSystem
+public interface IParticleSystem : IDisposable
 {
-    
+    void Dispatch(FrameResource currentResource);
+
+    void Render(FrameResource currentResource);
+    void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings);
+    void SwapBuffers();
 };
-public interface IParticleSystem<TSettings > : IParticleSystem  where TSettings : ISettings 
+public interface IParticleSystem<TSettings> where TSettings : ISettings
 {
 }

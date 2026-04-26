@@ -13,10 +13,10 @@ namespace Particles.Systems.Strip;
 public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
 {
     protected Controller ParticleSystemController;
-    public ParticleSystem(ParticleSystemInitContext context, Settings settings)
+    public ParticleSystem(ParticleSystemInitContext context, Settings settings) : 
+        base(context, (uint)settings.initSettings.MaxParticleAmount, "StripSystem", "strip/compute.hlsl", "strip/precompute.hlsl")
     {
         ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "StripSystem_Constant"));
-        ConstructRequiredFields(context, (uint)settings.initSettings.MaxParticleAmount, "StripSystem", "strip/compute.hlsl", "strip/precompute.hlsl");
         ParticleSystemController = new Controller(ParticleBuffers);
     }
     

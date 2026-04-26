@@ -15,12 +15,12 @@ namespace Particles.Systems.Text;
 public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
 {
     protected Controller Controller;
-    Random random = new Random();
+    static Random random = new Random();
     public ParticleSystem(
-        ParticleSystemInitContext context, Settings settings)
+        ParticleSystemInitContext context, Settings settings) : 
+        base(context, generateParticles(settings.initSettings), "TextSystem", "text/compute.hlsl", "text/precompute.hlsl")
     {
         ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "TextSystem_Constant"));
-        ConstructRequiredFields(context, generateParticles(settings.initSettings), "TextSystem", "text/compute.hlsl", "text/precompute.hlsl");
         Controller = new Controller(ParticleBuffers);
     }
 
@@ -38,7 +38,7 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
             ref currentResource.GetBufferConstantRef<Constants>(ConstantKey),
             currentResource.frameMetric, systemSettings);
     }
-    private Point GetRandomWhitePixelWeightedTop(Bitmap bitmap)
+    private static  Point GetRandomWhitePixelWeightedTop(Bitmap bitmap)
     {
         const int MaxAttempts = 100;
 
@@ -91,7 +91,7 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
 
         return candidates[^1].point;
     }
-    private Bitmap GenerateBitmap(InitSettings settings)
+    private static Bitmap GenerateBitmap(InitSettings settings)
     {
         string text = settings.Text;
 
@@ -111,7 +111,7 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
         g.DrawString(text, font, brush, new RectangleF(0,0,bitmap.Width,bitmap.Height), format);
         return bitmap;
     }
-    private Particle[] generateParticles(InitSettings settings)
+    private static Particle[] generateParticles(InitSettings settings)
     {
         using var text = GenerateBitmap(settings);
         float size = settings.PixelSize;

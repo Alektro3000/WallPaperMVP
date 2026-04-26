@@ -14,18 +14,18 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
 {
     protected Controller ParticleSystemController;
     public ParticleSystem(
-        ParticleSystemInitContext context, Settings settings)
+        ParticleSystemInitContext context, Settings settings) : 
+        base(context, (uint)settings.initSettings.MaxParticleAmount, "WhirlSystem", "whirl/compute.hlsl", "whirl/precompute.hlsl")
     {
-        
+
         ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "WhirlSystem_Constant"));
-        ConstructRequiredFields(context, (uint)settings.initSettings.MaxParticleAmount, "WhirlSystem", "whirl/compute.hlsl", "whirl/precompute.hlsl");
         ParticleSystemController = new Controller(ParticleBuffers);
     }
 
     [SystemBuilder]
     public static ParticleSystem? Create(ParticleSystemInitContext context, Settings settings)
     {
-        if(settings.initSettings.MaxParticleAmount <= 0)
+        if (settings.initSettings.MaxParticleAmount <= 0)
             return null;
         return new ParticleSystem(context, settings);
     }

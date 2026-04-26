@@ -27,7 +27,7 @@ public sealed class Orchestrator : IDisposable
 
     private readonly SharedField.Pass fieldPass;
 
-    public readonly BaseParticleSystem[] ParticleSystems;
+    public readonly IParticleSystem[] ParticleSystems;
     public Orchestrator(SystemSettings systemSettings, IntPtr hwnd, int width, int height)
     {
         Context = new GraphicsContext();

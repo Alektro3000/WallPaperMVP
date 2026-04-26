@@ -14,17 +14,17 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystem<Settings>
 {
     protected Controller ParticleSystemController;
     public ParticleSystem(
-        ParticleSystemInitContext context, Settings settings)
+        ParticleSystemInitContext context, Settings settings) :
+        base(context, (uint)settings.initSettings.MaxParticleAmount, "CornerSystem", "corner/compute.hlsl", "corner/precompute.hlsl")
     {
         ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "CornerSystem_Constant"));
-        ConstructRequiredFields(context, (uint)settings.initSettings.MaxParticleAmount, "CornerSystem", "corner/compute.hlsl", "corner/precompute.hlsl");
         ParticleSystemController = new Controller(ParticleBuffers);
     }
-    
+
     [SystemBuilder]
     public static ParticleSystem? Create(ParticleSystemInitContext context, Settings settings)
     {
-        if(settings.initSettings.MaxParticleAmount <= 0)
+        if (settings.initSettings.MaxParticleAmount <= 0)
             return null;
         return new ParticleSystem(context, settings);
     }

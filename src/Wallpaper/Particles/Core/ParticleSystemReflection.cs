@@ -53,13 +53,13 @@ public static class ParticleSystemReflection
             $"Valid builder not found: {systemType.FullName}");
     }
 
-    public static IEnumerable<BaseParticleSystem> CreateParticleSystems(SystemSettings settings, ParticleSystemInitContext context)
+    public static IEnumerable<IParticleSystem> CreateParticleSystems(SystemSettings settings, ParticleSystemInitContext context)
     {
         return GetParticleSystems()
             .Select(t => GetBuilderMethod(t, GetSettingsType(t))
                             ?.Invoke(null, [context, settings.GetSettings(GetSettingsType(t))]))
             .Where(t => t is not null)
             .Select(t => t!)
-            .OfType<BaseParticleSystem>();
+            .OfType<IParticleSystem>();
     }
 }
