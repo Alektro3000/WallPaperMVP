@@ -47,7 +47,7 @@ public static class BufferFactory
 
     }
     
-    public static unsafe ID3D12Resource CreateUploadBuffer<T>(
+    public static ID3D12Resource CreateUploadBuffer<T>(
         ID3D12Device device,
         ReadOnlySpan<T> data)
         where T : unmanaged
@@ -55,7 +55,7 @@ public static class BufferFactory
         if (data.Length == 0)
             throw new ArgumentException("Data must not be empty.", nameof(data));
 
-        uint sizeInBytes = (uint)(data.Length * sizeof(T));
+        uint sizeInBytes = (uint)(data.Length * (uint)Marshal.SizeOf<T>());
 
         return CreateUploadBuffer(device, data, sizeInBytes);
     }
@@ -149,7 +149,7 @@ public static class BufferFactory
             finalState);
     }
 
-    public static unsafe ID3D12Resource CreateDefaultBuffer<T>(
+    public static ID3D12Resource CreateDefaultBuffer<T>(
         ID3D12Device device,
         ReadOnlySpan<T> data,
         ImmediateCommandList commandList,
@@ -159,7 +159,7 @@ public static class BufferFactory
     {
         using var uploadBuffer = CreateUploadBuffer(device, data);
 
-        uint sizeInBytes = (uint)(data.Length * sizeof(T));
+        uint sizeInBytes = (uint)(data.Length * (uint)Marshal.SizeOf<T>());
 
         ID3D12Resource buffer = device.CreateCommittedResource(
             new HeapProperties(HeapType.Default),
@@ -184,13 +184,13 @@ public static class BufferFactory
         return buffer;
     }
 
-    public unsafe static VertexBufferView CreateVertexBufferView<T>(
+    public static VertexBufferView CreateVertexBufferView<T>(
         ID3D12Resource buffer,
         uint elementCount)
         where T : unmanaged
     {
-        uint stride = (uint)sizeof(T);
-        uint sizeInBytes = (uint)(elementCount * (uint)sizeof(T));
+        uint stride = (uint)Marshal.SizeOf<T>();
+        uint sizeInBytes = (uint)(elementCount * stride);
 
         return new VertexBufferView(
             buffer.GPUVirtualAddress,
@@ -201,7 +201,7 @@ public static class BufferFactory
         ID3D12Resource buffer, uint elementCount)
     {
 
-        uint sizeInBytes = (uint)(elementCount * sizeof(ushort));
+        uint sizeInBytes = elementCount * sizeof(ushort);
 
         return new IndexBufferView(
             buffer.GPUVirtualAddress,
