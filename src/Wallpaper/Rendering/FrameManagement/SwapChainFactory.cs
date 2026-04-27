@@ -5,9 +5,6 @@ using Renderer.Resources;
 using Vortice.Direct3D;
 using Vortice.Direct3D12;
 using Vortice.DXGI;
-using Vortice.Mathematics;
-
-using Vortice.DXGI;
 
 #if TRANSPARENT
 using Vortice.DirectComposition;
@@ -21,7 +18,7 @@ namespace Renderer.FrameManagement;
 
 public static class SwapChainFactory
 {
-    public static IDXGISwapChain3 CreateSwapChain(int height, int width, uint frameCount, GraphicsContext context, nint hwnd)
+    public static IDXGISwapChain3 CreateSwapChain(int width, int height, uint frameCount, GraphicsContext context, nint hwnd)
     {
 
 #if DEBUG

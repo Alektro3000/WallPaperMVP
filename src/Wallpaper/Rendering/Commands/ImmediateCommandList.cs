@@ -8,10 +8,12 @@ public class ImmediateCommandList : IDisposable
 {
     private readonly ID3D12CommandAllocator CommandAllocator;
     private readonly ID3D12GraphicsCommandList CommandList;
-    private readonly ID3D12Fence Fence;
     private readonly ID3D12CommandQueue CommandQueue;
+    
     private readonly AutoResetEvent FenceEvent;
     private ulong FenceValue;
+    private readonly ID3D12Fence Fence;
+
     public ImmediateCommandList(GraphicsContext context) : this(context.Device, context.CommandQueue){}
     public ImmediateCommandList(ID3D12Device device, ID3D12CommandQueue commandQueue)
     {

@@ -22,14 +22,9 @@ public sealed class FrameManager : IDisposable
     //Frame Resource
     private FrameResource[] frameResources = new FrameResource[frameCount];
 
-    // Synchronization
-    private readonly ID3D12Fence fence;
-    private ulong fenceValue;
-    private readonly AutoResetEvent fenceEvent = new(false);
 
     private readonly GraphicsContext context;
 
-    private readonly IntPtr hwnd;
     private readonly int width;
     private readonly int height;
 
@@ -38,10 +33,10 @@ public sealed class FrameManager : IDisposable
     private readonly HeapAllocator heap;
     private readonly FrameMetricManager manager;
     private readonly ConstantBufferRegistry constantBufferRegistry;
+    private readonly FrameCommandList frameCommandList;
 
     public FrameManager(GraphicsContext context, IntPtr hwnd, int width, int height, HeapAllocator heap, ConstantBufferRegistry constantBufferRegistry)
     {
-        this.hwnd = hwnd;
         this.width = width;
         this.height = height;
         this.heap = heap;
@@ -53,9 +48,8 @@ public sealed class FrameManager : IDisposable
         this.constantBufferRegistry = constantBufferRegistry;
 
         swapChain = SwapChainFactory.CreateSwapChain(width, height, frameCount, context, hwnd);
+        frameCommandList = new FrameCommandList(device);
 
-        fence = device.CreateFence(0);
-        fenceValue = 1;
 
         rtvHeap = CreateRTVHeap(device);
 
@@ -76,12 +70,12 @@ public sealed class FrameManager : IDisposable
 
     private void CreateFrameResources(ID3D12Device device)
     {
-        var _rtvDescriptorSize = device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
+        var rtvDescriptorSize = device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
         CpuDescriptorHandle rtvHeapStart = rtvHeap.GetCPUDescriptorHandleForHeapStart();
 
         for (uint i = 0; i < frameCount; i++)
         {
-            CpuDescriptorHandle rtvHandle = new CpuDescriptorHandle(in rtvHeapStart, (int)i, _rtvDescriptorSize);
+            CpuDescriptorHandle rtvHandle = new CpuDescriptorHandle(in rtvHeapStart, (int)i, rtvDescriptorSize);
 
             var renderTarget = swapChain.GetBuffer<ID3D12Resource>(i);
             device.CreateRenderTargetView(renderTarget, null, rtvHandle);
@@ -98,12 +92,11 @@ public sealed class FrameManager : IDisposable
     public FrameResource BeginFrame()
     {
         var currentResource = frameResources[swapChain.CurrentBackBufferIndex];
-        WaitForFrame(currentResource);
+        frameCommandList.WaitForFrame(currentResource);
         currentResource.frameMetric = manager.Update();
-        currentResource.CommandAllocator.Reset();
 
+        frameCommandList.ResetCmd(currentResource);
         var cmd = currentResource.CommandList;
-        cmd.Reset(currentResource.CommandAllocator);
 
         // PRESENT -> RENDER_TARGET
         cmd.ResourceBarrierTransition(
@@ -135,27 +128,7 @@ public sealed class FrameManager : IDisposable
 
         swapChain.Present(1, PresentFlags.None);
 
-        ulong fenceValue = this.fenceValue;
-        context.CommandQueue.Signal(fence, fenceValue);
-        currentResource.FenceValue = fenceValue;
-        this.fenceValue++;
-    }
-
-    private void WaitForFrame(FrameResource frame)
-    {
-        if (frame.FenceValue != 0 && fence.CompletedValue < frame.FenceValue)
-        {
-            fence.SetEventOnCompletion(
-                frame.FenceValue,
-                fenceEvent.SafeWaitHandle.DangerousGetHandle());
-
-            fenceEvent.WaitOne();
-        }
-    }
-    public void WaitForAllFrames()
-    {
-        for (int i = 0; i < frameCount; i++)
-            WaitForFrame(frameResources[i]);
+        frameCommandList.SetSignal(currentResource, context.CommandQueue);
     }
 
     public void Dispose()
@@ -164,10 +137,14 @@ public sealed class FrameManager : IDisposable
         {
             frameResources[i].Dispose();
         }
-        fence?.Dispose();
-        fenceEvent?.Dispose();
 
+        frameCommandList?.Dispose();
         rtvHeap?.Dispose();
         swapChain?.Dispose();
+    }
+
+    public void WaitForAllFrames()
+    {
+        frameCommandList.WaitForAllFrames(frameResources);
     }
 }
