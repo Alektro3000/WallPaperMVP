@@ -101,9 +101,6 @@ public sealed class Orchestrator : IDisposable
             item.Render(currentResource);
             
         FrameManager.EndFrame(currentResource);
-        
-        foreach (var item in ParticleSystems)
-            item.SwapBuffers();
     }
 
 

@@ -1,3 +1,6 @@
+
+
+namespace Renderer.Resources;
 public readonly struct ConstantBufferKey
 {
     internal readonly int Key;

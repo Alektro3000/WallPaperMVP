@@ -59,7 +59,8 @@ internal static class Program
 
         string inputRoot = Path.Combine(projectDir, "shaders");
         string outputRoot = Path.Combine(outputDir, "shaders");
-
+        
+        bool failed = false; 
 
         foreach (var type in assembly.GetTypes())
         {
@@ -79,10 +80,22 @@ internal static class Program
                 Log.Information($"{inputPath} to {outputPath}");
 
                 //if(File.GetLastWriteTimeUtc(inputPath) >= File.GetLastWriteTimeUtc(outputPath))
-                Compile(inputPath, inputRoot, outputPath, stage);
+                try
+                {
+                    Compile(inputPath, inputRoot, outputPath, stage);
+                }
+                catch (Exception exception)
+                {
+                    failed = true;
+                    Log.Error("Failed to compile shader on path {inputPath}", inputPath);
+                    Log.Error("Error message {Message}", exception.Message);
+                }
             }
         }
         Log.CloseAndFlush();
+        
+        if(failed)
+            throw new Exception("Failed to Compile Shaders");
         
     }
     private static void Compile(string inputPath, string inputRoot, string outputPath, string Stage)

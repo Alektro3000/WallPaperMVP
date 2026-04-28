@@ -38,16 +38,12 @@ public class ParticleBuffers : IDisposable
     public ParticleBufferBinding ReadBufferBinding => Buffers[ReadIndex];
     public ParticleBufferBinding WriteBufferBinding => Buffers[WriteIndex];
 
-
-    public ID3D12Resource EmitterBuffer;
-
     public ID3D12Resource DrawArgs;
 
 
     public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, string name, Particle[] initParticles)
     {
         particleCount = (uint)initParticles.Length;
-        EmitterBuffer = InitEmitterBuffer(device, commandList, name);
         DrawArgs = InitDrawArgs(device, commandList, particleCount, name);
         InitPingPong(device, commandList, heapAllocator, initParticles, name);
     }
@@ -55,7 +51,6 @@ public class ParticleBuffers : IDisposable
     public ParticleBuffers(ID3D12Device device, ImmediateCommandList commandList, HeapAllocator heapAllocator, string name, uint particleCount)
     {
         this.particleCount = particleCount;
-        EmitterBuffer = InitEmitterBuffer(device, commandList, name);
         DrawArgs = InitDrawArgs(device, commandList, particleCount, name);
         InitPingPong(device, commandList, heapAllocator, generateParticles(), name);
     }
@@ -65,14 +60,6 @@ public class ParticleBuffers : IDisposable
             ResourceStates.IndirectArgument,
             ResourceFlags.AllowUnorderedAccess);
         buf.Name = name + "_DrawArgs";
-        return buf;
-    }
-    private ID3D12Resource InitEmitterBuffer(ID3D12Device device, ImmediateCommandList commandList, string name)
-    {
-        var buf = BufferFactory.CreateDefaultBuffer(device, [new Emitter()], commandList,
-            ResourceStates.VertexAndConstantBuffer,
-            ResourceFlags.AllowUnorderedAccess);
-        buf.Name = name + "_EmitterBuffer";
         return buf;
     }
     private Particle[] generateParticles()
@@ -112,8 +99,6 @@ public class ParticleBuffers : IDisposable
                 ParticleBuffer = buffer,
             };
 
-            bindUAVResource(device, EmitterBuffer, uavRange[1].Cpu);
-
             Buffers[i] = bufferBinding;
         }
     }
@@ -151,7 +136,6 @@ public class ParticleBuffers : IDisposable
     {
         for (int i = 0; i < Buffers.Length; i++)
             Buffers[i].ParticleBuffer.Dispose();
-        EmitterBuffer?.Dispose();
         DrawArgs?.Dispose();
     }
 }

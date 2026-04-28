@@ -9,13 +9,14 @@ using Renderer.Resources;
 namespace Particles.Systems.Whirl;
 
 [Shader("whirl\\compute.hlsl", "cs")]
-[Shader("whirl\\precompute.hlsl", "cs")]
+[Shader("whirl\\emitter.hlsl", "cs")]
+[Shader("whirl\\draw_count.hlsl", "cs")]
 public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller ParticleSystemController;
     public ParticleSystem(
         ParticleSystemInitContext context, Settings settings) : 
-        base(context, (uint)settings.initSettings.MaxParticleAmount, "WhirlSystem", "whirl/compute.hlsl", "whirl/precompute.hlsl")
+        base(context, (uint)settings.initSettings.MaxParticleAmount, "Whirl")
     {
 
         ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "WhirlSystem_Constant"));

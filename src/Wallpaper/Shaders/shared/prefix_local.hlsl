@@ -1,4 +1,4 @@
-#include "common.hlsli"
+#include "../common/commonCompute.hlsli"
 
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
 RWStructuredBuffer<uint> ActiveList : register(u2);

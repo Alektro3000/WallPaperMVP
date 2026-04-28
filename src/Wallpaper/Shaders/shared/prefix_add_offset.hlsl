@@ -1,4 +1,4 @@
-#include "common.hlsli"
+#include "../common/commonCompute.hlsli"
 
 RWStructuredBuffer<uint> ActiveList : register(u2);
 StructuredBuffer<uint> BlockSums    : register(t3);

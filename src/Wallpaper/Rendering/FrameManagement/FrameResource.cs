@@ -5,7 +5,7 @@ namespace Renderer.FrameManagement;
 
 public sealed class FrameResource : IDisposable
 {
-    public uint FrameIndex;
+    internal uint FrameIndex;
 
     public required ID3D12Resource RenderTarget;
     public required CpuDescriptorHandle RenderTargetHandle;

@@ -1,4 +1,4 @@
-#include "common.hlsli"
+#include "../common/commonCompute.hlsli"
 
 RWStructuredBuffer<uint> AliveList: register(u2);
 

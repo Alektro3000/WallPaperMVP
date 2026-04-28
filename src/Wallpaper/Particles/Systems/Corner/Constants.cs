@@ -20,7 +20,7 @@ public struct GpuSettings
     public Vector3 Color = new Vector3(0.2f, 0.9f, 1f);
 
     [UiLabel("Spawn rate")]
-    [UiRange(0.001f, 0.2f, 0.001f)]
+    [UiRange(0.001f, 100f, 0.001f)]
     public float SpawnRate = 70f;
 
     [UiLabel("Spawn offset")]

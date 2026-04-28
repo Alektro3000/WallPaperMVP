@@ -9,13 +9,14 @@ using Vortice.Direct3D12;
 namespace Particles.Systems.Corner;
 
 [Shader("corner\\compute.hlsl", "cs")]
-[Shader("corner\\precompute.hlsl", "cs")]
+[Shader("corner\\emitter.hlsl", "cs")]
+[Shader("corner\\draw_count.hlsl", "cs")]
 public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller ParticleSystemController;
     public ParticleSystem(
         ParticleSystemInitContext context, Settings settings) :
-        base(context, (uint)settings.initSettings.MaxParticleAmount, "CornerSystem", "corner/compute.hlsl", "corner/precompute.hlsl")
+        base(context, (uint)settings.initSettings.MaxParticleAmount, "Corner")
     {
         ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "CornerSystem_Constant"));
         ParticleSystemController = new Controller(ParticleBuffers);

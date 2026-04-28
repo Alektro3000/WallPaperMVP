@@ -9,31 +9,38 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
     uint i = dtid.x;
     if (i >= ParticleCount)
         return;
+
+    EmitterData emitter = Emitter[0];
+    uint totalCount = emitter.TotalCount;
+    uint aliveCount = emitter.AliveCount;
+
+    if (i >= totalCount)
+        return;
+
     Particle p = PrevParticles[i];
 
-    if (p.Age < 0)
+    if (i >= aliveCount)
     {
-        uint spawnIndex;
-        InterlockedAdd(Emitter[0].ConsumedSpawns, 1, spawnIndex);
-        if (spawnIndex < Emitter[0].SpawnCountThisFrame)
-        {
-            uint seed = i + FrameIndex * 12345;
-            float angle = Random(seed) * PI2;
-            float speed = Speed + Speed * Random(seed * 3 + 1);
+        uint seed = i + FrameIndex * 12345;
+        float angle = Random(seed) * PI2;
+        float speed = Speed + Speed * Random(seed * 3 + 1);
 
-            p.Position = CenterPosition;
-            p.Velocity = Rotate(speed, angle);
-            p.Age = LifeTime * (0.9f + 0.1f * Random(seed + 2));
-        }
+        p.Position = CenterPosition;
+        p.Velocity = Rotate(speed, angle);
+        p.Age = LifeTime * (0.9f + 0.1f * Random(seed + 2));
     }
+    else
+    {
+
+        float2 tangent = float2(p.Velocity.y, -p.Velocity.x) * Tangent;
+        float2 radial = (p.Position.xy - CenterPosition) * Radial;
+        p.Velocity += (tangent + radial) * DeltaTime;
+
+        p.Position = p.Position + p.Velocity * DeltaTime;
+        p.Age -= DeltaTime;
+    }
+    
     float scaledAge = p.Age / LifeTime;
-
-    float2 tangent = float2(p.Velocity.y, -p.Velocity.x) * Tangent;
-    float2 radial = (p.Position.xy - CenterPosition) * Radial;
-    p.Velocity += (tangent + radial) * DeltaTime;
-
-    p.Position = p.Position + p.Velocity * DeltaTime;
-    p.Age -= DeltaTime;
 
     if (p.Age < 0)
     {

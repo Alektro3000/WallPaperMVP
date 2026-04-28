@@ -14,10 +14,12 @@ float2 EvalCubicTangent(float t)
 {
     return (3.0f * CatmulA * t + 2.0f * CatmulB) * t + CatmulC;
 }
+
 float map01(float x, float minValue, float maxValue)
 {
     return saturate((x - minValue) / (maxValue - minValue));
 }
+
 // Uses CustomData.xy to store unsnapped position
 [numthreads(256, 1, 1)] void main(uint3 dtid : SV_DispatchThreadID)
 {

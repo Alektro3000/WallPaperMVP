@@ -23,7 +23,7 @@ public struct GpuSettings
     public Vector3 BeginColor = new Vector3(0.4f,0.18f,1f);
     
     
-    [UiLabel("Spawn Rate")]
+    [UiLabel("Life Time")]
     [UiRange(0.1f, 30f, 0.1f)]
     public float LifeTime = 3f;
 

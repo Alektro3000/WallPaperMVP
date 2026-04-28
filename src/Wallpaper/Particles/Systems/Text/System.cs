@@ -11,14 +11,15 @@ namespace Particles.Systems.Text;
 
 
 [Shader("text\\compute.hlsl", "cs")]
-[Shader("text\\precompute.hlsl", "cs")]
+[Shader("text\\emitter.hlsl", "cs")]
+[Shader("text\\draw_count.hlsl", "cs")]
 public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller Controller;
     static Random random = new Random();
     public ParticleSystem(
         ParticleSystemInitContext context, Settings settings) : 
-        base(context, generateParticles(settings.initSettings), "TextSystem", "text/compute.hlsl", "text/precompute.hlsl")
+        base(context, generateParticles(settings.initSettings), "Text")
     {
         ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "TextSystem_Constant"));
         Controller = new Controller(ParticleBuffers);
@@ -31,6 +32,9 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
             return null;
         return new ParticleSystem(context, settings);
     }
+    
+    public override void Dispatch(FrameResource currentResource)
+        => ComputePass.DispatchParticles(currentResource, ConstantKey, false);
 
     public override void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings)
     {
@@ -38,7 +42,7 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
             ref currentResource.GetBufferConstantRef<Constants>(ConstantKey),
             currentResource.frameMetric, systemSettings);
     }
-    private static  Point GetRandomWhitePixelWeightedTop(Bitmap bitmap)
+    private static Point GetRandomWhitePixelWeightedTop(Bitmap bitmap)
     {
         const int MaxAttempts = 100;
 

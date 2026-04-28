@@ -6,7 +6,7 @@ namespace Renderer.Descriptors;
 
 public class HeapAllocator : IDisposable
 {
-    private const uint AllocatorInitSize = 64;
+    private const uint AllocatorInitSize = 256;
     public readonly ID3D12DescriptorHeap Heap;
     private uint CurrentOffset;
     public static uint DescriptorSize;

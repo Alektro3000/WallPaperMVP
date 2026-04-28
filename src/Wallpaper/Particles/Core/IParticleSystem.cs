@@ -9,7 +9,7 @@ public interface IParticleSystem : IDisposable
 
     void Render(FrameResource currentResource);
     void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings);
-    void SwapBuffers();
+
 };
 public interface IParticleSystemFor<TSettings> where TSettings : ISettings
 {

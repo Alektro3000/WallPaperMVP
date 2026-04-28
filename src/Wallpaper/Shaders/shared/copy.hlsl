@@ -1,4 +1,4 @@
-#include "common.hlsli"
+#include "../common/commonCompute.hlsli"
 
 StructuredBuffer<Particle> SourceParticles : register(t0);
 RWStructuredBuffer<Particle> DestParticles : register(u0);

@@ -9,12 +9,13 @@ using Vortice.Direct3D12;
 namespace Particles.Systems.Strip;
 
 [Shader("strip\\compute.hlsl", "cs")]
-[Shader("strip\\precompute.hlsl", "cs")]
+[Shader("strip\\emitter.hlsl", "cs")]
+[Shader("strip\\draw_count.hlsl", "cs")]
 public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller ParticleSystemController;
     public ParticleSystem(ParticleSystemInitContext context, Settings settings) : 
-        base(context, (uint)settings.initSettings.MaxParticleAmount, "StripSystem", "strip/compute.hlsl", "strip/precompute.hlsl")
+        base(context, (uint)settings.initSettings.MaxParticleAmount, "Strip")
     {
         ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "StripSystem_Constant"));
         ParticleSystemController = new Controller(ParticleBuffers);

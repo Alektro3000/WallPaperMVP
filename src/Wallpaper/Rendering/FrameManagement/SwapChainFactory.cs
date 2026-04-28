@@ -1,9 +1,5 @@
 
 using Renderer.Core;
-using Renderer.Descriptors;
-using Renderer.Resources;
-using Vortice.Direct3D;
-using Vortice.Direct3D12;
 using Vortice.DXGI;
 
 #if TRANSPARENT

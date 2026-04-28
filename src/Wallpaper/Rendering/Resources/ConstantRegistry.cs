@@ -2,6 +2,7 @@ using Renderer.FrameManagement;
 using Renderer.Resources;
 using Vortice.Direct3D12;
 
+namespace Renderer.Resources;
 public sealed class ConstantBufferRegistry
 {
     private int count;
