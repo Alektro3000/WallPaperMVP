@@ -13,6 +13,9 @@
   <PropertyGroup Condition="'$(TransparentMode)' == 'true'">
     <DefineConstants>$(DefineConstants);TRANSPARENT</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DefineConstants>DEBUGDX</DefineConstants>
+  </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <PublishSingleFile>true</PublishSingleFile>

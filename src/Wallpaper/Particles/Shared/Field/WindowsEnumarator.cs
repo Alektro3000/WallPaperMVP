@@ -86,9 +86,6 @@ public static class WindowEnumerator
             if (rect.Width <= 0 || rect.Height <= 0)
                 return true;
 
-            //Don't ask for now
-            if (rect.Width >= 1920 || rect.Height >= 1080)
-                return true;
                 
             string className = GetWindowClass(hWnd);
             if (className == "ApplicationFrameWindow" ||

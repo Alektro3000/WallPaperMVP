@@ -54,11 +54,10 @@ public class Controller
         };
 
         Win32.GetCursorPos(out Win32.POINT point);
-        float ratio = (float)metric.height/metric.width;
         MousePos3 = MousePos2;
         MousePos2 = MousePos1;
         MousePos1 = MousePos0;
-        MousePos0 = new Vector2(((float)point.X) / metric.height, (metric.height - (float)point.Y) / metric.height) * 2 - new Vector2(1/ratio, 1);
+        MousePos0 = new Vector2(((float)point.X) / metric.height, (metric.height - (float)point.Y) / metric.height) * 2 - new Vector2(1/metric.ratio, 1);
 
         constant.CatmulA = CatmullA(MousePos3, MousePos2, MousePos1, MousePos0);
         constant.CatmulB = CatmullB(MousePos3, MousePos2, MousePos1, MousePos0);

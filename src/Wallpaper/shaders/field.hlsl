@@ -14,13 +14,53 @@ cbuffer FieldConstantBuffer : register(b0)
 {
     WindowFieldDescription Descriptors[32];
     uint WindowCount;
-    uint2 WindowSize;
+    uint2 ScreenSize;
 };
 
 float InsideBox(float2 p, float2 bmin, float2 bmax)
 {
     return all(p >= bmin && p <= bmax) ? 1.0 : 0.0;
 }
+float WindowScreenAwareSdf(float2 p, float2 bmin, float2 bmax)
+{
+    float sdf = 1e20f;
+
+    bool useLeft   = bmin.x > 0.0f;
+    bool useRight  = bmax.x < ScreenSize.x;
+    bool useBottom = bmin.y > 0.0f;
+    bool useTop    = bmax.y < ScreenSize.y;
+
+    // outside distances to active faces
+    if (useLeft && p.x < bmin.x)
+        sdf = min(sdf, bmin.x - p.x);
+
+    if (useRight && p.x > bmax.x)
+        sdf = min(sdf, p.x - bmax.x);
+
+    if (useBottom && p.y < bmin.y)
+        sdf = min(sdf, bmin.y - p.y);
+
+    if (useTop && p.y > bmax.y)
+        sdf = min(sdf, p.y - bmax.y);
+
+    // inside: negative distance to nearest active face
+    if (p.x >= bmin.x && p.x <= bmax.x &&
+        p.y >= bmin.y && p.y <= bmax.y)
+    {
+        float insideDist = 1e20f;
+
+        if (useLeft)   insideDist = min(insideDist, p.x - bmin.x);
+        if (useRight)  insideDist = min(insideDist, bmax.x - p.x);
+        if (useBottom) insideDist = min(insideDist, p.y - bmin.y);
+        if (useTop)    insideDist = min(insideDist, bmax.y - p.y);
+
+        if (insideDist < 1e19f)
+            sdf = min(sdf, -insideDist);
+    }
+
+    return sdf;
+}
+
 [numthreads(8, 8, 1)]
 void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
@@ -31,9 +71,13 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     float2 pos = xy;
     float2 velocity = 0;
     float1 inside = 0;
+    float sdf = 1e20;
+    float2 velocitySDF = 0.0f;
+
     for(uint i = 0; i < WindowCount; i++)
     {
         WindowFieldDescription desc = Descriptors[i];
+
 
         float2 prevCenter = 0.5 * (desc.PrevMin + desc.PrevMax);
         float2 currCenter = 0.5 * (desc.CurrMin + desc.CurrMax);
@@ -52,7 +96,12 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
         float t = saturate(1.0 - dist / influenceRadius);
         float falloff = t * t;
         velocity += (edgeSpeed * 0.02f + motion * 0.005f) * falloff;
-        inside += InsideBox(pos, desc.CurrMin, desc.CurrMax);
+        
+        float boxSdf = WindowScreenAwareSdf(pos, 
+                desc.CurrMin,
+                desc.CurrMax);
+
+        sdf = min(sdf, boxSdf);
     }
-    FieldUav[xy] = float4(velocity, saturate(inside),1);
+    FieldUav[xy] = float4(velocity, sdf, sdf );
 }

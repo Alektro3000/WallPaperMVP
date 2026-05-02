@@ -13,6 +13,10 @@ public struct FrameMetric
     {
         get => new Vector2(width, height);
     }
+    public float ratio
+    {
+        get => (float)height/width;
+    }
     public FrameMetric(
         float DeltaTime,
         uint FrameIndex,
