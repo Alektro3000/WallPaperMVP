@@ -80,16 +80,17 @@ public sealed class FluidCompute : IDisposable
         cmd.SetComputeRootDescriptorTable(7, fluidUavs);
         cmd.SetComputeRootDescriptorTable(8, fluidSrvs);
 
-        cmd.ResourceBarrierUnorderedAccessView(bindings.ComputeBuffers.EmitterBuffer);
         cmd.ResourceBarrierTransition(bindings.ComputeBuffers.DispatchArgs, ResourceStates.IndirectArgument, ResourceStates.UnorderedAccess);
         cmd.SetPipelineState(emitterPso);
         cmd.Dispatch(1, 1, 1);
+        cmd.ResourceBarrierUnorderedAccessView(bindings.ComputeBuffers.EmitterBuffer);
         cmd.ResourceBarrierTransition(bindings.ComputeBuffers.DispatchArgs, ResourceStates.UnorderedAccess, ResourceStates.IndirectArgument);
 
         TransitToUnordered(cmd, fluidBuffers.HashEntries);
         cmd.SetComputeRoot32BitConstants<uint>(9, [0u, 0u, capacity, 0u], 0);
         cmd.SetPipelineState(sortPso);
         DispatchIndirect(cmd);
+        cmd.ResourceBarrierUnorderedAccessView(fluidBuffers.HashEntries);
 
         uint sortCount = NextPowerOfTwo(capacity);
         for (uint k = 2; k <= sortCount; k <<= 1)
@@ -99,6 +100,7 @@ public sealed class FluidCompute : IDisposable
                 cmd.SetComputeRoot32BitConstants<uint>(9, [j, k, capacity, 0u], 0);
                 cmd.SetPipelineState(sortPso);
                 cmd.Dispatch((capacity + 255) / 256, 1, 1);
+                cmd.ResourceBarrierUnorderedAccessView(fluidBuffers.HashEntries);
             }
         }
         TransitToNonPixel(cmd, fluidBuffers.HashEntries);

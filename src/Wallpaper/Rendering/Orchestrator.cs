@@ -1,10 +1,8 @@
 
-using Particles.Systems;
 using Renderer.Core;
 using Serilog;
 using SharedField = Particles.Shared.Field;
 using SharedCommon = Particles.Shared.Global;
-using Renderer;
 using Renderer.Descriptors;
 using Particles.Settings;
 using Particles.Core;
@@ -12,8 +10,10 @@ using Renderer.FrameManagement;
 using Renderer.Resources;
 using Renderer.Commands;
 using Particles.Shared;
+using Renderer.Passes;
 
 namespace Renderer;
+
 public sealed class Orchestrator : IDisposable
 {
     //SubClasses
@@ -26,10 +26,12 @@ public sealed class Orchestrator : IDisposable
     private readonly IConstantUpdater[] constantUpdaters;
 
     private readonly SharedField.Pass fieldPass;
+    private readonly Debug fieldDebugPass;
 
     public readonly IParticleSystem[] ParticleSystems;
     public Orchestrator(SystemSettings systemSettings, IntPtr hwnd, int width, int height)
     {
+
         Context = new GraphicsContext();
         Log.Debug("Graphic Context initialized");
 
@@ -42,22 +44,23 @@ public sealed class Orchestrator : IDisposable
 
         ConstantBufferRegistry = new ConstantBufferRegistry();
 
-        var field = 
-            new SharedField.Buffers(Context.Device, ConstantBufferRegistry , HeapAllocator);
-        var common = 
-            new SharedCommon.Buffers(ConstantBufferRegistry );
-        
+        var field =
+            new SharedField.Buffers(Context.Device, ConstantBufferRegistry, HeapAllocator);
+        var common =
+            new SharedCommon.Buffers(ConstantBufferRegistry);
+
         constantBufferSets = [
             field,
             common
         ];
-        
+
         constantUpdaters = [
             new SharedField.Controller(field),
             new SharedCommon.Controller(common)
         ];
 
         fieldPass = new SharedField.Pass(Context.Device, field, common, "field.hlsl");
+        fieldDebugPass = new Debug(Context.Device, field.SRVFieldDescriptor);
         Log.Information("FieldPass Initialized");
 
 
@@ -71,49 +74,62 @@ public sealed class Orchestrator : IDisposable
             FieldBuffers = field,
             Registry = ConstantBufferRegistry
         };
-        
+
         ParticleSystems = ParticleSystemReflection.CreateParticleSystems(systemSettings, context).ToArray();
-        
-        
+
+
         FrameManager = new FrameManager(Context, hwnd, width, height, HeapAllocator, ConstantBufferRegistry);
         Log.Information("FrameManager Initialized {@FrameManager}", FrameManager);
-        
+
 
         //renderer2D = new Renderer2DPass(Context.Device, Context.CommandQueue);
     }
 
     public void Render(SystemSettings systemSettings)
     {
+        Log.Debug("Render stage: begin frame");
         var currentResource = FrameManager.BeginFrame();
 
+        Log.Debug("Render stage: update constants");
         foreach (var item in constantUpdaters)
             item.UpdateConstants(currentResource, systemSettings);
 
+        Log.Debug("Render stage: field update");
         fieldPass.UpdateField(currentResource);
 
+        Log.Debug("Render stage: particle constant buffers");
         foreach (var item in ParticleSystems)
             item.UpdateConstantBuffers(currentResource, systemSettings);
 
+        Log.Debug("Render stage: particle dispatch");
         foreach (var item in ParticleSystems)
             item.Dispatch(currentResource);
 
+        Log.Debug("Render stage: particle render");
         foreach (var item in ParticleSystems)
             item.Render(currentResource);
-            
+
+        
+        // Log.Debug("Render stage: debug overlay");
+        // fieldDebugPass.Render(currentResource);
+
+        Log.Debug("Render stage: end frame");
         FrameManager.EndFrame(currentResource);
+
     }
 
 
     public void Dispose()
     {
-        
+
         FrameManager.WaitForAllFrames();
 
         foreach (var item in ParticleSystems)
             item.Dispose();
 
         fieldPass.Dispose();
-        
+        fieldDebugPass.Dispose();
+
         foreach (var item in constantBufferSets)
             item.Dispose();
 

@@ -26,9 +26,9 @@ float4 main(PsIn input) : SV_TARGET
             int2 ncell = cell + int2(ox, oy);
 
             CellRange range = CellRangesSrv[CellHash(ncell)];
-            for (uint n = 0; n < range.Count; n++)
+            for (uint n = range.Start; n < range.End; n++)
             {
-                Particle p = Particles[HashEntriesSrv[range.Start + n].ParticleIndex];
+                Particle p = Particles[HashEntriesSrv[n].ParticleIndex];
                 float r = length(world - p.Position);
                 if(r < h)
                     density += SphKernel(r, h);

@@ -18,5 +18,5 @@ void main(uint3 dtid : SV_DispatchThreadID)
         CellRanges[entry.Hash].Start = i;
 
     if (i == ParticleCount - 1 || HashEntriesSrv[i + 1].Hash != entry.Hash)
-        CellRanges[entry.Hash].Count = i - CellRanges[entry.Hash].Start + 1;
+        CellRanges[entry.Hash].End = i + 1;
 }

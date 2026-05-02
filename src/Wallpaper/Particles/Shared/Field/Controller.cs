@@ -16,6 +16,8 @@ public class Controller(Buffers buffers) : IConstantUpdater
     }
     private void UpdateConstant(FrameResource currentResource, ref FieldConstantBuffer constant)
     {
+        constant.ScreenWidth = (uint)currentResource.frameMetric.width;
+        constant.ScreenHeight = (uint)currentResource.frameMetric.height; 
         var screenHeight = currentResource.frameMetric.height;
         var windows = WindowEnumerator.GetWindows()
             .OrderByDescending(x => x.Rect.Width * x.Rect.Height)

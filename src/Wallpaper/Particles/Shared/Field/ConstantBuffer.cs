@@ -43,5 +43,7 @@ public struct WindowFieldDescriptionArray
 public struct FieldConstantBuffer
 {
     public WindowFieldDescriptionArray Descriptors;
+    public uint ScreenWidth;
+    public uint ScreenHeight;
     public uint windowsCount;
 }

@@ -64,7 +64,7 @@ public class Debug : IDisposable
                 ShaderVisibility.Pixel),
         };
 
-        return ShaderLibrary.CreateRootSignature(device, rootParameters, []);
+        return ShaderLibrary.CreateRootSignature(device, rootParameters, [staticSampler]);
         
 
 

@@ -11,6 +11,6 @@ void main(uint3 dtid : SV_DispatchThreadID)
 
     CellRange emptyRange;
     emptyRange.Start = 0;
-    emptyRange.Count = 0;
+    emptyRange.End = 0;
     CellRanges[i] = emptyRange;
 }

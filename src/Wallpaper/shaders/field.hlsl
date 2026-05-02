@@ -13,35 +13,24 @@ struct WindowFieldDescription
 cbuffer FieldConstantBuffer : register(b0)
 {
     WindowFieldDescription Descriptors[32];
-    uint WindowCount;
     uint2 ScreenSize;
+    uint WindowCount;
 };
 
 float InsideBox(float2 p, float2 bmin, float2 bmax)
 {
     return all(p >= bmin && p <= bmax) ? 1.0 : 0.0;
 }
+
 float WindowScreenAwareSdf(float2 p, float2 bmin, float2 bmax)
 {
     float sdf = 1e20f;
 
     bool useLeft   = bmin.x > 0.0f;
-    bool useRight  = bmax.x < ScreenSize.x;
+    bool useRight  = bmax.x < fieldSize.x;
     bool useBottom = bmin.y > 0.0f;
-    bool useTop    = bmax.y < ScreenSize.y;
+    bool useTop    = bmax.y < fieldSize.y;
 
-    // outside distances to active faces
-    if (useLeft && p.x < bmin.x)
-        sdf = min(sdf, bmin.x - p.x);
-
-    if (useRight && p.x > bmax.x)
-        sdf = min(sdf, p.x - bmax.x);
-
-    if (useBottom && p.y < bmin.y)
-        sdf = min(sdf, bmin.y - p.y);
-
-    if (useTop && p.y > bmax.y)
-        sdf = min(sdf, p.y - bmax.y);
 
     // inside: negative distance to nearest active face
     if (p.x >= bmin.x && p.x <= bmax.x &&

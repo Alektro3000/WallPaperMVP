@@ -50,9 +50,10 @@ public sealed class ParticleComputeBindings : IDisposable
     }
     private GpuDescriptorHandle CreateSrvTable(ID3D12Device device, HeapAllocator heap, uint capacity)
     {
-        var range = heap.Allocate(2);
+        var range = heap.Allocate(3);
         device.CreateShaderResourceView(ComputeBuffers.AliveList, BufferFactory.CreateStructuredBufferSrvDesc<uint>(capacity), range[0].Cpu);
         device.CreateShaderResourceView(ComputeBuffers.BlockSum, BufferFactory.CreateStructuredBufferSrvDesc<uint>(ComputeBuffers.BlockSumCapacity(capacity)), range[1].Cpu);
+        device.CreateShaderResourceView(ComputeBuffers.BlockSum, BufferFactory.CreateStructuredBufferSrvDesc<uint>(ComputeBuffers.BlockSumCapacity(capacity)), range[2].Cpu);
 
         return range[0].Gpu;
     }

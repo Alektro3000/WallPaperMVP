@@ -39,10 +39,8 @@ float2 Boundary(inout float2 position, float2 velocity)
     if (p.Age < 0) // false && sortedIndex >= emitter.AliveCount)
     {
         uint seed = sortedIndex * 747796405u + FrameIndex * 2891336453u;
-        float angle = Random(seed) * PI2;
-        float radius = sqrt(Random(seed + 11u)) * EmitterRadius;
-        p.Position = EmitterPosition + Rotate(radius, angle);
-        p.Velocity = Rotate(InitialVelocity, angle);
+        
+        p.Position = Random2(seed) * 2 - 1;
         p.Age = LifeTime;
     }
 
@@ -63,9 +61,9 @@ float2 Boundary(inout float2 position, float2 velocity)
 
             uint hash = CellHash(ncell);
             CellRange range = CellRangesSrv[hash];
-            for (uint n = 0; n < range.Count; n++)
+            for (uint n = range.Start; n < range.End; n++)
             {
-                HashEntry otherEntry = HashEntriesSrv[range.Start + n];
+                HashEntry otherEntry = HashEntriesSrv[n];
                 if (otherEntry.ParticleIndex == i)
                     continue;
 
@@ -108,8 +106,9 @@ float2 Boundary(inout float2 position, float2 velocity)
     p.Position += p.Velocity * DeltaTime;
     p.CustomData1.x = density;
     p.Size = Size;
-    p.Age += DeltaTime;
     p.Color = float4(BeginColor, 0.8f);
+
+    p.Color.x = CellHashFromPosition(p.Position) == CellHashFromPosition(MousePos);
 
     if (p.Age >= 0.0f)
         InterlockedAdd(Emitter[0].AliveCountCheck, 1);

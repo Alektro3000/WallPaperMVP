@@ -8,13 +8,16 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TransparentMode>false</TransparentMode>
+    <Optimize>false</Optimize>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TransparentMode)' == 'true'">
     <DefineConstants>$(DefineConstants);TRANSPARENT</DefineConstants>
   </PropertyGroup>
+  
+  
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <DefineConstants>DEBUGDX</DefineConstants>
+    <!-- <DefineConstants>DEBUGDX</DefineConstants> -->
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">

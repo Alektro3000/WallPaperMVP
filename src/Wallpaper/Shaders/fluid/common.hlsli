@@ -41,7 +41,7 @@ struct HashEntry
 struct CellRange
 {
     uint Start;
-    uint Count;
+    uint End;
 };
 
 uint2 CellCoord(float2 p)
@@ -63,8 +63,9 @@ uint CellHash(int2 cell)
     uint localId = (local.y << 2) | local.x; // 0..15
 
     uint h = WangHash(cell.y) ^ WangHash(cell.x * 3 + 1);
-
-    return ((h << 4) | localId) & (RangeCount - 1);
+    uint hash = (h << 4) | localId;
+    
+    return hash & (RangeCount-1);
 }
 
 uint CellHashFromPosition(float2 p)
