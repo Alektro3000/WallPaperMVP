@@ -8,10 +8,13 @@ namespace Particles.Shared.Global;
 public struct ConstantBuffer
 {
     public Matrix4x4 viewMatrix;
+    
     public float DeltaTime;
-    public uint FrameIndex;
+    public float SmoothedDeltaTime;
     public uint width;
     public uint height;
+
+    public uint FrameIndex;
     public float ScreenRatio;
     public float ScreenRatioInv;
 }

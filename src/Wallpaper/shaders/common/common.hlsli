@@ -4,9 +4,12 @@
 cbuffer CommonConstants : register(b1)
 {
     float4x4 ViewMatrix;
+    
     float DeltaTime;
-    uint FrameIndex;
+    float SmoothedDeltaTime;
     uint2 fieldSize;
+
+    uint FrameIndex;
     float ScreenRatio;
     float ScreenRatioInv;
 };
