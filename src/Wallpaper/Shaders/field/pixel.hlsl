@@ -13,6 +13,6 @@ float4 main(float4 position : SV_Position, float2 uv : TEXCOORD0) : SV_Target
         float output = saturate( (sdf-DebugSettings.minPos) / (DebugSettings.maxPos - DebugSettings.minPos));
         return float4(lerp(DebugSettings.minColor,DebugSettings.maxColor, output), 1.0f);
     }
-        return float4((field.xy-DebugSettings.minPos) / (DebugSettings.maxPos - DebugSettings.minPos), 1, 1.0f);
-
+    
+    return float4((field.xy-DebugSettings.minPos) / (DebugSettings.maxPos - DebugSettings.minPos), 1, 1.0f);
 }

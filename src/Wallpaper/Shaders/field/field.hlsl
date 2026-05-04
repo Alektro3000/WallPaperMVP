@@ -6,6 +6,8 @@ struct WindowFieldDescription
     float2 PrevMax;
     float2 CurrMin;
     float2 CurrMax;
+    float2 ExtendedMin;
+    float2 ExtendedMax;
 };
 cbuffer FieldWindowDescriptors : register(b2)
 {
@@ -19,58 +21,17 @@ float InsideBox(float2 p, float2 bmin, float2 bmax)
     return all(p >= bmin && p <= bmax) ? 1.0 : 0.0;
 }
 
-float WindowScreenAwareSdf(float2 p, float2 bmin, float2 bmax)
+float WindowSdf(float2 p, float2 bmin, float2 bmax)
 {
-    float sdf = 1e20f;
+    float2 center = (bmin + bmax) * 0.5f;
+    float2 halfSize = (bmax - bmin) * 0.5f;
 
-    bool useLeft   = bmin.x > 0.0f;
-    bool useRight  = bmax.x < fieldSize.x;
-    bool useBottom = bmin.y > 0.0f;
-    bool useTop    = bmax.y < fieldSize.y;
+    float2 q = abs(p - center) - halfSize;
 
+    float outsideDist = length(max(q, 0.0f));
+    float insideDist = min(max(q.x, q.y), 0.0f);
 
-    bool inside = all(bmin <= p && p <= bmax);
-        
-    if (inside)
-    {
-    // inside: negative distance to nearest active face
-        float insideDist = 1e20f;
-
-        if (useLeft)   insideDist = min(insideDist, p.x - bmin.x);
-        if (useRight)  insideDist = min(insideDist, bmax.x - p.x);
-        if (useBottom) insideDist = min(insideDist, p.y - bmin.y);
-        if (useTop)    insideDist = min(insideDist, bmax.y - p.y);
-
-        if (insideDist < 1e19f)
-            sdf = min(sdf, -insideDist);
-    }
-    else
-    {
-        
-        float2 d = 0.0f;
-
-        float2 below = bmin - p;
-        float2 above = p - bmax;
-
-        if (useLeft)
-            d.x = max(d.x, below.x);
-
-        if (useRight)
-            d.x = max(d.x, above.x);
-
-        if (useBottom)
-            d.y = max(d.y, below.y);
-
-        if (useTop)
-            d.y = max(d.y, above.y);
-
-        float outsideDist = length(max(d, 0.0f));
-
-        if (outsideDist > 0.0f)
-            sdf = min(sdf, outsideDist);
-    }
-
-    return sdf;
+    return outsideDist + insideDist;
 }
 
 [numthreads(8, 8, 1)]
@@ -98,20 +59,19 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
         float2 closest = clamp(pos, desc.CurrMin, desc.CurrMax);
         float2 closestPrev = clamp(pos, desc.PrevMin, desc.PrevMax);
 
-        float2 edgeSpeed = closest - closestPrev ;
+        float2 edgeSpeed = closest - closestPrev;
 
         float2 delta = pos - closest;
 
         float dist = length(delta);
-        float influenceRadius = 5.0;
 
-        float t = saturate(1.0 - dist / influenceRadius);
+        float t = saturate(1.0 - dist / InfluenceRadius);
         float falloff = t * t;
-        velocity += (edgeSpeed * 0.02f + motion * 0.005f) * falloff;
+        velocity += (edgeSpeed * EdgeSpeed + motion * WindowSpeed) * falloff;
         
-        float boxSdf = WindowScreenAwareSdf(pos, 
-                desc.CurrMin,
-                desc.CurrMax);
+        float boxSdf = WindowSdf(pos, 
+                desc.ExtendedMin,
+                desc.ExtendedMax);
 
         sdf = min(sdf, boxSdf);
     }

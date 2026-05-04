@@ -20,6 +20,10 @@ struct DebugSettingsStruct
 cbuffer FieldConstantBuffer : register(b0)
 {
     DebugSettingsStruct DebugSettings;
+    float EdgeSpeed;
+    float WindowSpeed;
+    float InfluenceRadius;
+    float _padding1;
     uint WindowCount;
     int3 _padding;
 };

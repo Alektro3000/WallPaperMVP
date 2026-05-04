@@ -23,7 +23,9 @@ public class Controller(Buffers buffers) : IConstantUpdater, IParticleSystemFor<
     ref FieldConstantBuffer constant, 
     ref WindowFieldDescriptionBuffer descriptionBuffer, SystemSettings systemSettings)
     {
-        constant.debugSettings = systemSettings.GetSettings<Settings>().gpuSettings;
+        var settings = systemSettings.GetSettings<Settings>();
+        constant.debugSettings = settings.debugSettings;
+        constant.fieldSettings = settings.fieldSettings;
         var screenHeight = currentResource.frameMetric.height;
         var windows = WindowEnumerator.GetWindows()
             .OrderByDescending(x => x.Rect.Width * x.Rect.Height)
@@ -55,7 +57,9 @@ public class Controller(Buffers buffers) : IConstantUpdater, IParticleSystemFor<
                 new WindowFieldDescription(
                     window.Rect,
                     previousWindows.Find(x=>x.Handle == window.Handle)?.Rect,
-                    scaling
+                    scaling,
+                    currentResource.frameMetric.size,
+                    settings.fieldWindowSettings
                 )).ToArray();
                 
         for(int i = 0; i < constant.WindowsCount; i++)
