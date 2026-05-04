@@ -14,18 +14,13 @@ public class Controller(Buffers buffers) : IConstantUpdater, IParticleSystemFor<
     public List<WindowEnumerator.WindowInfo> previousWindows = [];
     public void UpdateConstants(FrameResource currentResource, SystemSettings systemSettings)
     {
-        UpdateConstant(currentResource, 
-        ref currentResource.GetBufferConstantRef(buffers.fieldKey), 
-        ref currentResource.GetBufferConstantRef(buffers.windowDescriptors), 
-        systemSettings);
-    }
-    private void UpdateConstant(FrameResource currentResource, 
-    ref FieldConstantBuffer constant, 
-    ref WindowFieldDescriptionBuffer descriptionBuffer, SystemSettings systemSettings)
-    {
+        ref var constant = ref currentResource.GetBufferConstantRef(buffers.fieldKey);
+        ref var descriptionBuffer = ref currentResource.GetBufferConstantRef(buffers.windowDescriptors);
         var settings = systemSettings.GetSettings<Settings>();
+
         constant.debugSettings = settings.debugSettings;
         constant.fieldSettings = settings.fieldSettings;
+        
         var screenHeight = currentResource.frameMetric.height;
         var windows = WindowEnumerator.GetWindows()
             .OrderByDescending(x => x.Rect.Width * x.Rect.Height)
