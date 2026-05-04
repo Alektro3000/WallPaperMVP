@@ -5,6 +5,8 @@ cbuffer Constants : register(b0)
     uint ParticleCount;
     uint RangeCount;
     float2 MousePos;
+    uint MouseButtons;
+    float3 _padding;
 
     float3 Color;
     float Size;
@@ -18,12 +20,16 @@ cbuffer Constants : register(b0)
     float Gravity;
     float WindowsForce;
     float WindowsOffset;
-    float SoftBoundaryScale;
 
+    float WindowsVelocity;
+    float SoftBoundaryScale;
     float BoundaryHardness;
     float BoundaryForce;
+
     float SeparationRadius;
     float SeparationStrength;
+    float MouseStrength;
+    float MouseRadius;
     
     float DensityDebug;
     float DensityDebugMin;

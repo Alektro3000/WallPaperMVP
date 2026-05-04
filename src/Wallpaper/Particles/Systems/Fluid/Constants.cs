@@ -9,6 +9,8 @@ public struct Constants
     public uint ParticleCount;
     public uint RangeCount;
     public Vector2 MousePos;
+    public uint MouseButtons;
+    public Vector3 Padding;
 
     public GpuSettings Settings;
 }

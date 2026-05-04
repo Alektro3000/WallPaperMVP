@@ -20,10 +20,17 @@ public sealed class Controller
 
         Win32.GetCursorPos(out Win32.POINT point);
         var mouse = new Vector2(((float)point.X) / frameMetric.height, (frameMetric.height - (float)point.Y) / frameMetric.height) * 2 - new Vector2(1/frameMetric.ratio, 1);
+        uint mouseButtons = 0;
+        if ((Win32.GetAsyncKeyState(Win32.VK_LBUTTON) & 0x8000) != 0)
+            mouseButtons |= 1u;
+        if ((Win32.GetAsyncKeyState(Win32.VK_RBUTTON) & 0x8000) != 0)
+            mouseButtons |= 2u;
 
         constant.ParticleCount = particles.particleCount;
         constant.RangeCount = FluidCompute.MaxGridCells;
         constant.MousePos = mouse;
+        constant.MouseButtons = mouseButtons;
+        constant.Padding = Vector3.Zero;
         constant.Settings = settings;
     }
 }

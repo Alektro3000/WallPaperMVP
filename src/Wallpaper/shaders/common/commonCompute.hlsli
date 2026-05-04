@@ -3,15 +3,23 @@
 Texture2D<float4> FieldSrv : register(t1);
 SamplerState LinearSampler : register(s0);
 
-Particle updateParticleField(Particle p)
+float2 getParticleFieldVelocity(float2 pos)
 {
 
     float2 texel = float2(
-                       (p.Position.x * ScreenRatioInv),
-                       (p.Position.y)) *
+                       (pos.x * ScreenRatioInv),
+                       (pos.y)) *
                        0.5 +
                    0.5;
-    p.Velocity += FieldSrv.SampleLevel(LinearSampler, texel, 0).xy;
+
+    return FieldSrv.SampleLevel(LinearSampler, texel, 0).xy;
+};
+
+
+Particle updateParticleField(Particle p)
+{
+
+    p.Velocity += getParticleFieldVelocity(p.Position);
 
     return p;
 };

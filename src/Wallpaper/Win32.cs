@@ -48,6 +48,8 @@ public static class Win32
     public const uint MOD_CONTROL = 0x0002;
     public const uint MOD_SHIFT = 0x0004;
     public const uint VK_F10 = 0x79;
+    public const int VK_LBUTTON = 0x01;
+    public const int VK_RBUTTON = 0x02;
 
 
     // =========================
@@ -359,6 +361,9 @@ public static class Win32
 
     [DllImport("user32.dll")]
     public static extern bool GetCursorPos(out POINT lpPoint);
+
+    [DllImport("user32.dll")]
+    public static extern short GetAsyncKeyState(int vKey);
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT

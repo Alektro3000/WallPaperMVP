@@ -109,7 +109,23 @@ float2 Boundary(inout float2 position, float2 velocity, float2 limit)
         viscosityForce * Viscosity + 
         getMoveOutWindowForce(p.Position, WindowsOffset) * WindowsForce + 
         float2(0.0f, Gravity);
+
+    if ((MouseButtons & 3u) != 0u)
+    {
+        float2 toMouse = MousePos - p.Position;
+        float distToMouse = length(toMouse);
+        float radius = max(MouseRadius, 0.0001f);
+        if (distToMouse < radius)
+        {
+            float2 dirToMouse = toMouse / max(distToMouse, 0.0001f);
+            float t = 1.0f - distToMouse / radius;
+            float falloff = t * t;
+            acceleration += ((MouseButtons & 1u) ? dirToMouse : -dirToMouse) * (MouseStrength * falloff);
+        }
+    }
+
     p.Velocity += acceleration * DeltaTime;
+    p.Velocity += getParticleFieldVelocity(p.Position) * WindowsVelocity;
     
     //p.Velocity *= 0.999f;
     p.Position += p.Velocity * DeltaTime;

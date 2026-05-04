@@ -2,7 +2,7 @@ using static SettingsForm;
 namespace Particles.Settings;
 public sealed class SettingsStore
 {
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private SystemSettings _settings;
     private readonly string _path;
 
@@ -30,8 +30,7 @@ public sealed class SettingsStore
 
     public void Save()
     {
-        lock (_lock)
-            SystemSettingsJson.Save(_path, _settings);
+        SystemSettingsJson.Save(_path, GetSnapshot());
     }
 
     public void Load()
