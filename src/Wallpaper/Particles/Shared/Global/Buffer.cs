@@ -8,10 +8,10 @@ namespace Particles.Shared.Global;
 
 public class Buffers : IConstantBufferSet
 {
-    public ConstantBufferKey commonKey;
+    public ConstantBufferKey<ConstantBuffer> commonKey;
     public Buffers(ConstantBufferRegistry registry)
     {
-        commonKey = registry.Reserve(device => BufferFactory.CreateConstantBuffer<ConstantBuffer>(device, "CommonBuffer"));
+        commonKey = registry.Reserve<ConstantBuffer>("CommonBuffer");
     }
 
     public void Dispose()

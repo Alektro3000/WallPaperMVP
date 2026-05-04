@@ -10,7 +10,6 @@ using Renderer.FrameManagement;
 using Renderer.Resources;
 using Renderer.Commands;
 using Particles.Shared;
-using Renderer.Passes;
 using System.Threading;
 
 namespace Renderer;
@@ -29,7 +28,7 @@ public sealed class Orchestrator : IDisposable
     private readonly IConstantUpdater[] constantUpdaters;
 
     private readonly SharedField.Pass fieldPass;
-    private readonly Debug fieldDebugPass;
+    private readonly SharedField.Debug fieldDebugPass;
 
     public readonly IParticleSystem[] ParticleSystems;
     public Orchestrator(SystemSettings systemSettings, IntPtr hwnd, int width, int height)
@@ -62,8 +61,8 @@ public sealed class Orchestrator : IDisposable
             new SharedCommon.Controller(common)
         ];
 
-        fieldPass = new SharedField.Pass(Context.Device, field, common, "field.hlsl");
-        fieldDebugPass = new Debug(Context.Device, field.SRVFieldDescriptor);
+        fieldPass = new SharedField.Pass(Context.Device, field, common);
+        fieldDebugPass = new SharedField.Debug(Context.Device, field);
         Log.Information("FieldPass Initialized");
 
 
@@ -90,7 +89,7 @@ public sealed class Orchestrator : IDisposable
 
     public void Render(SystemSettings systemSettings)
     {
-        if (SharedField.WindowEnumerator.IsAnyWindowFullscreen())
+        if (WindowEnumerator.IsAnyWindowFullscreen())
         {
             FrameManager.UpdateFrameMetricOnly();
             Thread.Sleep(SkipFrameDelayMs);
@@ -121,7 +120,7 @@ public sealed class Orchestrator : IDisposable
 
         
         // Log.Debug("Render stage: debug overlay");
-        // fieldDebugPass.Render(currentResource);
+        fieldDebugPass.Render(currentResource, systemSettings);
 
         Log.Debug("Render stage: end frame");
         FrameManager.EndFrame(currentResource);

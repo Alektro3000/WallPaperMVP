@@ -17,11 +17,15 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller Controller;
     static Random random = new Random();
+
+    private readonly ConstantBufferKey<Constants> ConstantKey;
+    public override IConstantBufferKey ConstantBufferKey => ConstantKey;
+
     public ParticleSystem(
         ParticleSystemInitContext context, Settings settings) : 
         base(context, generateParticles(settings.initSettings), "Text")
     {
-        ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "TextSystem_Constant"));
+        ConstantKey = context.Registry.Reserve<Constants>("TextSystem_Constant");
         Controller = new Controller(ParticleBuffers);
     }
 

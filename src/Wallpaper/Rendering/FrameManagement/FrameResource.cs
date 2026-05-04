@@ -33,12 +33,10 @@ public sealed class FrameResource : IDisposable
         CommandList.Close();
     }
 
-    public void AddBuffer(ConstantBufferKey key, ConstantBinding binding)
-        => ConstantBindings[key.Key] = binding;
-
-    public ref T GetBufferConstantRef<T>(ConstantBufferKey key) where T : unmanaged
+    public ref T GetBufferConstantRef<T>(ConstantBufferKey<T> key) where T : unmanaged
         => ref ConstantBindings[key.Key].Constants<T>();
-    public ulong GetGPUVirtualAddress(ConstantBufferKey key)
+        
+    public ulong GetGPUVirtualAddress(IConstantBufferKey key)
         => ConstantBindings[key.Key].ConstantBuffer.GPUVirtualAddress;
 
     public void Dispose()

@@ -27,9 +27,11 @@ public static class ParticleSystemReflection
 
     public static Dictionary<Type, object> GetParticleSystemsSettings()
     {
-        return GetParticleSystems()
-            .Select(GetSettingsType)
-            .Where(t => t != null)
+        return Assembly.GetExecutingAssembly()
+            .GetTypes()
+            .Where(t =>
+                !t.IsAbstract &&
+                typeof(ISettings).IsAssignableFrom(t))
             .Distinct()
             .ToDictionary(t => t!, t => Activator.CreateInstance(t!))!;
     }

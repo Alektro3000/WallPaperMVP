@@ -2,7 +2,6 @@ using Vortice.Direct3D12;
 using SharedField = Particles.Shared.Field;
 using SharedCommon = Particles.Shared.Global;
 using Renderer;
-using Renderer.Passes;
 using Renderer.Descriptors;
 using Particles.Settings;
 using Renderer.Core;
@@ -32,13 +31,13 @@ public abstract class BaseParticleSystem : IParticleSystem, IDisposable
 
     protected ParticleComputeBindings ParticleComputeBindings;
 
-    protected ConstantBufferKey ConstantKey;
+    public abstract IConstantBufferKey ConstantBufferKey { get; }
 
     public virtual void Dispatch(FrameResource currentResource)
-        => ComputePass.DispatchParticles(currentResource, ConstantKey, currentResource.frameMetric.FrameIndex % 10 == 0);
+        => ComputePass.DispatchParticles(currentResource, ConstantBufferKey, currentResource.frameMetric.FrameIndex % 10 == 0);
 
     public virtual void Render(FrameResource currentResource)
-        => GraphicPass.Render(currentResource, ConstantKey);
+        => GraphicPass.Render(currentResource, ConstantBufferKey);
 
     protected BaseParticleSystem(
         ParticleSystemInitContext context,

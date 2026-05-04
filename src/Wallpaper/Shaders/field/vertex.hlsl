@@ -1,3 +1,5 @@
+#include "common.hlsli"
+
 struct VSOut
 {
     float4 Position : SV_Position;
@@ -27,7 +29,7 @@ VSOut main(uint vertexID : SV_VertexID)
         float2(1.0, 1.0)
     };
 
-    o.Position = float4(positions[indeces[vertexID]] * 0.1 + 0.5, 0.0, 1.0);
+    o.Position = float4(positions[indeces[vertexID]] * DebugSettings.Size + DebugSettings.Center, 0.0, 1.0);
     o.UV = uvs[indeces[vertexID]];
     return o;
 }

@@ -1,14 +1,8 @@
 
 using Particles.Core;
-using Particles.Passes;
-using Particles.Resources;
 using Particles.Settings;
-using Particles.Shared.Field;
-using Renderer.Core;
 using Renderer.FrameManagement;
-using Renderer.Passes;
 using Renderer.Resources;
-using Vortice.Direct3D12;
 
 
 namespace Particles.Systems.Mouse;
@@ -19,13 +13,16 @@ namespace Particles.Systems.Mouse;
 public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller ParticleSystemController;
+    protected ConstantBufferKey<Constants> ConstantKey;
+    public override IConstantBufferKey ConstantBufferKey => ConstantKey;
     public ParticleSystem(
         ParticleSystemInitContext context, Settings settings) :
         base(context, (uint)settings.initSettings.MaxParticleAmount, "Mouse")
     {
-        ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "MouseSystem_Constant"));
+        ConstantKey = context.Registry.Reserve<Constants>("MouseSystem_Constant");
         ParticleSystemController = new Controller(ParticleBuffers);
     }
+
 
     [SystemBuilder]
     public static ParticleSystem? Create(ParticleSystemInitContext context, Settings settings)
@@ -38,7 +35,7 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
     public override void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings)
     {
         ParticleSystemController.UpdateStaticResource(
-            ref currentResource.GetBufferConstantRef<Constants>(ConstantKey),
+            ref currentResource.GetBufferConstantRef(ConstantKey),
             currentResource.frameMetric, systemSettings);
     }
 }

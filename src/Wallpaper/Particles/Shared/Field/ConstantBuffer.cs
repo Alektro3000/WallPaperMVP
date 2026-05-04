@@ -6,12 +6,14 @@ using Vortice.Mathematics;
 
 namespace Particles.Shared.Field;
 
+[StructLayout(LayoutKind.Sequential)]
 public struct WindowFieldDescription
 {
     public Vector2 PrevMin;
     public Vector2 PrevMax;
     public Vector2 CurrMin;
     public Vector2 CurrMax;
+    public WindowFieldDescription(){}
     public WindowFieldDescription(WindowEnumerator.RECT rect, WindowEnumerator.RECT? prevRect, Vector2 Scaling) : this()
     {
         CurrMin = new Vector2(rect.Left, rect.Top) * Scaling;
@@ -34,16 +36,19 @@ public struct WindowFieldDescription
 }
 
 [InlineArray(32)]
-public struct WindowFieldDescriptionArray
+public struct WindowFieldDescriptionBuffer
 {
-    private WindowFieldDescription _element0;
+    WindowFieldDescription windowFieldDescription;
 }
 
 [StructLayout(LayoutKind.Sequential)]
 public struct FieldConstantBuffer
 {
-    public WindowFieldDescriptionArray Descriptors;
-    public uint ScreenWidth;
-    public uint ScreenHeight;
-    public uint windowsCount;
+    public DebugSettings debugSettings = new DebugSettings();
+    public uint WindowsCount;
+    Vector3 Padding;
+
+    public FieldConstantBuffer()
+    {
+    }
 }

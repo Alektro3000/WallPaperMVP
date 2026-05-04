@@ -10,7 +10,7 @@ public class Controller(Buffers buffers) : IConstantUpdater
 {
     public void UpdateConstants(FrameResource currentResource, SystemSettings systemSettings)
     {
-        UpdateConstant(currentResource, ref currentResource.GetBufferConstantRef<ConstantBuffer>(buffers.commonKey));
+        UpdateConstant(currentResource, ref currentResource.GetBufferConstantRef(buffers.commonKey));
     }
 
     private void UpdateConstant(FrameResource currentResource, ref ConstantBuffer constant)

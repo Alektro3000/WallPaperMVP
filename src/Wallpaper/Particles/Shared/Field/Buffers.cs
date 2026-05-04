@@ -21,12 +21,14 @@ public class Buffers : IConstantBufferSet
     public ID3D12Resource FieldResource;
     public GpuDescriptorHandle UAVFieldDescriptor;
     public GpuDescriptorHandle SRVFieldDescriptor;    
-    public ConstantBufferKey fieldKey;
+    public ConstantBufferKey<WindowFieldDescriptionBuffer> windowDescriptors;
+    public ConstantBufferKey<FieldConstantBuffer> fieldKey;
     public const int width = 192;
     public const int height = 108;
     public Buffers(ID3D12Device device, ConstantBufferRegistry registry, HeapAllocator heap)
     {
-        fieldKey = registry.Reserve(device => BufferFactory.CreateConstantBuffer<FieldConstantBuffer>(device, "Field Constants"));
+        windowDescriptors = registry.Reserve<WindowFieldDescriptionBuffer>("Field Windows Constants");
+        fieldKey = registry.Reserve<FieldConstantBuffer>("Field Constants");
 
         //Creating Buffer
         var textureDesc = ResourceDescription.Texture2D(

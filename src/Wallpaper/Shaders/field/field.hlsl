@@ -1,6 +1,4 @@
-#include "common/common.hlsli"
-
-RWTexture2D<float4> FieldUav : register(u0);
+#include "common.hlsli"
 
 struct WindowFieldDescription
 {
@@ -9,13 +7,12 @@ struct WindowFieldDescription
     float2 CurrMin;
     float2 CurrMax;
 };
-
-cbuffer FieldConstantBuffer : register(b0)
+cbuffer FieldWindowDescriptors : register(b2)
 {
     WindowFieldDescription Descriptors[32];
-    uint2 ScreenSize;
-    uint WindowCount;
-};
+}
+
+RWTexture2D<float4> FieldUav : register(u0);
 
 float InsideBox(float2 p, float2 bmin, float2 bmax)
 {

@@ -63,7 +63,7 @@ public sealed class FluidCompute : IDisposable
         dispatchCommandSignature = device.CreateCommandSignature<ID3D12CommandSignature>(commandSigDesc, null);
     }
 
-    public void DispatchParticles(FrameResource currentResource, ConstantBufferKey key, bool shouldCompact)
+    public void DispatchParticles(FrameResource currentResource, IConstantBufferKey key, bool shouldCompact)
     {
         var read = bindings.ParticleBuffers.WriteBufferBinding;
         var write = bindings.ParticleBuffers.ReadBufferBinding;

@@ -14,12 +14,15 @@ namespace Particles.Systems.Whirl;
 public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller ParticleSystemController;
+
+    private readonly ConstantBufferKey<Constants> ConstantKey;
+    public override IConstantBufferKey ConstantBufferKey => ConstantKey;
     public ParticleSystem(
         ParticleSystemInitContext context, Settings settings) : 
         base(context, (uint)settings.initSettings.MaxParticleAmount, "Whirl")
     {
 
-        ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "WhirlSystem_Constant"));
+        ConstantKey = context.Registry.Reserve<Constants>("WhirlSystem_Constant");
         ParticleSystemController = new Controller(ParticleBuffers);
     }
 

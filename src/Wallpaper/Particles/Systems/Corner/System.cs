@@ -14,11 +14,13 @@ namespace Particles.Systems.Corner;
 public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller ParticleSystemController;
+    private readonly ConstantBufferKey<Constants> ConstantKey;
+    public override IConstantBufferKey ConstantBufferKey => ConstantKey;
     public ParticleSystem(
         ParticleSystemInitContext context, Settings settings) :
         base(context, (uint)settings.initSettings.MaxParticleAmount, "Corner")
     {
-        ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "CornerSystem_Constant"));
+        ConstantKey = context.Registry.Reserve<Constants>("CornerSystem_Constant");
         ParticleSystemController = new Controller(ParticleBuffers);
     }
 

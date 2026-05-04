@@ -1,7 +1,11 @@
 
 
 namespace Renderer.Resources;
-public readonly struct ConstantBufferKey
+public interface IConstantBufferKey
+{
+    internal int Key { get; }
+}
+public readonly struct ConstantBufferKey<T> : IConstantBufferKey where T: unmanaged 
 {
     internal readonly int Key;
 
@@ -9,4 +13,6 @@ public readonly struct ConstantBufferKey
     {
         Key = index;
     }
+
+    int IConstantBufferKey.Key => Key;
 }

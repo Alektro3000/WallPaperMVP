@@ -17,7 +17,7 @@ namespace Particles.Systems.Fluid;
 [Shader("fluid\\density_debug_pixel.hlsl", "ps")]
 public sealed class ParticleSystem : IParticleSystem, IParticleSystemFor<Settings>
 {
-    private readonly ConstantBufferKey ConstantKey;
+    private readonly ConstantBufferKey<Constants> ConstantKey;
     private readonly ParticleComputeBindings ParticleComputeBindings;
     private readonly Graphic graphic;
     private readonly Controller controller;
@@ -28,7 +28,7 @@ public sealed class ParticleSystem : IParticleSystem, IParticleSystemFor<Setting
 
     public ParticleSystem(ParticleSystemInitContext context, Settings settings)
     {
-        ConstantKey = context.Registry.Reserve(device => BufferFactory.CreateConstantBuffer<Constants>(device, "FluidSystem_Constant"));
+        ConstantKey = context.Registry.Reserve<Constants>("FluidSystem_Constant");
         ParticleBuffers = new ParticleBuffers(context.Device, context.CommandList, context.HeapAllocator, "Fluid", (uint)settings.initSettings.MaxParticleAmount);
         controller = new Controller(ParticleBuffers);
         

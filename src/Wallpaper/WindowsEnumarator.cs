@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Particles.Shared.Field;
-
 public static class WindowEnumerator
 {
 

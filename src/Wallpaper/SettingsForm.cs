@@ -476,6 +476,9 @@ public sealed class SettingsForm : Form
         if (name.StartsWith("Particles.Systems.", StringComparison.Ordinal))
             name = name["Particles.Systems.".Length..];
 
+        if (name.StartsWith("Particles.Shared.", StringComparison.Ordinal))
+            name = name["Particles.Shared.".Length..];
+
         return string.Concat(name.Select((c, i) =>
             i > 0 && char.IsUpper(c) ? " " + c : c.ToString()));
     }

@@ -145,7 +145,7 @@ public class Graphic : IDisposable
         
     }
 
-    public void Render(FrameResource currentResource, ConstantBufferKey key)
+    public void Render(FrameResource currentResource, IConstantBufferKey key)
     {
         var cmd = currentResource.CommandList;
         // Begin of Graphics Pass

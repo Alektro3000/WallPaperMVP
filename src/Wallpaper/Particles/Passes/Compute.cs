@@ -4,7 +4,6 @@ using Particles.Systems.Mouse;
 using Renderer;
 using Renderer.Core;
 using Renderer.FrameManagement;
-using Renderer.Passes;
 using Renderer.Resources;
 using Renderer.Shaders;
 using Vortice.Direct3D12;
@@ -141,7 +140,7 @@ public class Compute : IDisposable
         cmd.ExecuteIndirect(DispatchCommandSignature, 1, BufferTable.ComputeBuffers.DispatchArgs, 0, null, 0);
     }
     
-    public void DispatchParticles(FrameResource currentResource, ConstantBufferKey key, bool shouldCompact)
+    public void DispatchParticles(FrameResource currentResource, IConstantBufferKey key, bool shouldCompact)
     {
         var compact = BufferTable.ParticleBuffers.WriteBufferBinding;
         var sparse = BufferTable.ParticleBuffers.ReadBufferBinding;
@@ -283,4 +282,8 @@ public class Compute : IDisposable
             ResourceStates.IndirectArgument);
     }
 
+    internal void DispatchParticles(FrameResource currentResource, object constantKey, bool v)
+    {
+        throw new NotImplementedException();
+    }
 }

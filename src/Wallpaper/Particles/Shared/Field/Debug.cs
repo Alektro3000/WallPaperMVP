@@ -5,12 +5,13 @@ using Renderer.Core;
 using Renderer;
 using Renderer.FrameManagement;
 using Renderer.Shaders;
+using Particles.Settings;
 
 
-namespace Renderer.Passes;
+namespace Particles.Shared.Field;
 
-[Shader("debug.hlsl", "vs")]
-[Shader("debugpixel.hlsl", "ps")]
+[Shader("field/vertex.hlsl", "vs")]
+[Shader("field/pixel.hlsl", "ps")]
 public class Debug : IDisposable
 {
 
@@ -18,14 +19,14 @@ public class Debug : IDisposable
     private ID3D12RootSignature RootSig;
     private ID3D12PipelineState PSO;
 
-    private GpuDescriptorHandle DebugTexture;
+    private Buffers buffers;
     public Debug(
         ID3D12Device device,
-        GpuDescriptorHandle DebugTexture)
+        Buffers buffers)
     {
-        this.DebugTexture = DebugTexture;
+        this.buffers = buffers;
         RootSig = CreateRootSignature(device);
-        PSO = CreatePipelineState(device, "debug.hlsl", "debugpixel.hlsl");
+        PSO = CreatePipelineState(device, "field/vertex.hlsl", "field/pixel.hlsl");
     }
     public void Dispose()
     {
@@ -52,6 +53,8 @@ public class Debug : IDisposable
         
         var rootParameters = new[]
         {
+            // b0 as root CBV
+            new RootParameter1(RootParameterType.ConstantBufferView, new RootDescriptor1(0, 0), ShaderVisibility.All),
             new RootParameter1(
                 new RootDescriptorTable1(
                     new[]
@@ -102,14 +105,21 @@ public class Debug : IDisposable
         return device.CreateGraphicsPipelineState(pipelineStateDescription);
     }
 
-    public void Render(FrameResource currentResource)
+    public void Render(FrameResource currentResource, SystemSettings systemSettings)
     {
+        if(systemSettings.GetSettings<Settings>().IsDebugModeEnabled < 0.5f)
+            return;
+
         var cmd = currentResource.CommandList;
+        
         // Begin of Graphics Pass
         cmd.SetPipelineState(PSO);
         cmd.SetGraphicsRootSignature(RootSig);
 
-        cmd.SetGraphicsRootDescriptorTable(0, DebugTexture);
+        cmd.SetGraphicsRootConstantBufferView(
+            0,
+            currentResource.GetGPUVirtualAddress(buffers.fieldKey));
+        cmd.SetGraphicsRootDescriptorTable(1, buffers.SRVFieldDescriptor);
 
         cmd.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         cmd.DrawInstanced(6, 1, 0, 0);

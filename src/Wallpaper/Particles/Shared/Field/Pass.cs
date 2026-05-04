@@ -1,13 +1,10 @@
-using Renderer;
-using Renderer.Core;
 using Renderer.FrameManagement;
 using Renderer.Shaders;
 using Vortice.Direct3D12;
-using static Vortice.Direct3D12.D3D12;
 
 namespace Particles.Shared.Field;
 
-[Shader("field.hlsl", "cs")]
+[Shader("field/field.hlsl", "cs")]
 sealed public class Pass : IDisposable
 {
 
@@ -17,12 +14,12 @@ sealed public class Pass : IDisposable
     private Buffers FieldBuffers;
     private Global.Buffers CommonBuffers;
 
-    public Pass(ID3D12Device device, Buffers fieldBuffers, Global.Buffers commonBuffers, String FieldPath)
+    public Pass(ID3D12Device device, Buffers fieldBuffers, Global.Buffers commonBuffers)
     {
         FieldBuffers = fieldBuffers;
         CommonBuffers = commonBuffers;
         RootSignature = CreateRootSignature(device);
-        FieldPSO = ShaderLibrary.CreatePSO(device, RootSignature, FieldPath);
+        FieldPSO = ShaderLibrary.CreatePSO(device, RootSignature, "field/field.hlsl");
     }
 
     public void Dispose()
@@ -57,6 +54,9 @@ sealed public class Pass : IDisposable
             // b1 as root CBV
             new RootParameter1(RootParameterType.ConstantBufferView, new RootDescriptor1(1, 0), ShaderVisibility.All),
 
+            // b2 as root CBV
+            new RootParameter1(RootParameterType.ConstantBufferView, new RootDescriptor1(2, 0), ShaderVisibility.All),
+
         };
 
 
@@ -87,6 +87,10 @@ sealed public class Pass : IDisposable
         cmd.SetComputeRootConstantBufferView(
             2,
             currentResource.GetGPUVirtualAddress(CommonBuffers.commonKey));
+            
+        cmd.SetComputeRootConstantBufferView(
+            3,
+            currentResource.GetGPUVirtualAddress(FieldBuffers.windowDescriptors));
 
         cmd.Dispatch((Buffers.width + 7) / 8, (Buffers.height + 7) / 8, 1);
 

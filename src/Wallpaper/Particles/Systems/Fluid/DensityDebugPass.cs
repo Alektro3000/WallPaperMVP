@@ -31,7 +31,7 @@ public sealed class DensityDebugPass : IDisposable
         pipelineState = CreatePipelineState(device, vertexShader, pixelShader);
     }
 
-    public void Render(FrameResource currentResource, ConstantBufferKey key)
+    public void Render(FrameResource currentResource, IConstantBufferKey key)
     {
         var cmd = currentResource.CommandList;
         cmd.SetPipelineState(pipelineState);
