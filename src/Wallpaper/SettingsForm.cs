@@ -108,18 +108,9 @@ public sealed class SettingsForm : Form
         buttons.Controls.Add(closeAppButton);
         buttons.Controls.Add(hideButton);
 
-        FormClosing += OnFormClosing;
         Controls.Add(buttons);
     }
 
-    private void OnFormClosing(object? sender, FormClosingEventArgs e)
-    {
-        if (e.CloseReason == CloseReason.UserClosing)
-        {
-            e.Cancel = true;
-            Hide();
-        }
-    }
 
     private void BuildTabsFromSystemSettings(TabControl tabs)
     {

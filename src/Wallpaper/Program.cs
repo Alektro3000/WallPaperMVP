@@ -68,8 +68,6 @@ class Program
             Log.Information("Renderer initialized");
 
 
-
-
             Win32.MSG msg;
             while (true)
             {

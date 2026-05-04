@@ -11,6 +11,7 @@ public sealed class SettingsFormHost : IDisposable
     private Thread? _thread;
     private SettingsForm? _form;
     private NotifyIcon? _trayIcon;
+    private Control? _uiInvoker;
 
     private readonly ManualResetEventSlim _formReady = new(false);
     private int _exitRequested;
@@ -30,6 +31,7 @@ public sealed class SettingsFormHost : IDisposable
             Name = "Settings UI",
             Priority = ThreadPriority.BelowNormal
         };
+        
         _thread.SetApartmentState(ApartmentState.STA);
         _thread.Start();
 
@@ -40,66 +42,90 @@ public sealed class SettingsFormHost : IDisposable
     {
         ApplicationConfiguration.Initialize();
 
+        _uiInvoker = new Control();
+        _uiInvoker.CreateControl();
+
+        _trayIcon = CreateTrayIcon();
+
+        _formReady.Set();
+        Application.Run();
+
+        _trayIcon.Visible = false;
+        _trayIcon.Dispose();
+        _trayIcon = null;
+
+        _uiInvoker.Dispose();
+        _uiInvoker = null;
+    }
+
+    public void ShowForm()
+    {
+        var invoker = _uiInvoker;
+        if (invoker == null || invoker.IsDisposed)
+            return;
+
+        if (invoker.InvokeRequired)
+        {
+            invoker.BeginInvoke(new Action(ShowFormOnUiThread));
+        }
+        else
+        {
+            ShowFormOnUiThread();
+        }
+    }
+
+    private void ShowFormOnUiThread()
+    {
+        if (_form != null && !_form.IsDisposed)
+        {
+            ShowAndActivate(_form);
+            return;
+        }
+
         var form = new SettingsForm(_store);
         _form = form;
 
         form.ExitRequested += (_, _) =>
         {
             Interlocked.Exchange(ref _exitRequested, 1);
+
+            if (_trayIcon != null)
+                _trayIcon.Visible = false;
+
+            Application.ExitThread();
         };
-        form.Load += (_, _) => form.Hide();
 
-        _trayIcon = CreateTrayIcon(form);
-
-        // start hidden
-        form.ShowInTaskbar = false;
-        form.WindowState = FormWindowState.Minimized;
-        form.Hide();
-
-        _formReady.Set();
-        Application.Run(form);
-
-        _trayIcon.Visible = false;
-        _trayIcon.Dispose();
-        _trayIcon = null;
-
-        form.Dispose();
-        _form = null;
-    }
-
-    public void ShowForm()
-    {
-        var form = _form;
-        if (form == null || form.IsDisposed)
-            return;
-
-        if (form.InvokeRequired)
+        form.FormClosed += (_, _) =>
         {
-            form.BeginInvoke(new Action(() =>
-            {
-                ShowAndActivate(form);
-            }));
-        }
-        else
-        {
-            ShowAndActivate(form);
-        }
+            if (ReferenceEquals(_form, form))
+                _form = null;
+        };
+
+        ShowAndActivate(form);
     }
 
     public void RequestCloseForm()
     {
-        var form = _form;
-        if (form == null || form.IsDisposed)
+        var invoker = _uiInvoker;
+        if (invoker == null || invoker.IsDisposed)
             return;
 
-        if (form.InvokeRequired)
+        if (invoker.InvokeRequired)
         {
-            form.BeginInvoke(new Action(() => form.Close()));
+            invoker.BeginInvoke(new Action(RequestCloseFormOnUiThread));
         }
         else
         {
-            form.Close();
+            RequestCloseFormOnUiThread();
         }
+    }
+
+    private void RequestCloseFormOnUiThread()
+    {
+        if (_form == null || _form.IsDisposed)
+            return;
+
+        _form.Close();
     }
 
     private static void ShowAndActivate(Form form)
@@ -110,11 +136,12 @@ public sealed class SettingsFormHost : IDisposable
         if (form.WindowState == FormWindowState.Minimized)
             form.WindowState = FormWindowState.Normal;
 
+        form.ShowInTaskbar = true;
         form.BringToFront();
         form.Activate();
     }
 
-    private NotifyIcon CreateTrayIcon(SettingsForm form)
+    private NotifyIcon CreateTrayIcon()
     {
         var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
 
@@ -136,6 +163,7 @@ public sealed class SettingsFormHost : IDisposable
         {
             Interlocked.Exchange(ref _exitRequested, 1);
             trayIcon.Visible = false;
+            Application.ExitThread();
         });
 
         trayIcon.ContextMenuStrip = menu;
@@ -147,6 +175,9 @@ public sealed class SettingsFormHost : IDisposable
     public void Dispose()
     {
         RequestCloseForm();
+
+        _uiInvoker?.BeginInvoke(new Action(Application.ExitThread));
+        
         _formReady.Dispose();
     }
 }
