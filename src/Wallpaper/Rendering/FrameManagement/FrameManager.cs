@@ -115,6 +115,12 @@ public sealed class FrameManager : IDisposable
         return currentResource;
     }
 
+    public void UpdateFrameMetricOnly()
+    {
+        var currentResource = frameResources[swapChain.CurrentBackBufferIndex];
+        currentResource.frameMetric = manager.Update();
+    }
+
     public void EndFrame(FrameResource currentResource)
     {
         Serilog.Log.Debug("FrameManager: closing and presenting frame {FrameIndex}", currentResource.FrameIndex);

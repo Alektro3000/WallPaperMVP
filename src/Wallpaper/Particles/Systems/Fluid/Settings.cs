@@ -48,7 +48,7 @@ public struct GpuSettings
     public float RestDensity = 35f;
 
     [UiLabel("Pressure")]
-    [UiRange(0f, 20f, 0.01f)]
+    [UiRange(0f, 2000f, 0.01f)]
     public float Pressure = 2.2f;
 
     [UiLabel("Viscosity")]

@@ -88,7 +88,7 @@ float2 Boundary(inout float2 position, float2 velocity)
                 {
                     float2 dir = delta / max(dist,0.0001f);
                     pressureForce += dir * SphKernel2(dist, h);
-                viscosityForce += (other.Velocity - p.Velocity) * w;
+                    viscosityForce += (other.Velocity - p.Velocity) * w;
                 }
             }
         }
@@ -108,7 +108,7 @@ float2 Boundary(inout float2 position, float2 velocity)
     p.Size = Size;
     p.Color = float4(BeginColor, 0.8f);
 
-    p.Color.x = CellHashFromPosition(p.Position) == CellHashFromPosition(MousePos);
+    //p.Color.x = CellHashFromPosition(p.Position) == CellHashFromPosition(MousePos);
 
     if (p.Age >= 0.0f)
         InterlockedAdd(Emitter[0].AliveCountCheck, 1);

@@ -9,7 +9,7 @@ namespace Particles.Systems.Fluid;
 
 public sealed class FluidCompute : IDisposable
 {
-    public const uint MaxGridCells = 1024;
+    public const uint MaxGridCells = 8192;
 
     private readonly ID3D12RootSignature rootSignature;
     private readonly ID3D12PipelineState emitterPso;

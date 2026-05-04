@@ -11,11 +11,14 @@ using Renderer.Resources;
 using Renderer.Commands;
 using Particles.Shared;
 using Renderer.Passes;
+using System.Threading;
 
 namespace Renderer;
 
 public sealed class Orchestrator : IDisposable
 {
+    private const int SkipFrameDelayMs = 16;
+
     //SubClasses
     private readonly GraphicsContext Context;
     private readonly FrameManager FrameManager;
@@ -87,6 +90,13 @@ public sealed class Orchestrator : IDisposable
 
     public void Render(SystemSettings systemSettings)
     {
+        if (SharedField.WindowEnumerator.IsAnyWindowFullscreen())
+        {
+            FrameManager.UpdateFrameMetricOnly();
+            Thread.Sleep(SkipFrameDelayMs);
+            return;
+        }
+
         Log.Debug("Render stage: begin frame");
         var currentResource = FrameManager.BeginFrame();
 

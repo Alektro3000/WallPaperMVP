@@ -18,6 +18,7 @@ public static class WindowEnumerator
 
     [DllImport("user32.dll")]
     private static extern bool IsWindowVisible(IntPtr hWnd);
+    
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
@@ -42,9 +43,6 @@ public static class WindowEnumerator
 
     [DllImport("user32.dll")]
     static extern IntPtr GetShellWindow();
-
-    [DllImport("user32.dll")]
-    static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
 
     [DllImport("user32.dll")]
     static extern int GetWindowLong(IntPtr hWnd, int nIndex);
@@ -100,64 +98,30 @@ public static class WindowEnumerator
 
         return result;
     }
-    public static bool HasAnyFullscreenWindow()
+    public static bool IsAnyWindowFullscreen()
     {
-        bool found = false;
-
-        EnumWindows((hWnd, _) =>
+        return GetWindows().Any(wind =>
         {
-            if (found)
-                return false;
-
-            if (!IsWindowVisible(hWnd) || IsIconic(hWnd))
-                return true;
-
-            int exStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
-            if ((exStyle & WS_EX_TOOLWINDOW) != 0)
-                return true;
-
-            if (!GetWindowRect(hWnd, out var windowRect))
-                return true;
-
-            if (windowRect.Width <= 0 || windowRect.Height <= 0)
-                return true;
-
-            if (IsCloaked(hWnd))
-                return true;
-
-            if ((exStyle & WS_EX_LAYERED) != 0 &&
-                (exStyle & WS_EX_TRANSPARENT) != 0)
-                return true;
-
-            IntPtr monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
-            if (monitor == IntPtr.Zero)
-                return true;
-
+            
+            IntPtr monitor = MonitorFromWindow(wind.Handle, MONITOR_DEFAULTTONEAREST);
             var mi = new MONITORINFO();
             mi.cbSize = (uint)Marshal.SizeOf<MONITORINFO>();
-
             if (!GetMonitorInfo(monitor, ref mi))
-                return true;
+                return false;
 
             var monitorRect = mi.rcMonitor;
+            const int tolerance = -2;
 
-            const int tolerance = 2;
+            return
+                monitorRect.Left - wind.Rect.Left >= tolerance &&
+                monitorRect.Top - wind.Rect.Top >= tolerance &&
+                wind.Rect.Right - monitorRect.Right >= tolerance &&
+                wind.Rect.Bottom - monitorRect.Bottom >= tolerance;
+        }
 
-            bool fullscreen =
-                Math.Abs(windowRect.Left - monitorRect.Left) <= tolerance &&
-                Math.Abs(windowRect.Top - monitorRect.Top) <= tolerance &&
-                Math.Abs(windowRect.Right - monitorRect.Right) <= tolerance &&
-                Math.Abs(windowRect.Bottom - monitorRect.Bottom) <= tolerance;
+        );
 
-            if (fullscreen)
-            {
-                found = true;
-                return false;
-            }
 
-            return true;
-        }, IntPtr.Zero);
-        return found;
     }
 
     [DllImport("user32.dll")]
@@ -176,29 +140,11 @@ public static class WindowEnumerator
         public RECT rcWork;
         public uint dwFlags;
     }
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmGetWindowAttribute(
-        IntPtr hwnd,
-        int dwAttribute,
-        out int pvAttribute,
-        int cbAttribute);
 
-    private const int DWMWA_CLOAKED = 14;
-
-    private static bool IsCloaked(IntPtr hwnd)
-    {
-        int cloaked = 0;
-        DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, out cloaked, sizeof(int));
-        return cloaked != 0;
-    }
-    const int WS_EX_LAYERED = 0x00080000;
-    const int WS_EX_TRANSPARENT = 0x00000020;
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
-    [DllImport("user32.dll")]
-    static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
     static string GetWindowTitle(IntPtr hWnd)
     {
