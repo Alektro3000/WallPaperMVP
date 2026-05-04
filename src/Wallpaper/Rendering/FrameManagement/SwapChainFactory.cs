@@ -17,7 +17,7 @@ public static class SwapChainFactory
     public static IDXGISwapChain3 CreateSwapChain(int width, int height, uint frameCount, GraphicsContext context, nint hwnd)
     {
 
-#if DEBUG
+#if DEBUGDX
         using IDXGIFactory4 factory = DXGI.CreateDXGIFactory2<IDXGIFactory4>(true);
 #else
         using IDXGIFactory4 factory = DXGI.CreateDXGIFactory2<IDXGIFactory4>(false);

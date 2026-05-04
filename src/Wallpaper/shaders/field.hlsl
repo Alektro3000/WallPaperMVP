@@ -32,10 +32,11 @@ float WindowScreenAwareSdf(float2 p, float2 bmin, float2 bmax)
     bool useTop    = bmax.y < fieldSize.y;
 
 
-    // inside: negative distance to nearest active face
-    if (p.x >= bmin.x && p.x <= bmax.x &&
-        p.y >= bmin.y && p.y <= bmax.y)
+    bool inside = all(bmin <= p && p <= bmax);
+        
+    if (inside)
     {
+    // inside: negative distance to nearest active face
         float insideDist = 1e20f;
 
         if (useLeft)   insideDist = min(insideDist, p.x - bmin.x);
@@ -45,6 +46,31 @@ float WindowScreenAwareSdf(float2 p, float2 bmin, float2 bmax)
 
         if (insideDist < 1e19f)
             sdf = min(sdf, -insideDist);
+    }
+    else
+    {
+        
+        float2 d = 0.0f;
+
+        float2 below = bmin - p;
+        float2 above = p - bmax;
+
+        if (useLeft)
+            d.x = max(d.x, below.x);
+
+        if (useRight)
+            d.x = max(d.x, above.x);
+
+        if (useBottom)
+            d.y = max(d.y, below.y);
+
+        if (useTop)
+            d.y = max(d.y, above.y);
+
+        float outsideDist = length(max(d, 0.0f));
+
+        if (outsideDist > 0.0f)
+            sdf = min(sdf, outsideDist);
     }
 
     return sdf;

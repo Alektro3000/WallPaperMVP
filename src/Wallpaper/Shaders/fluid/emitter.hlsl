@@ -8,10 +8,9 @@ void main(uint3 dtid : SV_DispatchThreadID)
 {
     EmitterData emitter = Emitter[0];
     uint alive = min(emitter.AliveCountCheck, ParticleCount);
-    uint spawn = min((uint)(SpawnRate * DeltaTime), ParticleCount - alive);
 
     emitter.AliveCount = alive;
-    emitter.SpawnCountThisFrame = spawn;
+    emitter.SpawnCountThisFrame = 0;
     emitter.TotalCount = ParticleCount;
     emitter.ConsumedSpawns = 0;
     emitter.AliveCountCheck = 0;

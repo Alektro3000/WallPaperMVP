@@ -50,6 +50,19 @@ public static class WindowEnumerator
     [DllImport("user32.dll")]
     private static extern bool IsIconic(IntPtr hWnd);
 
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmGetWindowAttribute(
+        IntPtr hwnd,
+        int dwAttribute,
+        out int pvAttribute,
+        int cbAttribute);
+    private const int DWMWA_CLOAKED = 14;
+
+    private static bool IsCloaked(IntPtr hwnd)
+    {
+        DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, out int cloaked, sizeof(int));
+        return cloaked != 0;
+    }
 
     const int GWL_EXSTYLE = -20;
     const int WS_EX_TOOLWINDOW = 0x00000080;
@@ -65,6 +78,10 @@ public static class WindowEnumerator
                 return true;
 
             if (!IsWindowVisible(hWnd) || IsIconic(hWnd))
+                return true;
+
+            // Windows on other virtual desktops are commonly cloaked by DWM.
+            if (IsCloaked(hWnd))
                 return true;
 
             // Skip tool windows

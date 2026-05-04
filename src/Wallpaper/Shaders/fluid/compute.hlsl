@@ -6,9 +6,8 @@ StructuredBuffer<CellRange> CellRangesSrv : register(t5);
 RWStructuredBuffer<Particle> NextParticles : register(u0);
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
 
-float2 Boundary(inout float2 position, float2 velocity)
+float2 Boundary(inout float2 position, float2 velocity, float2 limit)
 {
-    float2 limit = float2(ScreenRatio, 1.0f);
     if (position.x < -limit.x || position.x > limit.x)
     {
         velocity.x *= -0.45f;
@@ -41,7 +40,7 @@ float2 Boundary(inout float2 position, float2 velocity)
         uint seed = sortedIndex * 747796405u + FrameIndex * 2891336453u;
         
         p.Position = Random2(seed) * 2 - 1;
-        p.Age = LifeTime;
+        p.Age = 1;
     }
 
     float h = InfluenceRadius;
@@ -94,24 +93,35 @@ float2 Boundary(inout float2 position, float2 velocity)
         }
     }
 
+    float2 limits = float2(ScreenRatio, 1.0f);
+    float2 bounds = limits * SoftBoundaryScale - 1/BoundaryHardness;
+
+    float2 leftBottom = saturate((-bounds - p.Position) * BoundaryHardness);
+    float2 rightTop   = saturate(( p.Position - bounds) * BoundaryHardness);
+
+    float2 boundaryForce = leftBottom - rightTop;
+
     float pressure = max(0.0f, density - RestDensity) * Pressure;
     float2 acceleration = 
         pressureForce * pressure + 
         separationForce * SeparationStrength +
+        boundaryForce * BoundaryForce +
         viscosityForce * Viscosity + 
+        getMoveOutWindowForce(p.Position, WindowsOffset) * WindowsForce + 
         float2(0.0f, Gravity);
     p.Velocity += acceleration * DeltaTime;
+    
     //p.Velocity *= 0.999f;
-    p.Velocity = Boundary(p.Position, p.Velocity);
     p.Position += p.Velocity * DeltaTime;
+    p.Velocity = Boundary(p.Position, p.Velocity, limits);
     p.CustomData1.x = density;
     p.Size = Size;
-    p.Color = float4(BeginColor, 0.8f);
+    p.Color = float4(Color, 0.8f);
 
     //p.Color.x = CellHashFromPosition(p.Position) == CellHashFromPosition(MousePos);
 
     if (p.Age >= 0.0f)
         InterlockedAdd(Emitter[0].AliveCountCheck, 1);
 
-    NextParticles[i] = moveOutsideWindows(p);
+    NextParticles[i] = p;
 }

@@ -16,17 +16,17 @@ Particle updateParticleField(Particle p)
     return p;
 };
 
-Particle moveOutsideWindows(Particle p)
+float2 getMoveOutWindowForce(float2 Pos, float windowOffset)
 {
     float2 uv = float2(
-        p.Position.x * ScreenRatioInv,
-        p.Position.y
+        Pos.x * ScreenRatioInv,
+        Pos.y
     ) * 0.5f + 0.5f;
 
     float sdf = FieldSrv.SampleLevel(LinearSampler, uv, 0).w;
 
-    if(sdf > 0)
-        return p;
+    if(sdf > windowOffset)
+        return 0;
 
     float2 texel = float2(ScreenRatioInv, 1.0f) * 0.01f;
 
@@ -37,10 +37,7 @@ Particle moveOutsideWindows(Particle p)
 
     float2 grad = normalize(float2(sdfR - sdfL, sdfU - sdfD) + 1e-6f);
 
-    // push out of obstacle
-    p.Velocity += grad;
-
-    return p;
+    return grad;
 }
 
 struct DispatchArgs

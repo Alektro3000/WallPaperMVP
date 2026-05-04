@@ -6,30 +6,28 @@ cbuffer Constants : register(b0)
     uint RangeCount;
     float2 MousePos;
 
-    float3 BeginColor;
-    float SpawnRate;
-
-    float3 EndColor;
-    float LifeTime;
-
+    float3 Color;
     float Size;
+
     float GridSize;
     float InfluenceRadius;
-    float EmitterRadius;
-
-    float2 EmitterPosition;
-    float InitialVelocity;
     float RestDensity;
-
     float Pressure;
+
     float Viscosity;
     float Gravity;
-    float DensityDebug;
+    float WindowsForce;
+    float WindowsOffset;
+    float SoftBoundaryScale;
 
-    float DensityDebugMin;
-    float DensityDebugMax;
+    float BoundaryHardness;
+    float BoundaryForce;
     float SeparationRadius;
     float SeparationStrength;
+    
+    float DensityDebug;
+    float DensityDebugMin;
+    float DensityDebugMax;
 };
 
 struct HashEntry
