@@ -13,7 +13,7 @@ public struct GpuSettings
 
 
     [UiRange(0.001f, 0.08f, 0.001f)]
-    public float Size = 0.02f;
+    public float Size = 0.015f;
 
 
     [UiRange(0.001f, 0.8f, 0.001f)]
@@ -23,7 +23,7 @@ public struct GpuSettings
     public float InfluenceRadius = 0.1f;
 
     [UiRange(0f, 200f, 0.01f)]
-    public float RestDensity = 3f;
+    public float RestDensity = 5f;
 
     [UiRange(0f, 2000f, 0.01f)]
     public float Pressure = 10f;
@@ -39,7 +39,7 @@ public struct GpuSettings
     
 
     [UiRange(0f, 200f, 0.1f)]
-    public float WindowsForce = 20f;
+    public float WindowsForce = 50f;
     
     [UiRange(-200f, 200f, 0.1f)]
     public float WindowsOffset = 0f;
@@ -59,10 +59,10 @@ public struct GpuSettings
     public float BoundaryForce = 200f;
 
     [UiRange(0.0001f, 0.1f, 0.0001f)]
-    public float SeparatationRadius = 0.001f;
+    public float SeparatationRadius = 0.02f;
     
     [UiRange(0f, 2000f, 0.1f)]
-    public float SeparatationStrength = 20f;
+    public float SeparatationStrength = 100f;
 
     [UiRange(-500f, 500f, 0.1f)]
     public float MouseStrength = 80f;

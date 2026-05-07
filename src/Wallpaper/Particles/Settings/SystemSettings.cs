@@ -43,4 +43,14 @@ public class SystemSettings
     {
         return data.Keys;
     }
+
+    internal void ApplyFallback(SystemSettings fallback)
+    {
+        data ??= new();
+
+        foreach (var (key, value) in fallback.data)
+        {
+            data.TryAdd(key, value);
+        }
+    }
 }

@@ -1,8 +1,10 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Serilog;
 
 namespace Particles.Settings;
+
 public static class SystemSettingsJson
 {
     private static readonly JsonSerializerOptions Options = new()
@@ -26,15 +28,28 @@ public static class SystemSettingsJson
         if (!File.Exists(path))
             return fallback;
 
-        var json = File.ReadAllText(path);
+        try
+        {
+            var json = File.ReadAllText(path);
 
-        return JsonSerializer.Deserialize<SystemSettings>(json, Options)
-            ?? fallback;
+            var loaded = JsonSerializer.Deserialize<SystemSettings>(json, Options);
+
+            if (loaded == null)
+                return fallback;
+
+            loaded.ApplyFallback(fallback);
+            return loaded;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load settings from {Path}, returning fallback", path);
+            return fallback;
+        }
     }
 }
 
 
-public sealed class TypeObjectDictionaryConverter 
+public sealed class TypeObjectDictionaryConverter
     : JsonConverter<Dictionary<Type, object>>
 {
     public override void Write(
@@ -57,7 +72,6 @@ public sealed class TypeObjectDictionaryConverter
 
         writer.WriteEndObject();
     }
-
     public override Dictionary<Type, object> Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
@@ -74,25 +88,30 @@ public sealed class TypeObjectDictionaryConverter
                 return result;
 
             if (reader.TokenType != JsonTokenType.PropertyName)
-                throw new JsonException();
+                throw new JsonException("Expected property name.");
 
-            var typeName = reader.GetString()!;
-
-            var settingsType = FindTypeByFullName(typeName)
-                ?? throw new JsonException($"Type not found: {typeName}");
-
+            var typeName = reader.GetString();
             reader.Read();
 
-            var value = JsonSerializer.Deserialize(
-                ref reader,
-                settingsType,
-                options);
+            try
+            {
+                var element = JsonElement.ParseValue(ref reader);
 
-            if (value != null)
-                result[settingsType] = value;
+                var settingsType = FindTypeByFullName(typeName!)
+                    ?? throw new JsonException($"Type not found: {typeName}");
+
+                var value = element.Deserialize(settingsType, options);
+
+                if (value != null)
+                    result[settingsType] = value;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to parse settings entry for type {TypeName}", typeName);
+            }
         }
 
-        throw new JsonException();
+        throw new JsonException("Unexpected EOF in TypeObjectDictionaryConverter");
     }
 
     private static Type? FindTypeByFullName(string fullName)
