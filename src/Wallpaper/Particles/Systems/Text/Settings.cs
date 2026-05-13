@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Particles.Settings;
+using Settings;
 
 
 namespace Particles.Systems.Text;

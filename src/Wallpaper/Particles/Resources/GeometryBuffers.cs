@@ -8,8 +8,9 @@ using Renderer;
 using Vortice.Direct3D12;
 using Vortice.DXGI;
 using Renderer.Commands;
+using Renderer.Resources;
 
-namespace Renderer.Resources;
+namespace Particles.Resources;
 public class GeometryBuffers : IDisposable
 {
     public const uint IndexCount = 6;

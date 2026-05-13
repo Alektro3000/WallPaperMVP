@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Serilog;
 
-namespace Particles.Settings;
+namespace Settings;
 
 public static class SystemSettingsJson
 {

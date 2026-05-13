@@ -1,6 +1,7 @@
 using Particles.Resources;
 using Particles.Settings;
 using Renderer.FrameManagement;
+using Settings;
 
 namespace Particles.Systems.Strip;
 public class Controller

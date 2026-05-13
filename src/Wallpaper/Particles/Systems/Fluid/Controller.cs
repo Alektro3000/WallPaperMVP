@@ -2,6 +2,7 @@ using System.Numerics;
 using Particles.Resources;
 using Particles.Settings;
 using Renderer.FrameManagement;
+using Settings;
 
 namespace Particles.Systems.Fluid;
 
@@ -16,10 +17,11 @@ public sealed class Controller
 
     public void UpdateStaticResource(ref Constants constant, FrameMetric frameMetric, SystemSettings systemSettings)
     {
-        var settings = systemSettings.GetSettings<Settings>().gpuSettings;
+        var settings = systemSettings.GetSettings<Settings>();
+        var gpuSettings = settings.gpuSettings;
 
         Win32.GetCursorPos(out Win32.POINT point);
-        var mouse = new Vector2(((float)point.X) / frameMetric.height, (frameMetric.height - (float)point.Y) / frameMetric.height) * 2 - new Vector2(1/frameMetric.ratio, 1);
+        var mouse = new Vector2(((float)point.X) / frameMetric.height, (frameMetric.height - (float)point.Y) / frameMetric.height) * 2 - new Vector2(frameMetric.ratio, 1);
         uint mouseButtons = 0;
         if ((Win32.GetAsyncKeyState(Win32.VK_LBUTTON) & 0x8000) != 0)
             mouseButtons |= 1u;
@@ -30,7 +32,7 @@ public sealed class Controller
         constant.RangeCount = FluidCompute.MaxGridCells;
         constant.MousePos = mouse;
         constant.MouseButtons = mouseButtons;
-        constant.Padding = Vector3.Zero;
-        constant.Settings = settings;
+        constant.SubdividedTime = frameMetric.DeltaTime * settings.TimeScale / settings.Subdivides;
+        constant.Settings = gpuSettings;
     }
 }

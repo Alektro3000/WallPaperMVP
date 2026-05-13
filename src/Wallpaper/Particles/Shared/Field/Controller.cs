@@ -12,16 +12,16 @@ namespace Particles.Shared.Field;
 public class Controller(Buffers buffers) : IConstantUpdater, IParticleSystemFor<Settings>
 {
     public List<WindowEnumerator.WindowInfo> previousWindows = [];
-    public void UpdateConstants(FrameResource currentResource, SystemSettings systemSettings)
+    public void UpdateConstants(FrameResource currentResource)
     {
         ref var constant = ref currentResource.GetBufferConstantRef(buffers.fieldKey);
         ref var descriptionBuffer = ref currentResource.GetBufferConstantRef(buffers.windowDescriptors);
-        var settings = systemSettings.GetSettings<Settings>();
+        var settings = currentResource.Settings.GetSettings<Settings>();
 
         constant.debugSettings = settings.debugSettings;
         constant.fieldSettings = settings.fieldSettings;
         
-        var screenHeight = currentResource.frameMetric.height;
+        var screenHeight = currentResource.FrameMetric.height;
         var windows = WindowEnumerator.GetWindows()
             .OrderByDescending(x => x.Rect.Width * x.Rect.Height)
             .Take(32)
@@ -44,8 +44,8 @@ public class Controller(Buffers buffers) : IConstantUpdater, IParticleSystemFor<
         constant.WindowsCount = (uint)windows.Count;
 
         Vector2 scaling = new Vector2(
-            (float)Buffers.width  / currentResource.frameMetric.width ,
-            (float)Buffers.height / currentResource.frameMetric.height);
+            (float)Buffers.width  / currentResource.FrameMetric.width ,
+            (float)Buffers.height / currentResource.FrameMetric.height);
 
         var shaderWindows = windows
             .Select(window =>
@@ -53,7 +53,7 @@ public class Controller(Buffers buffers) : IConstantUpdater, IParticleSystemFor<
                     window.Rect,
                     previousWindows.Find(x=>x.Handle == window.Handle)?.Rect,
                     scaling,
-                    currentResource.frameMetric.size,
+                    currentResource.FrameMetric.size,
                     settings.fieldWindowSettings
                 )).ToArray();
                 

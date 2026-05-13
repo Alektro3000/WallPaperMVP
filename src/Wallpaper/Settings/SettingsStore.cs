@@ -1,5 +1,4 @@
-using static SettingsForm;
-namespace Particles.Settings;
+namespace Settings;
 public sealed class SettingsStore
 {
     private readonly Lock _lock = new();

@@ -5,6 +5,7 @@ using Particles.Resources;
 using Particles.Settings;
 using Renderer.Core;
 using Renderer.FrameManagement;
+using Settings;
 
 namespace Particles.Systems.Text;
 

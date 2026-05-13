@@ -90,10 +90,12 @@ public static class SwapChainFactory
             SwapEffect = SwapEffect.FlipDiscard,
             AlphaMode = AlphaMode.Ignore
         };
+
         using IDXGISwapChain1 tempSwapChain = factory.CreateSwapChainForHwnd(
             context.CommandQueue,
             hwnd,
             swapChainDesc);
+            
         return tempSwapChain.QueryInterface<IDXGISwapChain3>();
 
 #endif

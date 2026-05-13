@@ -1,4 +1,4 @@
-namespace Particles.Settings;
+namespace Settings;
 public interface ISettings
 {
 }

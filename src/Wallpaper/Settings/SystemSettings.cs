@@ -1,9 +1,7 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
-using Particles.Core;
-using Vortice.DXGI;
 
-namespace Particles.Settings;
+namespace Settings;
 public class SystemSettings
 {
 
@@ -12,7 +10,13 @@ public class SystemSettings
     Dictionary<Type, Object> data;
     public SystemSettings()
     {
-        data = ParticleSystemReflection.GetParticleSystemsSettings();
+        data = Assembly.GetExecutingAssembly()
+            .GetTypes()
+            .Where(t =>
+                !t.IsAbstract &&
+                typeof(ISettings).IsAssignableFrom(t))
+            .Distinct()
+            .ToDictionary(t => t!, t => Activator.CreateInstance(t!))!;
     }
 
     public SystemSettings Clone()

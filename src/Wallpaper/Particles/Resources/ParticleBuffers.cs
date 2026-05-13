@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.Numerics;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using Particles.Core;
 using Renderer;
 using Renderer.Commands;
 using Renderer.Core;

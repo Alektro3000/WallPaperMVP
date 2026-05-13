@@ -40,11 +40,11 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
     public override void Dispatch(FrameResource currentResource)
         => ComputePass.DispatchParticles(currentResource, ConstantKey, false);
 
-    public override void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings)
+    public override void UpdateConstantBuffers(FrameResource currentResource)
     {
         Controller.UpdateConstantBuffer(
             ref currentResource.GetBufferConstantRef<Constants>(ConstantKey),
-            currentResource.frameMetric, systemSettings);
+            currentResource.FrameMetric, currentResource.Settings);
     }
     private static Point GetRandomWhitePixelWeightedTop(Bitmap bitmap)
     {

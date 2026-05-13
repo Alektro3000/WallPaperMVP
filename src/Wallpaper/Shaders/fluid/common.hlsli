@@ -6,7 +6,8 @@ cbuffer Constants : register(b0)
     uint RangeCount;
     float2 MousePos;
     uint MouseButtons;
-    float3 _padding;
+    float SubdividedTime;
+    float2 _padding;
 
     float3 Color;
     float Size;

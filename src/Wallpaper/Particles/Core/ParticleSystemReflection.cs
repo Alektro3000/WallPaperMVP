@@ -2,6 +2,7 @@
 
 using System.Reflection;
 using Particles.Settings;
+using Settings;
 
 namespace Particles.Core;
 public static class ParticleSystemReflection

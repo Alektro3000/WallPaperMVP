@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Particles.Resources;
 using Renderer.FrameManagement;
 using Renderer.Resources;
@@ -9,7 +10,7 @@ namespace Particles.Systems.Fluid;
 
 public sealed class FluidCompute : IDisposable
 {
-    public const uint MaxGridCells = 8192;
+    public const uint MaxGridCells = 1024;
 
     private readonly ID3D12RootSignature rootSignature;
     private readonly ID3D12PipelineState emitterPso;
@@ -23,8 +24,9 @@ public sealed class FluidCompute : IDisposable
     private readonly FluidBuffers fluidBuffers;
     private readonly GpuDescriptorHandle fluidUavs;
     private readonly GpuDescriptorHandle fluidSrvs;
+    private readonly IConstantBufferKey particleKey;
     private readonly uint capacity;
-    
+
     private void TransitToUnordered(ID3D12GraphicsCommandList cmd, ID3D12Resource resource)
     {
         cmd.ResourceBarrierTransition(
@@ -40,13 +42,21 @@ public sealed class FluidCompute : IDisposable
             ResourceStates.NonPixelShaderResource);
     }
 
-    public FluidCompute(ID3D12Device device, ParticleComputeBindings bindings, uint capacity, FluidBuffers fluidBuffers, GpuDescriptorHandle fluidUavs, GpuDescriptorHandle fluidSrvs)
+    public FluidCompute(
+        ID3D12Device device,
+        ParticleComputeBindings bindings,
+        uint capacity,
+        FluidBuffers fluidBuffers,
+        GpuDescriptorHandle fluidUavs,
+        GpuDescriptorHandle fluidSrvs,
+        IConstantBufferKey particleKey)
     {
         this.bindings = bindings;
         this.capacity = capacity;
         this.fluidBuffers = fluidBuffers;
         this.fluidUavs = fluidUavs;
         this.fluidSrvs = fluidSrvs;
+        this.particleKey = particleKey;
 
         rootSignature = CreateFluidRootSignature(device);
         emitterPso = ShaderLibrary.CreatePSO(device, rootSignature, "fluid\\emitter.hlsl");
@@ -63,29 +73,27 @@ public sealed class FluidCompute : IDisposable
         dispatchCommandSignature = device.CreateCommandSignature<ID3D12CommandSignature>(commandSigDesc, null);
     }
 
-    public void DispatchParticles(FrameResource currentResource, IConstantBufferKey key, bool shouldCompact)
+    public void DispatchParticles(FrameResource currentResource, uint subpasses )
     {
-        var read = bindings.ParticleBuffers.WriteBufferBinding;
-        var write = bindings.ParticleBuffers.ReadBufferBinding;
         var cmd = currentResource.CommandList;
+        BindBuffers(cmd, currentResource);
 
-        cmd.SetComputeRootSignature(rootSignature);
-        cmd.SetComputeRootConstantBufferView(0, currentResource.GetGPUVirtualAddress(key));
-        cmd.SetComputeRootDescriptorTable(1, read.ParticleBufferSRV.Gpu);
-        cmd.SetComputeRootDescriptorTable(2, write.ParticleBufferUAV.Gpu);
-        cmd.SetComputeRootDescriptorTable(3, bindings.UavsStart);
-        cmd.SetComputeRootDescriptorTable(4, bindings.FieldBuffers.SRVFieldDescriptor);
-        cmd.SetComputeRootDescriptorTable(5, bindings.SrvsStart);
-        cmd.SetComputeRootConstantBufferView(6, currentResource.GetGPUVirtualAddress(bindings.CommonBuffers.commonKey));
-        cmd.SetComputeRootDescriptorTable(7, fluidUavs);
-        cmd.SetComputeRootDescriptorTable(8, fluidSrvs);
+        EmitterPass(cmd);
 
-        cmd.ResourceBarrierTransition(bindings.ComputeBuffers.DispatchArgs, ResourceStates.IndirectArgument, ResourceStates.UnorderedAccess);
-        cmd.SetPipelineState(emitterPso);
-        cmd.Dispatch(1, 1, 1);
-        cmd.ResourceBarrierUnorderedAccessView(bindings.ComputeBuffers.EmitterBuffer);
-        cmd.ResourceBarrierTransition(bindings.ComputeBuffers.DispatchArgs, ResourceStates.UnorderedAccess, ResourceStates.IndirectArgument);
+        for (uint i = 0; i < subpasses; i++)
+        {
+            var write = BindSwapBuffer(cmd);
+            SortParticles(cmd);
+            BuildLookupRanges(cmd);
+            UpdateParticles(cmd, write);
+            bindings.ParticleBuffers.SwapBuffers();
+        }
 
+        UpdateDrawArgs(cmd);
+    }
+
+    private void SortParticles(ID3D12GraphicsCommandList cmd)
+    {
         TransitToUnordered(cmd, fluidBuffers.HashEntries);
         cmd.SetComputeRoot32BitConstants<uint>(9, [0u, 0u, capacity, 0u], 0);
         cmd.SetPipelineState(sortPso);
@@ -104,6 +112,9 @@ public sealed class FluidCompute : IDisposable
             }
         }
         TransitToNonPixel(cmd, fluidBuffers.HashEntries);
+    }
+    private void BuildLookupRanges(ID3D12GraphicsCommandList cmd)
+    {
 
         TransitToUnordered(cmd, fluidBuffers.CellRanges);
         cmd.SetPipelineState(clearGridPso);
@@ -113,20 +124,49 @@ public sealed class FluidCompute : IDisposable
         cmd.SetPipelineState(rangesPso);
         DispatchIndirect(cmd);
         TransitToNonPixel(cmd, fluidBuffers.CellRanges);
-
+    }
+    private void BindBuffers(ID3D12GraphicsCommandList cmd, FrameResource currentResource)
+    {
+        cmd.SetComputeRootSignature(rootSignature);
+        cmd.SetComputeRootConstantBufferView(0, currentResource.GetGPUVirtualAddress(particleKey));
+        cmd.SetComputeRootDescriptorTable(3, bindings.UavsStart);
+        cmd.SetComputeRootDescriptorTable(4, bindings.FieldBuffers.SRVFieldDescriptor);
+        cmd.SetComputeRootDescriptorTable(5, bindings.SrvsStart);
+        cmd.SetComputeRootConstantBufferView(6, currentResource.GetGPUVirtualAddress(bindings.CommonBuffers.commonKey));
+        cmd.SetComputeRootDescriptorTable(7, fluidUavs);
+        cmd.SetComputeRootDescriptorTable(8, fluidSrvs);
+    }
+    private void UpdateParticles(ID3D12GraphicsCommandList cmd, ParticleBuffers.ParticleBufferBinding write)
+    {
         TransitToUnordered(cmd, write.ParticleBuffer);
         cmd.SetPipelineState(updatePso);
         DispatchIndirect(cmd);
         TransitToNonPixel(cmd, write.ParticleBuffer);
+    }
+    private void EmitterPass(ID3D12GraphicsCommandList cmd)
+    {
+        cmd.ResourceBarrierTransition(bindings.ComputeBuffers.DispatchArgs, ResourceStates.IndirectArgument, ResourceStates.UnorderedAccess);
+        cmd.SetPipelineState(emitterPso);
+        cmd.Dispatch(1, 1, 1);
+        cmd.ResourceBarrierUnorderedAccessView(bindings.ComputeBuffers.EmitterBuffer);
+        cmd.ResourceBarrierTransition(bindings.ComputeBuffers.DispatchArgs, ResourceStates.UnorderedAccess, ResourceStates.IndirectArgument);
+    }
+    private ParticleBuffers.ParticleBufferBinding BindSwapBuffer(ID3D12GraphicsCommandList cmd)
+    {
 
+        var read = bindings.ParticleBuffers.WriteBufferBinding;
+        var write = bindings.ParticleBuffers.ReadBufferBinding;
+        cmd.SetComputeRootDescriptorTable(1, read.ParticleBufferSRV.Gpu);
+        cmd.SetComputeRootDescriptorTable(2, write.ParticleBufferUAV.Gpu);
+        return write;
+    }
+    private void UpdateDrawArgs(ID3D12GraphicsCommandList cmd)
+    {
         cmd.ResourceBarrierTransition(bindings.ParticleBuffers.DrawArgs, ResourceStates.IndirectArgument, ResourceStates.UnorderedAccess);
         cmd.SetPipelineState(drawCountPso);
         cmd.Dispatch(1, 1, 1);
         cmd.ResourceBarrierTransition(bindings.ParticleBuffers.DrawArgs, ResourceStates.UnorderedAccess, ResourceStates.IndirectArgument);
-
-        bindings.ParticleBuffers.SwapBuffers();
     }
-
     private static uint NextPowerOfTwo(uint value)
     {
         value--;

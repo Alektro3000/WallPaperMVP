@@ -1,3 +1,5 @@
+using Settings;
+
 namespace Particles.Settings;
 public struct CommonInitSettings {
     [UiLabel("Max Particle Amount")]

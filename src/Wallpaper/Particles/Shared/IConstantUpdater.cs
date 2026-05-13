@@ -6,5 +6,5 @@ using Renderer.FrameManagement;
 namespace Particles.Shared;
 public interface IConstantUpdater
 {
-    void UpdateConstants(FrameResource currentResource, SystemSettings systemSettings);
+    void UpdateConstants(FrameResource currentResource);
 }

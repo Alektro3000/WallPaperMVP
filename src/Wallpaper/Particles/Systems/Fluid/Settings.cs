@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Particles.Settings;
+using Settings;
 
 namespace Particles.Systems.Fluid;
 
@@ -90,6 +91,10 @@ public struct GpuSettings
 public struct Settings : ISettings
 {
     public CommonInitSettings initSettings = new(4096);
+    [UiRange(1f, 16f, 1f)]
+    public float Subdivides = 0;
+    
+    public float TimeScale = 0;
     public GpuSettings gpuSettings = new();
 
     public Settings()

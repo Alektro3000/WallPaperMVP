@@ -1,7 +1,8 @@
 
 using System.Numerics;
-using Particles.Settings;
 using System.Runtime.InteropServices;
+using Particles.Settings;
+using Settings;
 
 namespace Particles.Systems.Strip;
 

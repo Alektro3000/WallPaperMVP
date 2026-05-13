@@ -124,11 +124,11 @@ float2 Boundary(inout float2 position, float2 velocity, float2 limit)
         }
     }
 
-    p.Velocity += acceleration * SmoothedDeltaTime;
+    p.Velocity += acceleration * SubdividedTime;
     p.Velocity += getParticleFieldVelocity(p.Position) * WindowsVelocity;
     
     //p.Velocity *= 0.999f;
-    p.Position += p.Velocity * SmoothedDeltaTime;
+    p.Position += p.Velocity * SubdividedTime;
     p.Velocity = Boundary(p.Position, p.Velocity, limits);
     p.CustomData1.x = density;
     p.Size = Size;

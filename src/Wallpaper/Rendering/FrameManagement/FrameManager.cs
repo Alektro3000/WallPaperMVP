@@ -19,6 +19,12 @@ public sealed class FrameManager : IDisposable
     private readonly ID3D12DescriptorHeap rtvHeap;
 
 
+    // Depth
+    private readonly ID3D12DescriptorHeap dsvHeap;
+    private readonly ID3D12Resource depthBuffer;
+    private readonly CpuDescriptorHandle depthStencilHandle;
+    private const Format DepthFormat = Format.D32_Float;
+    
     //Frame Resource
     private FrameResource[] frameResources = new FrameResource[frameCount];
 
@@ -53,6 +59,12 @@ public sealed class FrameManager : IDisposable
 
         rtvHeap = CreateRTVHeap(device);
 
+        dsvHeap = CreateDSVHeap(device);
+        depthBuffer = CreateDepthBuffer(device, width, height);
+        depthStencilHandle = dsvHeap.GetCPUDescriptorHandleForHeapStart();
+
+        device.CreateDepthStencilView(depthBuffer, null, depthStencilHandle);
+
         CreateFrameResources(device);
 
         viewport = new Viewport(0, 0, this.width, this.height, 0.0f, 1.0f);
@@ -67,6 +79,43 @@ public sealed class FrameManager : IDisposable
             DescriptorHeapFlags.None,
             0));
     }
+    private ID3D12DescriptorHeap CreateDSVHeap(ID3D12Device device)
+    {
+        return device.CreateDescriptorHeap(new DescriptorHeapDescription(
+            DescriptorHeapType.DepthStencilView,
+            1,
+            DescriptorHeapFlags.None,
+            0));
+    }
+    private static ID3D12Resource CreateDepthBuffer(
+        ID3D12Device device,
+        int width,
+        int height)
+    {
+        var depthDesc = ResourceDescription.Texture2D(
+            DepthFormat,
+            (uint)width,
+            (uint)height,
+            arraySize: 1,
+            mipLevels: 1,
+            sampleCount: 1,
+            sampleQuality: 0,
+            flags: ResourceFlags.AllowDepthStencil);
+
+        var clearValue = new ClearValue
+        {
+            Format = DepthFormat,
+            DepthStencil = new DepthStencilValue(1.0f, 0)
+        };
+
+        return device.CreateCommittedResource(
+            new HeapProperties(HeapType.Default),
+            HeapFlags.None,
+            depthDesc,
+            ResourceStates.DepthWrite,
+            clearValue);
+    }
+
 
     private void CreateFrameResources(ID3D12Device device)
     {
@@ -80,11 +129,12 @@ public sealed class FrameManager : IDisposable
             var renderTarget = swapChain.GetBuffer<ID3D12Resource>(i);
             device.CreateRenderTargetView(renderTarget, null, rtvHandle);
 
-            frameResources[i] = new FrameResource(i, device)
+            frameResources[i] = new FrameResource(i, device, constantBufferRegistry.CreateFrameBindings(device))
             {
                 RenderTargetHandle = rtvHandle,
                 RenderTarget = renderTarget,
-                ConstantBindings = constantBufferRegistry.CreateFrameBindings(device)
+                DepthStencilHandle = depthStencilHandle,
+                DepthStencil = depthBuffer,
             };
         }
     }
@@ -95,7 +145,7 @@ public sealed class FrameManager : IDisposable
         var currentResource = frameResources[swapChain.CurrentBackBufferIndex];
         frameCommandList.WaitForFrame(currentResource);
         Serilog.Log.Debug("FrameManager: frame available");
-        currentResource.frameMetric = manager.Update();
+        currentResource.FrameMetric = manager.Update();
 
         frameCommandList.ResetCmd(currentResource);
         var cmd = currentResource.CommandList;
@@ -110,15 +160,24 @@ public sealed class FrameManager : IDisposable
         cmd.RSSetScissorRect(scissor);
         cmd.SetDescriptorHeaps(heap.Heap);
 
-        cmd.OMSetRenderTargets(currentResource.RenderTargetHandle);
-        cmd.ClearRenderTargetView(currentResource.RenderTargetHandle, new Color4(0.0f, 0.0f, 0.0f, 0.0f));
+        cmd.OMSetRenderTargets(currentResource.RenderTargetHandle, currentResource.DepthStencilHandle);
+
+        cmd.ClearRenderTargetView(
+            currentResource.RenderTargetHandle, 
+            new Color4(0.0f, 0.0f, 0.0f, 0.0f));
+            
+        cmd.ClearDepthStencilView(
+            depthStencilHandle,
+            ClearFlags.Depth,
+            1.0f,
+            0);
         return currentResource;
     }
 
     public void UpdateFrameMetricOnly()
     {
         var currentResource = frameResources[swapChain.CurrentBackBufferIndex];
-        currentResource.frameMetric = manager.Update();
+        currentResource.FrameMetric = manager.Update();
     }
 
     public void EndFrame(FrameResource currentResource)

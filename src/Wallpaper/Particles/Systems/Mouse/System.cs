@@ -34,10 +34,10 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
     public override void Dispatch(FrameResource currentResource)
         => ComputePass.DispatchParticles(currentResource, ConstantBufferKey, true);
 
-    public override void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings)
+    public override void UpdateConstantBuffers(FrameResource currentResource)
     {
         ParticleSystemController.UpdateStaticResource(
             ref currentResource.GetBufferConstantRef(ConstantKey),
-            currentResource.frameMetric, systemSettings);
+            currentResource.FrameMetric, currentResource.Settings);
     }
 }

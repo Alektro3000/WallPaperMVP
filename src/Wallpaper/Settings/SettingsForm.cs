@@ -1,12 +1,6 @@
-using System;
-using System.Linq;
 using System.Numerics;
 using System.Reflection;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Windows.Forms;
-using Particles.Systems;
-using Particles.Settings;
+using Settings;
 
 public sealed class SettingsForm : Form
 {

@@ -186,25 +186,27 @@ public static class BufferFactory
 
     public static VertexBufferView CreateVertexBufferView<T>(
         ID3D12Resource buffer,
-        uint elementCount)
+        uint elementCount, 
+        uint offset = 0 )
         where T : unmanaged
     {
         uint stride = (uint)Marshal.SizeOf<T>();
         uint sizeInBytes = (uint)(elementCount * stride);
 
         return new VertexBufferView(
-            buffer.GPUVirtualAddress,
+            buffer.GPUVirtualAddress + offset,
             sizeInBytes,
             stride);
     }
     public static IndexBufferView CreateIndexBufferView(
-        ID3D12Resource buffer, uint elementCount)
+        ID3D12Resource buffer, uint elementCount, uint offset = 0 )
     {
 
         uint sizeInBytes = elementCount * sizeof(ushort);
 
         return new IndexBufferView(
-            buffer.GPUVirtualAddress,
+            buffer.GPUVirtualAddress + offset,
             sizeInBytes);
     }
+
 }

@@ -6,6 +6,7 @@ using Renderer.Descriptors;
 using Renderer.Resources;
 using Renderer.FrameManagement;
 using Renderer.Commands;
+using Particles.Resources;
 
 namespace Particles.Core;
 

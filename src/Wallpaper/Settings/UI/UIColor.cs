@@ -1,5 +1,5 @@
 
-namespace Particles.Settings;
+namespace Settings;
 
 [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
 public sealed class UiColorAttribute : Attribute

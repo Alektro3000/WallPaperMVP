@@ -1,6 +1,6 @@
 
 
-namespace Particles.Settings;
+namespace Settings;
 
 [AttributeUsage(AttributeTargets.Field)]
 public sealed class UiVector2Attribute : Attribute

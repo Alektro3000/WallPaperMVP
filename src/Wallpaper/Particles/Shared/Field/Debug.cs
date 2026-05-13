@@ -6,6 +6,7 @@ using Renderer;
 using Renderer.FrameManagement;
 using Renderer.Shaders;
 using Particles.Settings;
+using Settings;
 
 
 namespace Particles.Shared.Field;

@@ -2,6 +2,7 @@ using System.Numerics;
 using Particles.Resources;
 using Particles.Settings;
 using Renderer.FrameManagement;
+using Settings;
 
 namespace Particles.Systems.Mouse;
 
@@ -57,7 +58,7 @@ public class Controller
         MousePos3 = MousePos2;
         MousePos2 = MousePos1;
         MousePos1 = MousePos0;
-        MousePos0 = new Vector2(((float)point.X) / metric.height, (metric.height - (float)point.Y) / metric.height) * 2 - new Vector2(1/metric.ratio, 1);
+        MousePos0 = new Vector2(((float)point.X) / metric.height, (metric.height - (float)point.Y) / metric.height) * 2 - new Vector2(metric.ratio, 1);
 
         constant.CatmulA = CatmullA(MousePos3, MousePos2, MousePos1, MousePos0);
         constant.CatmulB = CatmullB(MousePos3, MousePos2, MousePos1, MousePos0);

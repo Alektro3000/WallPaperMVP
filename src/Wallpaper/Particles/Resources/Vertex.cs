@@ -3,7 +3,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace Renderer.Resources;
+namespace Particles.Resources;
 
 [StructLayout(LayoutKind.Sequential)]
 public struct QuadVertex

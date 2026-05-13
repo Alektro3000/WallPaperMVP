@@ -12,6 +12,8 @@ public class FrameMetricManager
     private uint FrameIndex;
     private int width;
     private int height;
+    public float Smoothed = -1;
+
     public FrameMetricManager(int width, int height)
     {
         this.width = width;
@@ -23,12 +25,25 @@ public class FrameMetricManager
     {
         FrameIndex++;
         var currentTime = timer.Elapsed.TotalSeconds;
+
+        float CalculatedDelta = (float)(currentTime - previousTime);
+        
+        if(Smoothed < 0)
+        {
+            Smoothed = CalculatedDelta;
+        }
+        else
+        {
+            Smoothed = Smoothed * 0.98f + CalculatedDelta * 0.02f;
+        }
+        
         var ans = new FrameMetric
         (
-            (float)(currentTime - previousTime),
+            CalculatedDelta,
             FrameIndex,
             width,
-            height
+            height,
+            Smoothed
         );
         previousTime = currentTime;
         return ans;

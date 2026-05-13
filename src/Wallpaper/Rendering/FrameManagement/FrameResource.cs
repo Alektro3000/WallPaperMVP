@@ -1,4 +1,5 @@
 using Renderer.Resources;
+using Settings;
 using Vortice.Direct3D12;
 
 namespace Renderer.FrameManagement;
@@ -10,18 +11,23 @@ public sealed class FrameResource : IDisposable
     public required ID3D12Resource RenderTarget;
     public required CpuDescriptorHandle RenderTargetHandle;
 
+    public required ID3D12Resource DepthStencil ;
+    public required CpuDescriptorHandle DepthStencilHandle ;
+
     public ID3D12CommandAllocator CommandAllocator;
     public ID3D12GraphicsCommandList CommandList;
 
-    public required ConstantBinding[] ConstantBindings;
+    private ConstantBinding[] ConstantBindings;
 
-    public FrameMetric frameMetric;
+    public FrameMetric FrameMetric;
+    public SystemSettings Settings;
 
     public ulong FenceValue;
 
-    public FrameResource(uint i, ID3D12Device device)
+    public FrameResource(uint i, ID3D12Device device, ConstantBinding[] ConstantBindings)
     {
         FrameIndex = i;
+        this.ConstantBindings = ConstantBindings;
 
         CommandAllocator = device.CreateCommandAllocator(CommandListType.Direct);
         CommandList = device.CreateCommandList<ID3D12GraphicsCommandList>(

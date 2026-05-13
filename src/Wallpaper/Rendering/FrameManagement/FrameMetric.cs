@@ -9,24 +9,27 @@ public struct FrameMetric
     public readonly uint FrameIndex;
     public readonly int width;
     public readonly int height;
+    public readonly float SmoothedDeltaTime;
     public Vector2 size
     {
         get => new Vector2(width, height);
     }
     public float ratio
     {
-        get => (float)height/width;
+        get => (float)width/height;
     }
     public FrameMetric(
         float DeltaTime,
         uint FrameIndex,
         int width,
-        int height
+        int height,
+        float SmoothedDeltaTime
     )
     {
         this.DeltaTime = DeltaTime;
         this.FrameIndex = FrameIndex;
         this.width = width;
         this.height = height;
+        this.SmoothedDeltaTime = SmoothedDeltaTime;
     }
 }

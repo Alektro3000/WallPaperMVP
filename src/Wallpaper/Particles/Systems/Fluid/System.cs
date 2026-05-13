@@ -44,7 +44,7 @@ public sealed class ParticleSystem : IParticleSystem, IParticleSystemFor<Setting
         var fluidUavs = fluidBuffers.CreateUavTable(context.Device, context.HeapAllocator);
         var fluidSrvs = fluidBuffers.CreateSrvTable(context.Device, context.HeapAllocator);
 
-        fluidCompute = new FluidCompute(context.Device, ParticleComputeBindings, ParticleBuffers.particleCount, fluidBuffers, fluidUavs[0].Gpu, fluidSrvs[0].Gpu);
+        fluidCompute = new FluidCompute(context.Device, ParticleComputeBindings, ParticleBuffers.particleCount, fluidBuffers, fluidUavs[0].Gpu, fluidSrvs[0].Gpu, ConstantKey);
         debugPass = new DensityDebugPass(context.Device, ParticleComputeBindings, fluidSrvs[0].Gpu, context.CommonBuffers, "fluid\\density_debug.hlsl", "fluid\\density_debug_pixel.hlsl");
     }
 
@@ -55,21 +55,24 @@ public sealed class ParticleSystem : IParticleSystem, IParticleSystemFor<Setting
             return null;
         return new ParticleSystem(context, settings);
     }
-
+    private ref Constants Constants(FrameResource currentResource)
+    {
+        return ref currentResource.GetBufferConstantRef<Constants>(ConstantKey);
+    }
     public void Render(FrameResource currentResource)
     {
-        if (currentResource.GetBufferConstantRef<Constants>(ConstantKey).Settings.DensityDebug > 0.5f)
+        if (Constants(currentResource).Settings.DensityDebug > 0.5f)
             debugPass.Render(currentResource, ConstantKey);
         
         graphic.Render(currentResource, ConstantKey);
     }
 
-    public void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings)
+    public void UpdateConstantBuffers(FrameResource currentResource)
     {
         controller.UpdateStaticResource(
-            ref currentResource.GetBufferConstantRef<Constants>(ConstantKey),
-            currentResource.frameMetric,
-            systemSettings);
+            ref Constants(currentResource),
+            currentResource.FrameMetric,
+            currentResource.Settings);
     }
 
     public void Dispose()
@@ -84,7 +87,13 @@ public sealed class ParticleSystem : IParticleSystem, IParticleSystemFor<Setting
 
     public void Dispatch(FrameResource currentResource)
     {
-        fluidCompute.DispatchParticles(currentResource, ConstantKey, false);
+        float subpasses = currentResource.Settings.GetSettings<Settings>().Subdivides;
+        if (subpasses < 1)
+        {
+            Serilog.Log.Error("Invalid subpasses settings in {@FluidSystem}, skipping dispatch", this);
+            return;
+        }
+        fluidCompute.DispatchParticles(currentResource, (uint)subpasses);
     }
 
 }

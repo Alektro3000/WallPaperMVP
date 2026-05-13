@@ -34,10 +34,10 @@ public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
         return new ParticleSystem(context, settings);
     }
 
-    public override void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings)
+    public override void UpdateConstantBuffers(FrameResource currentResource)
     {
         ParticleSystemController.UpdateStaticResource(
             ref currentResource.GetBufferConstantRef<Constants>(ConstantKey),
-            currentResource.frameMetric, systemSettings);
+            currentResource.FrameMetric, currentResource.Settings);
     }
 }

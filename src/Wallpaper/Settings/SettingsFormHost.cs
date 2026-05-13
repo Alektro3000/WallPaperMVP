@@ -1,8 +1,4 @@
-using System;
-using System.Threading;
-using System.Windows.Forms;
-using Particles.Systems;
-using Particles.Settings;
+using Settings;
 
 public sealed class SettingsFormHost : IDisposable
 {
@@ -143,7 +139,7 @@ public sealed class SettingsFormHost : IDisposable
 
     private NotifyIcon CreateTrayIcon()
     {
-        var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
+        var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "resources/app.ico");
 
         NotifyIcon trayIcon = new NotifyIcon
         {

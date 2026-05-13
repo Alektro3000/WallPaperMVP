@@ -17,7 +17,7 @@
   
   
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <!-- <DefineConstants>DEBUGDX</DefineConstants> -->
+     <DefineConstants>DEBUGDX</DefineConstants> 
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
@@ -31,6 +31,7 @@
     <PackageReference Include="Serilog" Version="4.3.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageReference Include="SharpGLTF.Core" Version="1.0.6" />
     <PackageReference Include="Vortice.Direct3D12" Version="3.8.3" />
     <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
   </ItemGroup>
@@ -42,12 +43,9 @@
   <Target Name="CompileShaders" AfterTargets="Build">
     <Exec Command="dotnet run --no-restore --project &quot;$(MSBuildProjectDirectory)\..\..\tools\ShaderCompiler\ShaderCompiler.csproj&quot; -- &quot;$(TargetPath)&quot; &quot;$(MSBuildProjectDirectory)&quot; &quot;$([System.IO.Path]::GetDirectoryName($(TargetPath)))&quot;" />
   </Target>
-	<ItemGroup>
-		<None Update="readme.txt">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="app.ico">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-	</ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\resources\**\*.*" Link="resources\%(RecursiveDir)%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

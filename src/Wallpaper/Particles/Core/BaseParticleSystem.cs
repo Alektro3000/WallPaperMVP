@@ -34,7 +34,7 @@ public abstract class BaseParticleSystem : IParticleSystem, IDisposable
     public abstract IConstantBufferKey ConstantBufferKey { get; }
 
     public virtual void Dispatch(FrameResource currentResource)
-        => ComputePass.DispatchParticles(currentResource, ConstantBufferKey, currentResource.frameMetric.FrameIndex % 10 == 0);
+        => ComputePass.DispatchParticles(currentResource, ConstantBufferKey, currentResource.FrameMetric.FrameIndex % 10 == 0);
 
     public virtual void Render(FrameResource currentResource)
         => GraphicPass.Render(currentResource, ConstantBufferKey);
@@ -93,5 +93,5 @@ public abstract class BaseParticleSystem : IParticleSystem, IDisposable
         ParticleBuffers?.Dispose();
     }
 
-    public abstract void UpdateConstantBuffers(FrameResource currentResource, SystemSettings systemSettings);
+    public abstract void UpdateConstantBuffers(FrameResource currentResource);
 }
