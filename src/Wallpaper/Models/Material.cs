@@ -27,12 +27,12 @@ public class Material : IDisposable
     private ID3D12CommandSignature DrawCommandSignature;
 
     public Texture? AlbedoTexture;
+    public Texture? NormalTexture;
 
     private ConstantBufferKey<MaterialInfo> ConstantKey;
 
     public Material(
         InitContext initContext,
-        TextureProvider textureRegistry,
         MaterialDescription materialDescription)
     {
         var device = initContext.GraphicsContext.Device;
@@ -41,11 +41,13 @@ public class Material : IDisposable
         PipelineState = CreateGraphicPipeline(device, "models\\materials\\base\\vertex.hlsl", "models\\materials\\base\\pixel.hlsl");
 
 
-        AlbedoTexture = textureRegistry.GetTexture(materialDescription.BaseColorTexturePath);
+        AlbedoTexture = materialDescription.BaseColorTexture;
+        NormalTexture = materialDescription.NormalTexture;
         ConstantKey = initContext.ConstantBufferRegistry.Reserve<MaterialInfo>("Material Constant Buffer");
     }
     public void Dispose()
     {
+        NormalTexture?.Dispose();
         AlbedoTexture?.Dispose();
 
         RootSignature?.Dispose();
@@ -72,6 +74,16 @@ public class Material : IDisposable
                 new RootDescriptor1(1, 0),
                 ShaderVisibility.Pixel),
 
+            new RootParameter1(
+                new RootDescriptorTable1(
+                new DescriptorRange1(DescriptorRangeType.ShaderResourceView, 1, 1)), 
+                ShaderVisibility.All),
+
+            new RootParameter1(
+                RootParameterType.ConstantBufferView,
+                new RootDescriptor1(2, 0),
+                ShaderVisibility.Vertex
+            )
         };
 
         var staticSampler = new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
@@ -178,6 +190,24 @@ public class Material : IDisposable
                 InputClassification.PerVertexData,
                 0),
 
+            new InputElementDescription(
+                "WEIGHTS",
+                0,
+                Format.R16G16B16A16_UNorm,
+                48,
+                0,
+                InputClassification.PerVertexData,
+                0),
+                
+            new InputElementDescription(
+                "JOINTS",
+                0,
+                Format.R16G16B16A16_UInt,
+                56,
+                0,
+                InputClassification.PerVertexData,
+                0),
+
         ]);
 
     }
@@ -187,7 +217,14 @@ public class Material : IDisposable
         var cmd = frameResource.CommandList;
 
         ref var materialConstantBuffer = ref frameResource.GetBufferConstantRef(ConstantKey);
-        materialConstantBuffer.flags = (AlbedoTexture != null) ? 1u : 0;
+
+        var settings = frameResource.Settings.GetSettings<Settings>();
+        var flags = (AlbedoTexture != null) ? 1u : 0;
+        flags |= (NormalTexture != null) ? 2u : 0;
+        flags |= (settings.showUV > 0) ? 4u : 0;
+        flags |= (settings.showNormal > 0) ? 8u : 0;
+
+        materialConstantBuffer.flags = flags;
 
         // Begin of Graphics Pass
         cmd.SetPipelineState(PipelineState);
@@ -195,8 +232,12 @@ public class Material : IDisposable
 
 
         cmd.SetGraphicsRootConstantBufferView(2, frameResource.GetGPUVirtualAddress(ConstantKey));
+
         if(AlbedoTexture != null)
             cmd.SetGraphicsRootDescriptorTable(1, AlbedoTexture.Handle.Gpu);
+
+        if(NormalTexture != null)
+            cmd.SetGraphicsRootDescriptorTable(3, NormalTexture.Handle.Gpu);
 
     }
 }

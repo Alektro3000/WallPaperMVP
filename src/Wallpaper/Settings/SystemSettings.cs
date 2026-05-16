@@ -34,7 +34,7 @@ public class SystemSettings
         data[typeof(T)] = newValue;
     }
 
-    public T GetSettings<T>()
+    public T GetSettings<T>() where T: ISettings 
     {
         return (T)data[typeof(T)];
     }

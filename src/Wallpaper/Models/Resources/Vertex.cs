@@ -9,4 +9,9 @@ public struct StaticVertex
     public Vector3 Normal;
     public Vector4 Tangent;
     public Vector2 UV;
+
+    //Packes 4 ushort weights
+    public ulong packedJointWeights;
+    //Packes 4 ushort indices
+    public ulong packedJointIndices;
 }

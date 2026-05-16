@@ -8,7 +8,7 @@ class ModelSubsystem : IDisposable
     Model model;
     public ModelSubsystem(InitContext initContext)
     {
-        model = ModelLoader.loadModelFromGLTF(initContext, "theroom.gltf");
+        model = ModelLoader.loadModelFromGLTF(initContext, "room", "theroom.gltf");
     }
 
     public void Render(FrameResource currentResource)

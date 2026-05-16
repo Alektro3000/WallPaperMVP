@@ -199,14 +199,14 @@ public static class BufferFactory
             stride);
     }
     public static IndexBufferView CreateIndexBufferView(
-        ID3D12Resource buffer, uint elementCount, uint offset = 0 )
+        ID3D12Resource buffer, uint elementCount, uint offset = 0, int IndexSize = 2)
     {
 
-        uint sizeInBytes = elementCount * sizeof(ushort);
+        uint sizeInBytes = (uint)(elementCount * IndexSize);
 
         return new IndexBufferView(
             buffer.GPUVirtualAddress + offset,
-            sizeInBytes);
+            sizeInBytes, IndexSize == 4);
     }
 
 }

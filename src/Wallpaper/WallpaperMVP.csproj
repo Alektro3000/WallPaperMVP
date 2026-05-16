@@ -17,7 +17,7 @@
   
   
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-     <DefineConstants>DEBUGDX</DefineConstants> 
+     <DefineConstants>DEBUGDXOFF</DefineConstants> 
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">

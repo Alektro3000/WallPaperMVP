@@ -5,4 +5,7 @@ procdump.exe
 .vs/**
 .vscode/**
 src/Wallpaper/logs/**
+*.csproj.lscache
 resources/**
+!resources/app.ico
+

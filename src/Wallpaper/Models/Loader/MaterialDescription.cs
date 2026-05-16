@@ -7,7 +7,8 @@ public class MaterialDescription
 {
     public string Name = "";
     public Vector4 BaseColorFactor = Vector4.One;
-    public string? BaseColorTexturePath;
+    public Texture? BaseColorTexture;
+    public Texture? NormalTexture;
     public bool DoubleSided;
     public string AlphaMode = "OPAQUE";
     public float AlphaCutoff = 0.5f;
@@ -16,7 +17,7 @@ public class MaterialDescription
     {
         Name = "__DefaultMaterial",
         BaseColorFactor = new Vector4(1, 1, 1, 1),
-        BaseColorTexturePath = null,
+        BaseColorTexture = null,
         DoubleSided = false,
         AlphaMode = "OPAQUE",
         AlphaCutoff = 0.5f

@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
@@ -11,17 +12,18 @@ using Vortice.Direct3D12;
 
 static class ModelLoader
 {
-    static public Model loadModelFromGLTF(InitContext context, string relativepath)
+    static public Model loadModelFromGLTF(InitContext context, string path, string name)
     {
-        var gltf = ModelRoot.Load(Path.Combine("resources", relativepath));
+        var absolute = Path.Combine("resources", path);
+        var gltf = ModelRoot.Load(Path.Combine(absolute, name));
 
-        TextureProvider textureProvider = new(context);
+        TextureProvider textureProvider = new(context, absolute);
 
         var materialMap = ImportMaterials(context, textureProvider, gltf);
         var (meshMap, meshData) = ImportMeshes(context, gltf, materialMap);
         var nodes = ImportNodes(gltf, meshMap);
 
-        return new Model()
+        return new Model(context)
         {
             Materials = materialMap,
             Meshes = meshMap,
@@ -37,7 +39,7 @@ static class ModelLoader
     {
         return gltf.LogicalMaterials.Select(
             mat =>
-            new Models.Material(initContext, textureProvider ,new MaterialDescription()
+            new Models.Material(initContext, new MaterialDescription()
             {
                 Name = mat.Name,
                 DoubleSided = mat.DoubleSided,
@@ -45,13 +47,24 @@ static class ModelLoader
                 AlphaMode = mat.Alpha switch
                 {
                     AlphaMode.OPAQUE => "OPAQUE",
-                    AlphaMode.MASK => throw new NotImplementedException(),
-                    AlphaMode.BLEND => throw new NotImplementedException(),
+                    AlphaMode.MASK => "OPAQUE", //throw new NotImplementedException(),
+                    AlphaMode.BLEND => "OPAQUE", //throw new NotImplementedException(),
                 },
                 BaseColorFactor = Vector4.One,
-                BaseColorTexturePath = mat.Extras?["mmd_material"]?["texture_rel_path"]?.ToString()
+                BaseColorTexture = GetBaseColorTexture(textureProvider, mat),
+                NormalTexture = textureProvider.GetTextureFromGltfTexture(mat.FindChannel("Normal")?.Texture)
             })
         ).ToList();
+    }
+// 
+    static private Models.Texture? GetBaseColorTexture(TextureProvider textureProvider, SharpGLTF.Schema2.Material mat)
+    {
+        var mmdTexture = textureProvider.GetTextureFromFile(mat.Extras?["mmd_material"]?["texture_rel_path"]?.ToString());
+        if(mmdTexture != null)
+            return mmdTexture;
+
+        var gltfTexture = mat.FindChannel("BaseColor")?.Texture;
+        return textureProvider.GetTextureFromGltfTexture(gltfTexture);
     }
 
     static private (List<Models.Mesh>, MeshBuffer meshData) ImportMeshes(InitContext context, ModelRoot gltf, List<Models.Material> materialMap)
@@ -89,8 +102,19 @@ static class ModelLoader
 
         int vertexCount = primitive.GetVertexAccessor("POSITION").Count;
         int indexCount = primitive.GetIndexAccessor().Count;
+        int indexSize = Math.Max(primitive.GetIndexAccessor().Format.ByteSize, 2);
 
-        vertexIndexRegistry.AddPrimitive(vertexCount, indexCount);
+        vertexIndexRegistry.AddPrimitive(vertexCount, indexCount, indexSize);
+    }
+
+    static private ulong PackVector(Vector4 vector4)
+    {
+        ulong mask = (1 << 16) - 1;
+        var x = (ulong)vector4.X & mask;
+        var y = (ulong)vector4.Y & mask;
+        var z = (ulong)vector4.Z & mask;
+        var w = (ulong)vector4.W & mask;
+        return x | (y << 16) | (z << 32) | (w << 48);
     }
 
     static private Primitive LoadPrimitive(
@@ -108,24 +132,32 @@ static class ModelLoader
         var normals = primitive.GetVertexAccessor("NORMAL")?.AsVector3Array();
         var texCoords = primitive.GetVertexAccessor("TEXCOORD_0")?.AsVector2Array();
 
+        var joints = primitive.GetVertexAccessor("JOINTS_0")?.AsVector4Array();
+        var weights = primitive.GetVertexAccessor("WEIGHTS_0")?.AsVector4Array();
+
         var vertices = new StaticVertex[positions.Count];
 
         
         for (int i = 0; i < positions.Count; i++)
         {
+            var UshortWeights = (weights?[i] ?? Vector4.Zero) * ushort.MaxValue;
+
             vertices[i] = new()
             {
                 Position = positions[i],
                 UV = texCoords?[i] ?? Vector2.Zero,
-                Normal = normals?[i] ?? Vector3.Zero
+                Normal = normals?[i] ?? Vector3.Zero,
+                packedJointIndices = PackVector(joints?[i] ?? Vector4.Zero),
+                packedJointWeights = PackVector(UshortWeights)
             };
         };
 
         var indeces32 = primitive.GetIndices();
-        if (indeces32.Any(x => x > ushort.MaxValue))
-            throw new NotSupportedException("Only 16-bit indices are supported for now.");
 
-        var (vertexView, indexView) = vertexIndexRegistry.UploadPrimitive(primitiveId++, vertices, indeces32.Select(x=>(ushort)x).ToArray());
+        var (vertexView, indexView) = vertexIndexRegistry.UploadPrimitive(
+            primitiveId++, 
+            vertices, 
+            indeces32);
 
         Models.Material? material = null;
         if (primitive.Material != null)

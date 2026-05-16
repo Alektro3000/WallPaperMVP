@@ -14,65 +14,103 @@ namespace Models;
 public class TextureProvider
 {
     Dictionary<string, Texture> loadedTextures = [];
+    Dictionary<int, Texture> loadedGltfImages = [];
 
-    ID3D12Device device;
-    ImmediateCommandList commandList;
-    HeapAllocator allocator;
-    public TextureProvider(InitContext initContext)
+    ID3D12Device Device;
+    ImmediateCommandList CommandList;
+    HeapAllocator Allocator;
+    string BasePath;
+    public TextureProvider(InitContext initContext, string basePath)
     {
-        device = initContext.GraphicsContext.Device;
-        commandList = initContext.CommandList;
-        allocator = initContext.HeapAllocator;
+        Device = initContext.GraphicsContext.Device;
+        CommandList = initContext.CommandList;
+        Allocator = initContext.HeapAllocator;
+        BasePath = basePath;
     }
 
-    public Texture? GetTexture(string? name)
+    public Texture? GetTextureFromFile(string? name)
     {
         if(name == null)
             return null;
-
-        if (loadedTextures.ContainsKey(name))
-            return loadedTextures[name];
-        return LoadTexture(name);
+       
+        string fullpath = Path.GetFullPath(Path.Combine(BasePath, name));
+        if (loadedTextures.TryGetValue(name, out var texture))
+            return texture;
+        return LoadTextureFromFile(fullpath);
     }
-    Texture? LoadTexture(string name)
+    public Texture? GetTextureFromGltfTexture(SharpGLTF.Schema2.Texture? gltfTexture)
     {
-        string fullpath = Path.Combine("resources", name);
+        var image = gltfTexture?.PrimaryImage;
+        if (image == null)
+            return null;
+
+        int key = image.LogicalIndex;
+
+        if (loadedGltfImages.TryGetValue(key, out var cached))
+            return cached;
+
+        return LoadTextureFromGltfImage(image, key);
+    }
+    private Texture? LoadTextureFromGltfImage(
+    SharpGLTF.Schema2.Image image,
+    int key)
+    {
+        var encoded = image.Content.Content;
+
+        using var stream = new MemoryStream(encoded.ToArray());
+        using var bitmap = new Bitmap(stream);
+
+        var texture = ConvertTexture(bitmap,  $"gltf_image_{key}");
+        
+        loadedGltfImages[key] = texture;
+        return texture;
+    }
+    Texture? LoadTextureFromFile(string fullpath)
+    {
 
         if (!File.Exists(fullpath))
             return null;
 
         using var bitmap = new Bitmap(fullpath);
 
+        var texture = ConvertTexture(bitmap, fullpath);
+
+        loadedTextures[fullpath] = texture;
+        return texture;
+    }
+
+    private Texture ConvertTexture(Bitmap bitmap, String name)
+    {
+        
         var width = bitmap.Width;
         var height = bitmap.Height;
-
         // Convert to RGBA8/BGRA8 CPU pixels.
         var pixels = LoadBitmapPixelsRgba8(bitmap);
 
         var textureResource = CreateTexture2D(
-            device,
+            Device,
             width,
             height,
             Format.R8G8B8A8_UNorm_SRgb);
 
         using var uploadBuffer = CreateTextureUploadBuffer(
-            device,
+            Device,
             textureResource,
             pixels,
             width,
             height,
             bytesPerPixel: 4);
 
-        commandList.ExecuteImmediate(cmd =>
+        CommandList.ExecuteImmediate(cmd =>
         {
             UploadTextureData(
-                device,
+                Device,
                 cmd,
                 textureResource,
                 uploadBuffer,
                 width,
                 height,
-                Format.R8G8B8A8_UNorm);
+                Format.R8G8B8A8_UNorm_SRgb);
 
             cmd.ResourceBarrierTransition(
                 textureResource,
@@ -88,9 +126,8 @@ public class TextureProvider
             Height = height,
         };
 
-        CreateSrvForTexture(texture, Format.R8G8B8A8_UNorm);
+        CreateSrvForTexture(texture, Format.R8G8B8A8_UNorm_SRgb);
 
-        loadedTextures[name] = texture;
         return texture;
     }
     private static ID3D12Resource CreateTexture2D(
@@ -263,7 +300,7 @@ public class TextureProvider
 
     private void CreateSrvForTexture(Texture texture, Format format)
     {
-        var descriptor = allocator.Allocate()[0]; 
+        var descriptor = Allocator.Allocate()[0]; 
         // assumes descriptor.CpuHandle and descriptor.GpuHandle
 
         var srvDesc = new ShaderResourceViewDescription
@@ -280,7 +317,7 @@ public class TextureProvider
             }
         };
 
-        device.CreateShaderResourceView(
+        Device.CreateShaderResourceView(
             texture.TextureResource,
             srvDesc,
             descriptor.Cpu);
