@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using Models;
 using Renderer.Commands;
 using Renderer.Resources;
-using SharpGLTF.Schema2;
 using Vortice.Direct3D12;
 
 public class VertexIndexRegistry
@@ -94,6 +93,7 @@ public class VertexIndexRegistry
                     if (index > ushort.MaxValue)
                         throw new InvalidOperationException(
                             $"Primitive {v} uses index {index}, which does not fit in 16-bit indices.");
+
                     dst16[i] = (ushort)index;
                 }
             }

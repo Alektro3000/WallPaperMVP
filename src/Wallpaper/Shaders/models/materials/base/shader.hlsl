@@ -1,6 +1,8 @@
+#pragma pack_matrix(row_major)
+
 cbuffer ModelConstants : register(b0)
 {
-    row_major float4x4 ModelViewProjection;
+    float4x4 ViewProjection;
 }
 
 cbuffer JointsConstants : register(b2)
@@ -39,9 +41,25 @@ struct PSInput
 PSInput MAIN_VS(VSInput input)
 {
     PSInput o;
-    o.Position = mul(float4(input.position, 1.0), ModelViewProjection);
-    o.normal = input.normal;
-    o.tangent = input.tangent;
+
+
+    float4 localPosition = float4(input.position, 1.0);
+    float4 localNormal = float4(input.normal, 0.0);
+
+    float4 skinnedPosition =
+        mul(localPosition, Joints[input.Joints.x]) * input.Weights.x +
+        mul(localPosition, Joints[input.Joints.y]) * input.Weights.y +
+        mul(localPosition, Joints[input.Joints.z]) * input.Weights.z +
+        mul(localPosition, Joints[input.Joints.w]) * input.Weights.w;
+
+    float4 skinnedNormal =
+        mul(localNormal, Joints[input.Joints.x]) * input.Weights.x +
+        mul(localNormal, Joints[input.Joints.y]) * input.Weights.y +
+        mul(localNormal, Joints[input.Joints.z]) * input.Weights.z +
+        mul(localNormal, Joints[input.Joints.w]) * input.Weights.w;
+
+    o.Position = mul(skinnedPosition, ViewProjection);
+    o.normal = skinnedNormal.xyz;
     o.UV = input.UV;
     return o;
 }

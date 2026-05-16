@@ -25,19 +25,21 @@ public sealed class Model : IDisposable
 {
     public List<Material> Materials = [];
     public required MeshBuffer MeshBuffer;
+    public List<Skin> Skins = [];
     public List<Mesh> Meshes = [];
     public List<Node> Nodes = [];
     public List<Node> RootNodes = [];
-    public List<int> JointMapping = [];
     public required TextureProvider textureProvider;
-    private ConstantBufferKey<JointsStaticBuffer> staticJoints;
     
     public Model(InitContext initContext)
     {
-        staticJoints = initContext.ConstantBufferRegistry.Reserve<JointsStaticBuffer>("StaticJointsRegistry");
+        
     }
-    public void Dispose()
-    {
+    public void Dispose(){
+        foreach(var skin in Skins)
+        {
+            skin.Dispose();
+        }
         foreach(var mesh in Meshes)
         {
             mesh.Dispose();
@@ -56,9 +58,11 @@ public sealed class Model : IDisposable
             i.UpdateWorldTransforms(Matrix4x4.Identity);
         }
 
+        foreach(var i in Nodes.Where(x=>x.Skin != null))
+        {
+            i.Skin?.UpdateJointsPositions(frameResource, i.GlobalTransform);
+        }
 
-        ref JointsStaticBuffer buffer = ref frameResource.GetBufferConstantRef(staticJoints);
-        //
 
         RenderMesh(frameResource);
     }
@@ -85,9 +89,8 @@ public sealed class Model : IDisposable
         {
             var cmd = frameResource.CommandList;
             var mesh = node.Mesh!;
-
             
-            var mvp = node.GlobalTransform * viewMatrix * projection;
+            var mvp = viewMatrix * projection;
             frameResource.GetBufferConstantRef(mesh.constantBufferKey) =  mvp;
 
             IEnumerable<Primitive> selected = mesh.Primitives;
@@ -102,8 +105,8 @@ public sealed class Model : IDisposable
                     continue;
                 }
                 primitive.Material.BindMaterial(frameResource);
+                node.Skin?.BindSkin(frameResource);
                 cmd.SetGraphicsRootConstantBufferView(0, frameResource.GetGPUVirtualAddress(mesh.constantBufferKey));
-                cmd.SetGraphicsRootConstantBufferView(4, frameResource.GetGPUVirtualAddress(staticJoints));
 
                 cmd.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
                 cmd.IASetVertexBuffers(0, primitive.VertexBufferView);

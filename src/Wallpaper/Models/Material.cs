@@ -66,22 +66,25 @@ public class Material : IDisposable
                 new RootDescriptorTable1(
                 new DescriptorRange1(DescriptorRangeType.ShaderResourceView, 1, 0)), 
                 ShaderVisibility.All),
-                
+            
+            //Pixel CBV
             new RootParameter1(
                 RootParameterType.ConstantBufferView,
                 new RootDescriptor1(1, 0),
                 ShaderVisibility.Pixel),
 
+            
             new RootParameter1(
                 new RootDescriptorTable1(
                 new DescriptorRange1(DescriptorRangeType.ShaderResourceView, 1, 1)), 
                 ShaderVisibility.All),
 
+            //Joints CBV
             new RootParameter1(
                 RootParameterType.ConstantBufferView,
                 new RootDescriptor1(2, 0),
-                ShaderVisibility.Vertex
-            )
+                ShaderVisibility.Vertex),
+
         };
 
         var staticSampler = new StaticSamplerDescription(ShaderVisibility.All, 0, 0)

@@ -1,13 +1,6 @@
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Numerics;
-using System.Reflection.Metadata.Ecma335;
-using System.Runtime.InteropServices;
 using Models;
-using Renderer.Commands;
-using Renderer.Resources;
 using SharpGLTF.Schema2;
-using Vortice.Direct3D12;
 
 
 static class ModelLoader
@@ -21,7 +14,10 @@ static class ModelLoader
 
         var materialMap = ImportMaterials(context, textureProvider, gltf);
         var (meshMap, meshData) = ImportMeshes(context, gltf, materialMap);
+
         var nodes = ImportNodes(gltf, meshMap);
+
+        var skins = ImportSkins(context, gltf, nodes);
 
         return new Model(context)
         {
@@ -29,6 +25,7 @@ static class ModelLoader
             Meshes = meshMap,
             Nodes = nodes,
             MeshBuffer = meshData,
+            Skins = skins,
             
             RootNodes = ImportSceneRoots(gltf, nodes),
             textureProvider = textureProvider
@@ -56,7 +53,7 @@ static class ModelLoader
             })
         ).ToList();
     }
-// 
+
     static private Models.Texture? GetBaseColorTexture(TextureProvider textureProvider, SharpGLTF.Schema2.Material mat)
     {
         var mmdTexture = textureProvider.GetTextureFromFile(mat.Extras?["mmd_material"]?["texture_rel_path"]?.ToString());
@@ -177,7 +174,21 @@ static class ModelLoader
         };
     }
 
+    static private List<Models.Skin> ImportSkins(InitContext context, ModelRoot gltf, List<Models.Node> nodeMap)
+    {
+        var skins = gltf.LogicalSkins.Select(x => new Models.Skin(context,
+            x.Joints.Select(j => nodeMap[j.LogicalIndex]).ToArray(),
+            x.InverseBindMatrices.ToArray()
+        )).ToList();
 
+        foreach(var node in gltf.LogicalNodes)
+        {
+            var index = node.Skin?.LogicalIndex;
+            if(index != null)
+                nodeMap[node.LogicalIndex].Skin = skins[(int)index];
+        }
+        return skins;
+    }
     static private List<Models.Node> ImportNodes(ModelRoot gltf, List<Models.Mesh> meshMap)
     {
         var list = gltf.LogicalNodes.Select(node =>
@@ -185,7 +196,7 @@ static class ModelLoader
             {
                 Name = node.Name ?? "",
                 LocalTransform = node.LocalMatrix,
-                Mesh = node.Mesh != null ? meshMap?[node.Mesh.LogicalIndex] : null
+                Mesh = node.Mesh != null ? meshMap?[node.Mesh.LogicalIndex] : null,
             }
         ).ToList();
 

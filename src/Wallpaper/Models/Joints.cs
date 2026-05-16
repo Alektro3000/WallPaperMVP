@@ -1,10 +1,10 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-[InlineArray(512+128)]
+[InlineArray(640)]
 struct JointsStaticBufferHelper
 {
-    public Matrix4x4 matrix4X4;
+    public Matrix4x4 TransformMatrix4X4;
 }
 
 struct JointsStaticBuffer
