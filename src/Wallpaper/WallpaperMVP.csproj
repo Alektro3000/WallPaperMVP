@@ -40,8 +40,19 @@
     <PackageReference Include="Vortice.DirectComposition" Version="3.8.3" />
     <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
   </ItemGroup>
-  <Target Name="CompileShaders" AfterTargets="Build">
-    <Exec Command="dotnet run --no-restore --project &quot;$(MSBuildProjectDirectory)\..\..\tools\ShaderCompiler\ShaderCompiler.csproj&quot; -- &quot;$(TargetPath)&quot; &quot;$(MSBuildProjectDirectory)&quot; &quot;$([System.IO.Path]::GetDirectoryName($(TargetPath)))&quot;" />
+  <ItemGroup>
+    <ShaderCompilerInputs Include="$(MSBuildProjectDirectory)\Shaders\**\*.hlsl" />
+    <ShaderCompilerInputs Include="$(MSBuildProjectDirectory)\Shaders\**\*.hlsli" />
+    <ShaderCompilerInputs Include="$(MSBuildProjectDirectory)\..\..\Tools\ShaderCompiler\Program.cs" />
+    <ShaderCompilerInputs Include="$(MSBuildProjectDirectory)\..\..\Tools\ShaderCompiler\ShaderCompiler.csproj" />
+  </ItemGroup>
+
+  <Target Name="CompileShaders"
+          AfterTargets="Build"
+          Inputs="@(ShaderCompilerInputs)"
+          Outputs="$([System.IO.Path]::GetDirectoryName($(TargetPath)))\shaders\.shadercompile.stamp">
+    <Exec Command="dotnet run --no-restore --project &quot;$(MSBuildProjectDirectory)\..\..\tools\ShaderCompiler\ShaderCompiler.csproj&quot; -- &quot;$(MSBuildProjectDirectory)&quot; &quot;$([System.IO.Path]::GetDirectoryName($(TargetPath)))&quot;" />
+    <Touch Files="$([System.IO.Path]::GetDirectoryName($(TargetPath)))\shaders\.shadercompile.stamp" AlwaysCreate="true" />
   </Target>
   <ItemGroup>
     <None Include="..\..\resources\**\*.*" Link="resources\%(RecursiveDir)%(Filename)%(Extension)">

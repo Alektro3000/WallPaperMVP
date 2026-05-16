@@ -11,7 +11,7 @@ groupshared uint WaveTotals[MAX_WAVES_PER_GROUP];
 groupshared uint WaveOffsets[MAX_WAVES_PER_GROUP];
 
 [numthreads(THREADS_PER_GROUP, 1, 1)]
-void main(uint3 dtid  : SV_DispatchThreadID,
+void MAIN_CS(uint3 dtid  : SV_DispatchThreadID,
           uint3 gtid  : SV_GroupThreadID,
           uint3 gid   : SV_GroupID)
 {

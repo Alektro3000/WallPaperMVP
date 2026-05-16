@@ -8,9 +8,6 @@ using Renderer.Resources;
 
 namespace Particles.Systems.Whirl;
 
-[Shader("whirl\\compute.hlsl", "cs")]
-[Shader("whirl\\emitter.hlsl", "cs")]
-[Shader("whirl\\draw_count.hlsl", "cs")]
 public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller ParticleSystemController;

@@ -9,7 +9,7 @@ RWStructuredBuffer<DispatchArgs> Args : register(u4);
 // 0 <= SpawnCountThisFrame <= ParticleCount - AliveCount
 // 0 <= AliveCount <= TotalCount <= ParticleCount
 [numthreads(1,1,1)]
-void main(uint3 tid : SV_DispatchThreadID)
+void MAIN_CS(uint3 tid : SV_DispatchThreadID)
 {
     EmitterData data = Emitter[0];
     uint aliveCount = min(data.AliveCount, ParticleCount);

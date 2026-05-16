@@ -8,9 +8,6 @@ using Vortice.Direct3D12;
 
 namespace Particles.Systems.Strip;
 
-[Shader("strip\\compute.hlsl", "cs")]
-[Shader("strip\\emitter.hlsl", "cs")]
-[Shader("strip\\draw_count.hlsl", "cs")]
 public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller ParticleSystemController;

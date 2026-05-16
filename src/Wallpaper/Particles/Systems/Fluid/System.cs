@@ -7,14 +7,6 @@ using Renderer.Resources;
 
 namespace Particles.Systems.Fluid;
 
-[Shader("fluid\\compute.hlsl", "cs")]
-[Shader("fluid\\emitter.hlsl", "cs")]
-[Shader("fluid\\draw_count.hlsl", "cs")]
-[Shader("fluid\\sort_hash.hlsl", "cs")]
-[Shader("fluid\\clear_grid.hlsl", "cs")]
-[Shader("fluid\\build_ranges.hlsl", "cs")]
-[Shader("fluid\\density_debug.hlsl", "vs")]
-[Shader("fluid\\density_debug_pixel.hlsl", "ps")]
 public sealed class ParticleSystem : IParticleSystem, IParticleSystemFor<Settings>
 {
     private readonly ConstantBufferKey<Constants> ConstantKey;
@@ -45,7 +37,7 @@ public sealed class ParticleSystem : IParticleSystem, IParticleSystemFor<Setting
         var fluidSrvs = fluidBuffers.CreateSrvTable(context.Device, context.HeapAllocator);
 
         fluidCompute = new FluidCompute(context.Device, ParticleComputeBindings, ParticleBuffers.particleCount, fluidBuffers, fluidUavs[0].Gpu, fluidSrvs[0].Gpu, ConstantKey);
-        debugPass = new DensityDebugPass(context.Device, ParticleComputeBindings, fluidSrvs[0].Gpu, context.CommonBuffers, "fluid\\density_debug.hlsl", "fluid\\density_debug_pixel.hlsl");
+        debugPass = new DensityDebugPass(context.Device, ParticleComputeBindings, fluidSrvs[0].Gpu, context.CommonBuffers, "fluid\\density_debug_shader.hlsl");
     }
 
     [SystemBuilder]

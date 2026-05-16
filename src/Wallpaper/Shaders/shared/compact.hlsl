@@ -8,7 +8,7 @@ RWStructuredBuffer<uint> AliveList: register(u2);
 
 
 [numthreads(1,1,1)]
-void main(uint3 tid : SV_DispatchThreadID)
+void MAIN_CS(uint3 tid : SV_DispatchThreadID)
 {
     if (tid.x != 0)
         return;

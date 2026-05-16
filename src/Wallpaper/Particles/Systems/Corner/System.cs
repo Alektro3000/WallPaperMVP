@@ -8,9 +8,6 @@ using Vortice.Direct3D12;
 
 namespace Particles.Systems.Corner;
 
-[Shader("corner\\compute.hlsl", "cs")]
-[Shader("corner\\emitter.hlsl", "cs")]
-[Shader("corner\\draw_count.hlsl", "cs")]
 public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller ParticleSystemController;

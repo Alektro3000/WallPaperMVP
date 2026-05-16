@@ -13,14 +13,6 @@ using Renderer.Commands;
 
 namespace Particles.Core;
 
-[Shader("vertex.hlsl", "vs")]
-[Shader("pixel.hlsl", "ps")]
-[Shader("shared\\alive.hlsl", "cs")]
-[Shader("shared\\prefix_local.hlsl", "cs")]
-[Shader("shared\\prefix_block_sums.hlsl", "cs")]
-[Shader("shared\\prefix_add_offset.hlsl", "cs")]
-[Shader("shared\\copy.hlsl", "cs")]
-[Shader("shared\\draw_count_no_compact.hlsl", "cs")]
 public abstract class BaseParticleSystem : IParticleSystem, IDisposable
 {
     protected Compute ComputePass;

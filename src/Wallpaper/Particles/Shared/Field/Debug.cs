@@ -11,8 +11,6 @@ using Settings;
 
 namespace Particles.Shared.Field;
 
-[Shader("field/vertex.hlsl", "vs")]
-[Shader("field/pixel.hlsl", "ps")]
 public class Debug : IDisposable
 {
 
@@ -27,7 +25,7 @@ public class Debug : IDisposable
     {
         this.buffers = buffers;
         RootSig = CreateRootSignature(device);
-        PSO = CreatePipelineState(device, "field/vertex.hlsl", "field/pixel.hlsl");
+        PSO = CreatePipelineState(device, "field/shader.hlsl", "field/shader.hlsl");
     }
     public void Dispose()
     {
@@ -80,8 +78,8 @@ public class Debug : IDisposable
         String PixelShaderPath)
     {
         
-        ReadOnlyMemory<byte> vs = ShaderLibrary.GetShader(VertexShaderPath);
-        ReadOnlyMemory<byte> ps = ShaderLibrary.GetShader(PixelShaderPath);
+        ReadOnlyMemory<byte> vs = ShaderLibrary.GetShader(VertexShaderPath, "vs");
+        ReadOnlyMemory<byte> ps = ShaderLibrary.GetShader(PixelShaderPath, "ps");
 
         GraphicsPipelineStateDescription pipelineStateDescription = new GraphicsPipelineStateDescription
         {

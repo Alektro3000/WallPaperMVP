@@ -10,9 +10,6 @@ using Vortice.Direct3D12;
 namespace Particles.Systems.Text;
 
 
-[Shader("text\\compute.hlsl", "cs")]
-[Shader("text\\emitter.hlsl", "cs")]
-[Shader("text\\draw_count.hlsl", "cs")]
 public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller Controller;

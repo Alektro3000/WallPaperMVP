@@ -35,7 +35,7 @@ float WindowSdf(float2 p, float2 bmin, float2 bmax)
 }
 
 [numthreads(8, 8, 1)]
-void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+void MAIN_CS(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     uint2 xy = dispatchThreadId.xy;
     if(any(xy >= fieldSize))

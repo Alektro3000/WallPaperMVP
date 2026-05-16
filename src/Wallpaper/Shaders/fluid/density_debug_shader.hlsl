@@ -4,13 +4,37 @@ StructuredBuffer<Particle> Particles : register(t0);
 StructuredBuffer<HashEntry> HashEntriesSrv : register(t4);
 StructuredBuffer<CellRange> CellRangesSrv : register(t5);
 
+struct VsOut
+{
+    float4 Position : SV_POSITION;
+    float2 Uv : TEXCOORD0;
+};
+
 struct PsIn
 {
     float4 Position : SV_POSITION;
     float2 Uv : TEXCOORD0;
 };
 
-float4 main(PsIn input) : SV_TARGET
+VsOut MAIN_VS(uint vertexId : SV_VertexID)
+{
+    float2 vertices[6] =
+    {
+        float2(-1.0f, -1.0f),
+        float2(-1.0f,  1.0f),
+        float2( 1.0f,  1.0f),
+        float2(-1.0f, -1.0f),
+        float2( 1.0f,  1.0f),
+        float2( 1.0f, -1.0f)
+    };
+
+    VsOut output;
+    output.Position = float4(vertices[vertexId], 0.0f, 1.0f);
+    output.Uv = vertices[vertexId] * 0.5f + 0.5f;
+    return output;
+}
+
+float4 MAIN_PS(PsIn input) : SV_TARGET
 {
     float2 world = float2((input.Uv.x * 2.0f - 1.0f) * ScreenRatio, input.Uv.y * 2.0f - 1.0f);
     int2 cell = CellCoord(world);

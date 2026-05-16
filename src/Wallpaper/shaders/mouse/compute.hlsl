@@ -21,7 +21,7 @@ float map01(float x, float minValue, float maxValue)
 }
 
 // Uses CustomData.xy to store unsnapped position
-[numthreads(256, 1, 1)] void main(uint3 dtid : SV_DispatchThreadID)
+[numthreads(256, 1, 1)] void MAIN_CS(uint3 dtid : SV_DispatchThreadID)
 {
     uint i = dtid.x;
     if (i >= ParticleCount)

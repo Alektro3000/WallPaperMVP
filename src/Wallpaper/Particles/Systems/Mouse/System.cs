@@ -7,9 +7,6 @@ using Renderer.Resources;
 
 namespace Particles.Systems.Mouse;
 
-[Shader("mouse\\compute.hlsl", "cs")]
-[Shader("mouse\\emitter.hlsl", "cs")]
-[Shader("mouse\\draw_count.hlsl", "cs")]
 public class ParticleSystem : BaseParticleSystem, IParticleSystemFor<Settings>
 {
     protected Controller ParticleSystemController;

@@ -9,7 +9,7 @@ RWStructuredBuffer<DrawIndexedArgs> DrawArgs : register(u5);
 StructuredBuffer<Particle> SparseParticles : register(t0);
 
 [numthreads(1, 1, 1)]
-void main(uint3 tid : SV_DispatchThreadID)
+void MAIN_CS(uint3 tid : SV_DispatchThreadID)
 {
     if (tid.x != 0)
         return;

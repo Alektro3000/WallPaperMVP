@@ -4,7 +4,6 @@ using Vortice.Direct3D12;
 
 namespace Particles.Shared.Field;
 
-[Shader("field/field.hlsl", "cs")]
 sealed public class Pass : IDisposable
 {
 

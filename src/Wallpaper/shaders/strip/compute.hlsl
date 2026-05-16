@@ -5,7 +5,7 @@ RWStructuredBuffer<Particle> NextParticles : register(u0);
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
 
 // Uses CustomData.xy to store unsnapped position
-[numthreads(256, 1, 1)] void main(uint3 dtid : SV_DispatchThreadID)
+[numthreads(256, 1, 1)] void MAIN_CS(uint3 dtid : SV_DispatchThreadID)
 {
     uint i = dtid.x;
     if (i >= ParticleCount)

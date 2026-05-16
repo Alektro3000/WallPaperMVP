@@ -75,8 +75,8 @@ public class Graphic : IDisposable
         String PixelShaderPath)
     {
 
-        ReadOnlyMemory<byte> vs = ShaderLibrary.GetShader(VertexShaderPath);
-        ReadOnlyMemory<byte> ps = ShaderLibrary.GetShader(PixelShaderPath);
+        ReadOnlyMemory<byte> vs = ShaderLibrary.GetShader(VertexShaderPath, "vs");
+        ReadOnlyMemory<byte> ps = ShaderLibrary.GetShader(PixelShaderPath, "ps");
 
         GraphicsPipelineStateDescription pipelineStateDescription = new GraphicsPipelineStateDescription
         {

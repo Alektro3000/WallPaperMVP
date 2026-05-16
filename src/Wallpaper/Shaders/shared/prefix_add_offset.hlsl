@@ -6,7 +6,7 @@ StructuredBuffer<uint> BlockSums    : register(t3);
 RWStructuredBuffer<EmitterData> Emitter : register(u1);
 
 [numthreads(256, 1, 1)]
-void main(
+void MAIN_CS(
     uint3 dtid : SV_DispatchThreadID,
     uint3 gid  : SV_GroupID)
 {

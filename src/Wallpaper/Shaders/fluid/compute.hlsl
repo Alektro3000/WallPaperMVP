@@ -21,7 +21,7 @@ float2 Boundary(inout float2 position, float2 velocity, float2 limit)
     return velocity;
 }
 
-[numthreads(256, 1, 1)] void main(uint3 dtid : SV_DispatchThreadID)
+[numthreads(256, 1, 1)] void MAIN_CS(uint3 dtid : SV_DispatchThreadID)
 {
     uint sortedIndex = dtid.x;
     if (sortedIndex >= ParticleCount)

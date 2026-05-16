@@ -21,14 +21,13 @@ public sealed class DensityDebugPass : IDisposable
         ParticleComputeBindings bindings,
         GpuDescriptorHandle fluidSrvs,
         Shared.Global.Buffers commonBuffers,
-        string vertexShader,
-        string pixelShader)
+        string shader)
     {
         this.bindings = bindings;
         this.fluidSrvs = fluidSrvs;
         this.commonBuffers = commonBuffers;
         rootSignature = CreateRootSignature(device);
-        pipelineState = CreatePipelineState(device, vertexShader, pixelShader);
+        pipelineState = CreatePipelineState(device, shader);
     }
 
     public void Render(FrameResource currentResource, IConstantBufferKey key)
@@ -57,13 +56,13 @@ public sealed class DensityDebugPass : IDisposable
         return ShaderLibrary.CreateRootSignature(device, rootParameters, []);
     }
 
-    private ID3D12PipelineState CreatePipelineState(ID3D12Device device, string vertexShader, string pixelShader)
+    private ID3D12PipelineState CreatePipelineState(ID3D12Device device, string shader)
     {
         return device.CreateGraphicsPipelineState(new GraphicsPipelineStateDescription
         {
             RootSignature = rootSignature,
-            VertexShader = ShaderLibrary.GetShader(vertexShader),
-            PixelShader = ShaderLibrary.GetShader(pixelShader),
+            VertexShader = ShaderLibrary.GetShader(shader, "vs"),
+            PixelShader = ShaderLibrary.GetShader(shader, "ps"),
             InputLayout = new InputLayoutDescription([]),
             SampleMask = uint.MaxValue,
             PrimitiveTopologyType = PrimitiveTopologyType.Triangle,

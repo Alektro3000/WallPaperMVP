@@ -12,8 +12,6 @@ using Vortice.DXGI;
 
 namespace Models;
 
-[Shader("models\\materials\\base\\pixel.hlsl", "ps")]
-[Shader("models\\materials\\base\\vertex.hlsl", "vs")]
 public class Material : IDisposable
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -38,7 +36,7 @@ public class Material : IDisposable
         var device = initContext.GraphicsContext.Device;
         DrawCommandSignature = CreateCommandSignature(device);
         RootSignature = CreateRootSignature(device);
-        PipelineState = CreateGraphicPipeline(device, "models\\materials\\base\\vertex.hlsl", "models\\materials\\base\\pixel.hlsl");
+        PipelineState = CreateGraphicPipeline(device, "models\\materials\\base\\shader.hlsl");
 
 
         AlbedoTexture = materialDescription.BaseColorTexture;
@@ -100,12 +98,10 @@ public class Material : IDisposable
     }
     private ID3D12PipelineState CreateGraphicPipeline(
         ID3D12Device device,
-        String VertexShaderPath,
-        String PixelShaderPath)
+        String shaderPath)
     {
-
-        ReadOnlyMemory<byte> vs = ShaderLibrary.GetShader(VertexShaderPath);
-        ReadOnlyMemory<byte> ps = ShaderLibrary.GetShader(PixelShaderPath);
+        ReadOnlyMemory<byte> vs = ShaderLibrary.GetShader(shaderPath, "vs");
+        ReadOnlyMemory<byte> ps = ShaderLibrary.GetShader(shaderPath, "ps");
 
         GraphicsPipelineStateDescription pipelineStateDescription = new GraphicsPipelineStateDescription
         {

@@ -10,7 +10,7 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
 // Current compacted destination index is defined only by:
 //  - particle alive test
 //  - ActiveList[i] exclusive prefix
-[numthreads(256, 1, 1)] void main(uint3 tid : SV_DispatchThreadID)
+[numthreads(256, 1, 1)] void MAIN_CS(uint3 tid : SV_DispatchThreadID)
 {
     uint i = tid.x;
     if (i >= Emitter[0].TotalCount)

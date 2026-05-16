@@ -9,7 +9,7 @@ groupshared uint WaveTotals[8];
 groupshared uint WaveOffsets[8];
 
 [numthreads(256, 1, 1)]
-void main(
+void MAIN_CS(
     uint3 dtid : SV_DispatchThreadID,
     uint3 gtid : SV_GroupThreadID)
 {

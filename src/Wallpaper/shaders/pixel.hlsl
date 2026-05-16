@@ -6,7 +6,7 @@ struct PSInput
 };
 
 
-float4 main(PSInput input) : SV_Target
+float4 MAIN_PS(PSInput input) : SV_Target
 {
     return input.Color;
 }

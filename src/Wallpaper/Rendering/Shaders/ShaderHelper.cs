@@ -7,11 +7,12 @@ namespace Renderer.Shaders;
 
 static class ShaderLibrary
 {
-    public static ReadOnlyMemory<byte> GetShader(string path)
+    public static ReadOnlyMemory<byte> GetShader(string path, string stage)
     {
         string shadersRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "shaders");
-        string fullPath = Path.ChangeExtension(Path.Combine(shadersRoot, path),".cso");
-
+        string sourcePath = Path.Combine(shadersRoot, path);
+        string fullPath = Path.ChangeExtension(sourcePath, $"{stage}.cso");
+        
         if (!File.Exists(fullPath))
         {
             throw new FileNotFoundException($"Shader file not found: {fullPath}");
@@ -21,7 +22,7 @@ static class ShaderLibrary
     }
     public static ID3D12PipelineState CreatePSO(ID3D12Device device, ID3D12RootSignature RootSignature, string path)
     {
-        var shader = GetShader(path);
+        var shader = GetShader(path, "cs");
         var pipelineState = device.CreateComputePipelineState(new ComputePipelineStateDescription
         {
             RootSignature = RootSignature,

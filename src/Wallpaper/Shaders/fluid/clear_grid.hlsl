@@ -3,7 +3,7 @@
 RWStructuredBuffer<CellRange> CellRanges : register(u7);
 
 [numthreads(256, 1, 1)]
-void main(uint3 dtid : SV_DispatchThreadID)
+void MAIN_CS(uint3 dtid : SV_DispatchThreadID)
 {
     uint i = dtid.x;
     if (i >= RangeCount)

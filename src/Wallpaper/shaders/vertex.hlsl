@@ -17,7 +17,7 @@ struct VSOut
 };
 
 // Simple working vertex shader
-VSOut main(VSInput input)
+VSOut MAIN_VS(VSInput input)
 {
     VSOut o;
 

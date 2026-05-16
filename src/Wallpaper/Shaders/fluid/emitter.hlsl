@@ -4,7 +4,7 @@ RWStructuredBuffer<EmitterData> Emitter : register(u1);
 RWStructuredBuffer<DispatchArgs> DispatchArgsBuffer : register(u4);
 
 [numthreads(1, 1, 1)]
-void main(uint3 dtid : SV_DispatchThreadID)
+void MAIN_CS(uint3 dtid : SV_DispatchThreadID)
 {
     EmitterData emitter = Emitter[0];
     uint alive = min(emitter.AliveCountCheck, ParticleCount);
