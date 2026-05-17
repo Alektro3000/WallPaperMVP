@@ -18,6 +18,7 @@ public class Settings : ISettings
     public float CameraSpeed;
     public float showUV;
     public float showNormal;
+    public float time;
 }
 
 
@@ -29,22 +30,24 @@ public sealed class Model : IDisposable
     public List<Mesh> Meshes = [];
     public List<Node> Nodes = [];
     public List<Node> RootNodes = [];
+    public List<Animation> Animations = [];
     public required TextureProvider textureProvider;
-    
+    public float animationDelta = 0;
     public Model(InitContext initContext)
     {
-        
+
     }
-    public void Dispose(){
-        foreach(var skin in Skins)
+    public void Dispose()
+    {
+        foreach (var skin in Skins)
         {
             skin.Dispose();
         }
-        foreach(var mesh in Meshes)
+        foreach (var mesh in Meshes)
         {
             mesh.Dispose();
         }
-        foreach(var material in Materials)
+        foreach (var material in Materials)
         {
             material.Dispose();
         }
@@ -53,31 +56,47 @@ public sealed class Model : IDisposable
 
     public void Render(FrameResource frameResource)
     {
-        foreach(var i in RootNodes)
+        foreach (var i in Nodes)
+        {
+            i.LocalTransform = i.DefaultTransform;
+        }
+
+        var animation = Animations.FirstOrDefault();
+        if(animation != null)
+        {
+            animationDelta += frameResource.FrameMetric.DeltaTime;
+            animationDelta %= animation.TotalTime;
+
+            foreach (var animationNode in animation.AnimationNodes)
+            {
+                animationNode.UpdateTransform(animationDelta);
+            }
+        }
+
+        foreach (var i in RootNodes)
         {
             i.UpdateWorldTransforms(Matrix4x4.Identity);
         }
 
-        foreach(var i in Nodes.Where(x=>x.Skin != null))
+        foreach (var i in Nodes.Where(x => x.Skin != null))
         {
             i.Skin?.UpdateJointsPositions(frameResource, i.GlobalTransform);
         }
-
 
         RenderMesh(frameResource);
     }
 
     public void RenderMesh(FrameResource frameResource)
     {
-        
+
         var set = frameResource.Settings.GetSettings<Settings>();
-        
+
         float time = frameResource.FrameMetric.FrameIndex * set.CameraSpeed;
         var viewMatrix = Matrix4x4.CreateLookAt(
-                cameraPosition: set.centerPos+ new Vector3((float)(set.cameraPos.X * Math.Sin(time)), set.cameraPos.Y, (float)(set.cameraPos.X * Math.Cos(time))),
+                cameraPosition: set.centerPos + new Vector3((float)(set.cameraPos.X * Math.Sin(time)), set.cameraPos.Y, (float)(set.cameraPos.X * Math.Cos(time))),
                 cameraTarget: set.centerPos,
                 cameraUpVector: Vector3.UnitY);
-                
+
         var projection =
             Matrix4x4.CreatePerspectiveFieldOfView(
                 fieldOfView: MathF.PI / 4.0f,
@@ -85,22 +104,22 @@ public sealed class Model : IDisposable
                 nearPlaneDistance: 0.1f,
                 farPlaneDistance: 100.0f);
 
-        foreach(var node in Nodes.Where(x=>x.Mesh != null))
+        foreach (var node in Nodes.Where(x => x.Mesh != null))
         {
             var cmd = frameResource.CommandList;
             var mesh = node.Mesh!;
-            
-            var mvp = viewMatrix * projection;
-            frameResource.GetBufferConstantRef(mesh.constantBufferKey) =  mvp;
+
+            var mvp = node.GlobalTransform  * viewMatrix * projection;
+            frameResource.GetBufferConstantRef(mesh.constantBufferKey) = mvp;
 
             IEnumerable<Primitive> selected = mesh.Primitives;
 
-            if(set.ShowComponent >= 0)
+            if (set.ShowComponent >= 0)
                 selected = selected.Skip((int)set.ShowComponent).Take(1);
 
-            foreach(var primitive in selected)
+            foreach (var primitive in selected)
             {
-                if(primitive.Material == null)
+                if (primitive.Material == null)
                 {
                     continue;
                 }

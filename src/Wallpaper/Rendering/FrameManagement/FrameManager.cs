@@ -182,7 +182,7 @@ public sealed class FrameManager : IDisposable
 
     public void EndFrame(FrameResource currentResource)
     {
-        Serilog.Log.Debug("FrameManager: closing and presenting frame {FrameIndex}", currentResource.FrameIndex);
+        Serilog.Log.Debug("FrameManager: closing and presenting frame {FrameIndex}", currentResource.FrameMetric.FrameIndex);
         // RENDER_TARGET -> PRESENT
         currentResource.CommandList.ResourceBarrierTransition(
             currentResource.RenderTarget,
@@ -197,7 +197,7 @@ public sealed class FrameManager : IDisposable
         swapChain.Present(1, PresentFlags.None);
 
         frameCommandList.SetSignal(currentResource, context.CommandQueue);
-        Serilog.Log.Debug("FrameManager: present completed for frame {FrameIndex}", currentResource.FrameIndex);
+        Serilog.Log.Debug("FrameManager: present completed for frame {FrameIndex}", currentResource.FrameMetric.FrameIndex);
     }
 
     public void Dispose()

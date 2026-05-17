@@ -1,4 +1,6 @@
+using System.Net;
 using System.Numerics;
+using System.Threading.Channels;
 using Models;
 using SharpGLTF.Schema2;
 
@@ -15,7 +17,9 @@ static class ModelLoader
         var materialMap = ImportMaterials(context, textureProvider, gltf);
         var (meshMap, meshData) = ImportMeshes(context, gltf, materialMap);
 
+
         var nodes = ImportNodes(gltf, meshMap);
+        var animations = ImportAnimations(gltf, nodes);
 
         var skins = ImportSkins(context, gltf, nodes);
 
@@ -26,10 +30,72 @@ static class ModelLoader
             Nodes = nodes,
             MeshBuffer = meshData,
             Skins = skins,
-            
+            Animations = animations,
+
             RootNodes = ImportSceneRoots(gltf, nodes),
             textureProvider = textureProvider
         };
+    }
+
+    private static List<Models.Animation> ImportAnimations(ModelRoot gtlf, List<Models.Node> nodeMap)
+    {
+        return gtlf.LogicalAnimations.Select(
+            x => new Models.Animation(x.Name,
+                x.Channels.Max(x=>x.GetRotationSampler()?.GetLinearKeys()?.LastOrDefault().Key) ?? 1,
+                 x.Channels
+                .GroupBy(node=>node.TargetNode)
+                .Select(node => ImportAnimationNode(gtlf, node.Key , node.ToArray(), nodeMap))
+                .ToList())
+        ).ToList();
+    }
+
+    public static AnimationNode ImportAnimationNode(ModelRoot gltf, SharpGLTF.Schema2.Node node, AnimationChannel[] animationChannels, List<Models.Node> nodeMap)
+    {
+        AnimationNode nodeAnimation = new()
+        {
+            Node = nodeMap[node.LogicalIndex]
+        };
+
+        foreach(var animationChannel in animationChannels)
+        {
+            switch (animationChannel.TargetNodePath)
+            {
+                case PropertyPath.translation:
+                    foreach (var key in animationChannel.GetTranslationSampler().GetLinearKeys())
+                    {
+                        nodeAnimation.Translations.Add(
+                            new LinearKey<Vector3>(key.Key, key.Value)
+                        );
+                    }
+                    break;
+
+                case PropertyPath.rotation:
+                    foreach (var key in animationChannel.GetRotationSampler().GetLinearKeys())
+                    {
+                        nodeAnimation.Rotations.Add(
+                            new LinearKey<Quaternion>(key.Key, key.Value)
+                        );
+                    }
+                    break;
+
+                case PropertyPath.scale:
+                    foreach (var key in animationChannel.GetScaleSampler().GetLinearKeys())
+                    {
+                        nodeAnimation.Scales.Add(
+                            new LinearKey<Vector3>(key.Key, key.Value)
+                        );
+                    }
+                    break;
+
+                case PropertyPath.weights:
+                    // Morph target / shape key animation.
+                    // Handle separately if you need blendshapes.
+                    break;
+            }
+        }
+
+
+        return nodeAnimation;
     }
 
     static private List<Models.Material> ImportMaterials(InitContext initContext, TextureProvider textureProvider, ModelRoot gltf)
@@ -57,7 +123,7 @@ static class ModelLoader
     static private Models.Texture? GetBaseColorTexture(TextureProvider textureProvider, SharpGLTF.Schema2.Material mat)
     {
         var mmdTexture = textureProvider.GetTextureFromFile(mat.Extras?["mmd_material"]?["texture_rel_path"]?.ToString());
-        if(mmdTexture != null)
+        if (mmdTexture != null)
             return mmdTexture;
 
         var gltfTexture = mat.FindChannel("BaseColor")?.Texture;
@@ -115,9 +181,9 @@ static class ModelLoader
     }
 
     static private Primitive LoadPrimitive(
-        MeshPrimitive primitive, 
+        MeshPrimitive primitive,
         List<Models.Material> materialMap,
-        VertexIndexRegistry vertexIndexRegistry, 
+        VertexIndexRegistry vertexIndexRegistry,
         ref int primitiveId)
     {
         if (primitive.DrawPrimitiveType != PrimitiveType.TRIANGLES)
@@ -134,7 +200,7 @@ static class ModelLoader
 
         var vertices = new StaticVertex[positions.Count];
 
-        
+
         for (int i = 0; i < positions.Count; i++)
         {
             var UshortWeights = (weights?[i] ?? Vector4.Zero) * ushort.MaxValue;
@@ -147,13 +213,14 @@ static class ModelLoader
                 packedJointIndices = PackVector(joints?[i] ?? Vector4.Zero),
                 packedJointWeights = PackVector(UshortWeights)
             };
-        };
+        }
+        ;
 
         var indeces32 = primitive.GetIndices();
 
         var (vertexView, indexView) = vertexIndexRegistry.UploadPrimitive(
-            primitiveId++, 
-            vertices, 
+            primitiveId++,
+            vertices,
             indeces32);
 
         Models.Material? material = null;
@@ -181,10 +248,10 @@ static class ModelLoader
             x.InverseBindMatrices.ToArray()
         )).ToList();
 
-        foreach(var node in gltf.LogicalNodes)
+        foreach (var node in gltf.LogicalNodes)
         {
             var index = node.Skin?.LogicalIndex;
-            if(index != null)
+            if (index != null)
                 nodeMap[node.LogicalIndex].Skin = skins[(int)index];
         }
         return skins;
@@ -195,7 +262,10 @@ static class ModelLoader
             new Models.Node()
             {
                 Name = node.Name ?? "",
-                LocalTransform = node.LocalMatrix,
+                DefaultTransform = new AffineTransform(
+                    node.LocalTransform.Translation,
+                    node.LocalTransform.Rotation,
+                    node.LocalTransform.Scale),
                 Mesh = node.Mesh != null ? meshMap?[node.Mesh.LogicalIndex] : null,
             }
         ).ToList();

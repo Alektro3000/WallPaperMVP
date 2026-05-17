@@ -7,7 +7,7 @@ cbuffer ModelConstants : register(b0)
 
 cbuffer JointsConstants : register(b2)
 {
-    float4x4 Joints[640];
+    float4x4 Joints[1024];
 }
 
 cbuffer MaterialBuffer : register(b1)
@@ -70,9 +70,13 @@ float4 MAIN_PS(PSInput input) : SV_Target
     {
         return float4(input.normal/2+0.5, 1);
     }
-    if (((flags & 1) == 0) || ((flags & 4) != 0))
+    if (((flags & 4) != 0))
     {
         return float4(input.UV, 0, 1);
+    }
+    if ((flags & 1) == 0) 
+    {
+        clip(-1);
     }
     return AlbedoTexture.Sample(LinearSampler, input.UV);
 }

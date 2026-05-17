@@ -6,7 +6,7 @@ namespace Renderer.FrameManagement;
 
 public sealed class FrameResource : IDisposable
 {
-    internal uint FrameIndex;
+    private uint FrameIndex;
 
     public required ID3D12Resource RenderTarget;
     public required CpuDescriptorHandle RenderTargetHandle;
@@ -22,7 +22,7 @@ public sealed class FrameResource : IDisposable
     public FrameMetric FrameMetric;
     public SystemSettings Settings;
 
-    public ulong FenceValue;
+    internal ulong FenceValue;
 
     public FrameResource(uint i, ID3D12Device device, ConstantBinding[] ConstantBindings)
     {

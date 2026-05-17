@@ -25,7 +25,7 @@ public class Skin : IDisposable
         Matrix4x4.Invert(RootTransform, out var rootInvert);
         for(int i = 0; i < JointMapping.Length; i++)
         {
-            buffer.buffer[i] = rootInvert * JointMapping[i].GlobalTransform * InverseMatrixBind[i];
+            buffer.buffer[i] = InverseMatrixBind[i] * JointMapping[i].GlobalTransform * rootInvert;
         }
     }
 
