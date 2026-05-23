@@ -5,18 +5,23 @@ using Renderer.FrameManagement;
 class ModelSubsystem : IDisposable
 {
 
-    Model model;
+    Model[] models;
     public ModelSubsystem(InitContext initContext)
     {
-        model = ModelLoader.loadModelFromGLTF(initContext, "room", "room.gltf");
+        models = 
+        [
+            ModelLoader.loadModelFromGLTF(initContext, "room", "room.gltf")
+        ];
     }
 
     public void Render(FrameResource currentResource)
     {
-        model.Render(currentResource);
+        foreach(var model in models)
+            model.Render(currentResource);
     }
     public void Dispose()
     {
-        model.Dispose();
+        foreach(var model in models)
+            model.Dispose();
     }
 }

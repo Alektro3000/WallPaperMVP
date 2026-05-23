@@ -9,3 +9,4 @@ src/Wallpaper/logs/**
 resources/**
 !resources/app.ico
 
+tools/ShaderCompiler/Properties/launchSettings.json

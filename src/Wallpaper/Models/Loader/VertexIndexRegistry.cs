@@ -7,13 +7,14 @@ using Renderer.Commands;
 using Renderer.Resources;
 using Vortice.Direct3D12;
 
-public class VertexIndexRegistry
+public class VertexIndexRegistry(InitContext context)
 {
+    public List<PrimitiveLoader> usedLoaders = [];
     public List<long> vertexOffsets = [];
+    public List<int> vertexStrides = [];
     public List<long> indexOffsets = [];
     public List<int> indexSizes = [];
-    public long TotalVertexCount = 0;
-    public long TotalIndexCount = 0;
+    public long TotalVertexBytes = 0;
     public long TotalIndexOffset = 0;
 
     public long vertexSize;
@@ -22,27 +23,25 @@ public class VertexIndexRegistry
 
 
     public ID3D12Resource? meshBuffer;
-    ID3D12Device device;
-    ImmediateCommandList immidiateCommandList;
-    public VertexIndexRegistry(InitContext context)
+    ID3D12Device device = context.GraphicsContext.Device;
+    ImmediateCommandList immidiateCommandList = context.CommandList;
+    
+    
+    public void AddPrimitive(long vertexCount, long indexCount, int indexSize, int vertexStride, PrimitiveLoader loader)
     {
-        immidiateCommandList = context.CommandList;
-        device = context.GraphicsContext.Device;
-    }
-    public void AddPrimitive(long VertexCount, long IndexCount, int indexSize)
-    {
-        vertexOffsets.Add(TotalVertexCount);
+        usedLoaders.Add(loader);
+        vertexOffsets.Add(TotalVertexBytes);
+        vertexStrides.Add(vertexStride);
         indexOffsets.Add(TotalIndexOffset);
         indexSizes.Add(indexSize);
 
-        TotalVertexCount += VertexCount;
-        TotalIndexCount += IndexCount;
-        TotalIndexOffset += indexSize * IndexCount;
+        TotalVertexBytes += vertexCount * vertexStride;
+        TotalIndexOffset += indexSize * indexCount;
     }
 
     public void CreateBuffer()
     {
-        vertexSize = TotalVertexCount * Marshal.SizeOf<StaticVertex>();
+        vertexSize = TotalVertexBytes;
 
         indexOffset = (vertexSize + 3) / 4 * 4;
 
@@ -55,7 +54,8 @@ public class VertexIndexRegistry
             ResourceStates.CopyDest);
     }
 
-    public unsafe (VertexBufferView, IndexBufferView) UploadPrimitive(int v, StaticVertex[] vertices, IList<uint> indeces)
+    //primitiveIndex is equal to index of primitive added in AddPrimitive function
+    public unsafe (VertexBufferView, IndexBufferView) UploadPrimitive(int primitiveIndex, ReadOnlySpan<byte> vertices, IList<uint> indeces)
     {
         if (meshBuffer == null)
         {
@@ -63,8 +63,8 @@ public class VertexIndexRegistry
             "Cannot upload primitive before the mesh buffer has been created. Call CreateBuffer() after registering all primitives.");
         }
 
-        var indexBegin = indexOffsets[v];
-        var indexSize = indexSizes[v];
+        var indexBegin = indexOffsets[primitiveIndex];
+        var indexSize = indexSizes[primitiveIndex];
         var indexBufferOffset = indexOffset + indexBegin;
 
         var indexCount = indeces.Count;
@@ -92,7 +92,7 @@ public class VertexIndexRegistry
 
                     if (index > ushort.MaxValue)
                         throw new InvalidOperationException(
-                            $"Primitive {v} uses index {index}, which does not fit in 16-bit indices.");
+                            $"Primitive {primitiveIndex} uses index {index}, which does not fit in 16-bit indices.");
 
                     dst16[i] = (ushort)index;
                 }
@@ -116,11 +116,10 @@ public class VertexIndexRegistry
         }
 
 
-        var vertexBegin = vertexOffsets[v];
-        var vertexBufferOffset = vertexBegin * Marshal.SizeOf<StaticVertex>();
+        var vertexBufferOffset = vertexOffsets[primitiveIndex];
 
-        var vertexBufferSize = vertices.Length * Marshal.SizeOf<StaticVertex>();
-        using var vertexUploadBuffer = BufferFactory.CreateUploadBuffer<StaticVertex>(device, vertices);
+        var vertexBufferSize = vertices.Length * sizeof(byte);
+        using var vertexUploadBuffer = BufferFactory.CreateUploadBuffer(device, vertices);
 
         immidiateCommandList.ExecuteImmediate(list =>
         {
@@ -136,7 +135,12 @@ public class VertexIndexRegistry
         });
 
         var indexBufferView = BufferFactory.CreateIndexBufferView(meshBuffer, (uint)indexCount, (uint)indexBufferOffset, indexSize);
-        var vertexBufferView = BufferFactory.CreateVertexBufferView<StaticVertex>(meshBuffer, (uint)vertices.Length, (uint)vertexBufferOffset);
+        var vertexBufferView = new VertexBufferView
+        {
+            BufferLocation = meshBuffer.GPUVirtualAddress + (ulong)vertexBufferOffset,
+            SizeInBytes = (uint)vertexBufferSize,
+            StrideInBytes = (uint)vertexStrides[primitiveIndex]
+        };
         return (vertexBufferView, indexBufferView);
     }
 

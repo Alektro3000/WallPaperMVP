@@ -12,11 +12,12 @@ public sealed class Node
     
     public AffineTransform DefaultTransform;
     public AffineTransform LocalTransform;
-    public Matrix4x4 GlobalTransform;
+    public Matrix4x4 GlobalMatrix;
     
-    public void UpdateWorldTransforms(Matrix4x4 worldMatrix)
+    public void UpdateWorldTransforms(AffineTransform worldMatrix)
     {
-        GlobalTransform = LocalTransform.Matrix * worldMatrix;
+        var GlobalTransform = LocalTransform * worldMatrix;
+        GlobalMatrix = GlobalTransform.Matrix;
         foreach(var child in Children)
             child.UpdateWorldTransforms(GlobalTransform);
     }

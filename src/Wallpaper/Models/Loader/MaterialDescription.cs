@@ -6,7 +6,7 @@ namespace Models;
 public class MaterialDescription
 {
     public string Name = "";
-    public Vector4 BaseColorFactor = Vector4.One;
+    public Vector4? BaseColorFactor;
     public Texture? BaseColorTexture;
     public Texture? NormalTexture;
     public bool DoubleSided;

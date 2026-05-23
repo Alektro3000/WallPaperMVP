@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Serilog;
+using ShaderConventions;
 using Vortice.Dxc;
 
 internal static class Program
@@ -99,11 +100,15 @@ internal static class Program
         string relativeBase = Path.ChangeExtension(relativePath, null)!;
         string outputBase = Path.Combine(outputRoot, relativeBase);
 
-        var outputs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var permutations = ShaderPermutationGenerator.GenerateAllPermutations();
+
+        var outputs = new Dictionary<(string, PermutationKey), string>();
+
         foreach (string stageName in foundStages)
         {
             string stageSuffix = stageName.ToLowerInvariant();
-            outputs[stageName] = $"{outputBase}.{stageSuffix}.cso";
+            foreach (var permutationKey in permutations)
+                outputs[(stageName, permutationKey)] = permutationKey.GetFileName(outputBase, stageName);
         }
 
         var dependencyNewestTime = loadResult.Dependencies
@@ -113,7 +118,7 @@ internal static class Program
         if (isUpToDate)
         {
             DateTime oldestOutput = outputs.Values.Min(File.GetLastWriteTimeUtc);
-            if(oldestOutput >= dependencyNewestTime)
+            if (oldestOutput >= dependencyNewestTime)
             {
                 Log.Information("Skip up-to-date shader file {ShaderPath}", relativePath);
                 Log.Debug("dependencyNewestTime is {dependencyNewestTime},  oldestOutput is {oldestOutput}", dependencyNewestTime, oldestOutput);
@@ -121,23 +126,23 @@ internal static class Program
             }
         }
 
-        foreach (string stageName in foundStages)
+        foreach (var ((stageName, permutationKey), outputPath) in outputs)
         {
             var stage = StageMap[stageName];
             string stageSuffix = stageName.ToLowerInvariant();
-            string outputPath = outputs[stageName];
 
-            Log.Information("{ShaderPath}: MAIN_{Stage} [{StageSuffix}]",
-                relativePath, stageName, stageSuffix);
-            Log.Information("{InputPath} to {OutputPath}", inputPath, outputPath);
+            Log.Information("{ShaderPath}: MAIN_{Stage} [{StageSuffix}] [{PermutationKey}]",
+                relativePath, stageName, stageSuffix, permutationKey);
+            Log.Information("{InputPath} to base {OutputPath}", inputPath, outputPath);
 
-            var bytecode = ShaderCompiler.PreCompile(inputPath, stage, $"MAIN_{stageName}", loadResult.Source);
+            var bytecode = ShaderCompiler.Compile(inputPath, stage, $"MAIN_{stageName}", loadResult.Source, permutationKey);
             string? directory = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(directory))
             {
                 Directory.CreateDirectory(directory);
             }
             File.WriteAllBytes(outputPath, bytecode.ToArray());
+
         }
     }
 }
@@ -158,7 +163,7 @@ class ShaderCompiler
         };
     }
 
-    public static ReadOnlyMemory<byte> PreCompile(string path, DxcShaderStage stage, string entryPoint, string source)
+    public static ReadOnlyMemory<byte> Compile(string path, DxcShaderStage stage, string entryPoint, string source, PermutationKey permutationKey)
     {
         string fullPath = path;
         if (!File.Exists(fullPath))
@@ -168,7 +173,9 @@ class ShaderCompiler
 
         Console.WriteLine($"Compiling {path} as {stage} ({entryPoint})...");
 
-        var result = DxcCompiler.Compile(stage, source, entryPoint, GetOptions());
+
+        var defines = ShaderPermutationGenerator.GetDefines(permutationKey);
+        var result = DxcCompiler.Compile(stage, source, entryPoint, GetOptions(), null, defines);
 
         try
         {

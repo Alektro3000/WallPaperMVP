@@ -25,13 +25,16 @@ public class Skin : IDisposable
         Matrix4x4.Invert(RootTransform, out var rootInvert);
         for(int i = 0; i < JointMapping.Length; i++)
         {
-            buffer.buffer[i] = InverseMatrixBind[i] * JointMapping[i].GlobalTransform * rootInvert;
+            buffer.buffer[i] = InverseMatrixBind[i] * JointMapping[i].GlobalMatrix * rootInvert;
         }
     }
 
-    public void BindSkin(FrameResource frameResource)
+    public void BindSkin(FrameResource frameResource, uint? bindIndex)
     {
-        frameResource.CommandList.SetGraphicsRootConstantBufferView(4, frameResource.GetGPUVirtualAddress(StaticJoints));
+        if(bindIndex.HasValue)
+        {
+            frameResource.CommandList.SetGraphicsRootConstantBufferView(bindIndex.Value, frameResource.GetGPUVirtualAddress(StaticJoints));
+        }
     }
 
     public void Dispose()

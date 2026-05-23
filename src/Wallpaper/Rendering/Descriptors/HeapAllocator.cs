@@ -7,9 +7,9 @@ namespace Renderer.Descriptors;
 public class HeapAllocator : IDisposable
 {
     private const uint AllocatorInitSize = 256;
-    public readonly ID3D12DescriptorHeap Heap;
+    private readonly ID3D12DescriptorHeap heap;
     private uint CurrentOffset;
-    public static uint DescriptorSize;
+    private readonly uint descriptorSize;
 
     public HeapAllocator(ID3D12Device device)
     {
@@ -18,8 +18,8 @@ public class HeapAllocator : IDisposable
             AllocatorInitSize,
             DescriptorHeapFlags.ShaderVisible,
             0);
-        DescriptorSize = device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
-        Heap = device.CreateDescriptorHeap(heapDesc);
+        descriptorSize = device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
+        heap = device.CreateDescriptorHeap(heapDesc);
 
     }
 
@@ -28,18 +28,23 @@ public class HeapAllocator : IDisposable
         if (CurrentOffset + size > AllocatorInitSize)
             throw new OutOfMemoryException("Out of memory for descriptor heap.");
 
-        var _baseCpu = Heap.GetCPUDescriptorHandleForHeapStart();
-        var _baseGpu = Heap.GetGPUDescriptorHandleForHeapStart();
+        var _baseCpu = heap.GetCPUDescriptorHandleForHeapStart();
+        var _baseGpu = heap.GetGPUDescriptorHandleForHeapStart();
 
-        _baseCpu = new CpuDescriptorHandle(in _baseCpu, (int)CurrentOffset, DescriptorSize);
-        _baseGpu = new GpuDescriptorHandle(in _baseGpu, (int)CurrentOffset, DescriptorSize);
+        _baseCpu = new CpuDescriptorHandle(in _baseCpu, (int)CurrentOffset, descriptorSize);
+        _baseGpu = new GpuDescriptorHandle(in _baseGpu, (int)CurrentOffset, descriptorSize);
 
         CurrentOffset += size;
-        return new ResourceDescriptorRange(_baseCpu, _baseGpu, size);
+        return new ResourceDescriptorRange(_baseCpu, _baseGpu, size, descriptorSize);
+    }
+
+    public void BindForCommandList(ID3D12GraphicsCommandList cmd)
+    {
+        cmd.SetDescriptorHeaps(heap);
     }
 
     public void Dispose()
     {
-        Heap?.Dispose();
+        heap?.Dispose();
     }
 }

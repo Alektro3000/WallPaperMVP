@@ -18,7 +18,7 @@ public sealed class Orchestrator : IDisposable
     private readonly GraphicsContext Context;
     private readonly FrameManager FrameManager;
     private readonly HeapAllocator HeapAllocator;
-    private readonly ParticleSystemSubsystem particleSystemSubsystem;
+    private readonly ParticleSystemSubsystem? particleSystemSubsystem;
     private readonly ModelSubsystem ModelSubsystem;
     public Orchestrator(SystemSettings systemSettings, IntPtr hwnd, int width, int height)
     {

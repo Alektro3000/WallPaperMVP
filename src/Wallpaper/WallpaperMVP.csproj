@@ -36,6 +36,10 @@
     <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\tools\ShaderConventions\ShaderConventions.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TransparentMode)' == 'true'">
     <PackageReference Include="Vortice.DirectComposition" Version="3.8.3" />
     <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
@@ -43,8 +47,10 @@
   <ItemGroup>
     <ShaderCompilerInputs Include="$(MSBuildProjectDirectory)\Shaders\**\*.hlsl" />
     <ShaderCompilerInputs Include="$(MSBuildProjectDirectory)\Shaders\**\*.hlsli" />
-    <ShaderCompilerInputs Include="$(MSBuildProjectDirectory)\..\..\Tools\ShaderCompiler\Program.cs" />
-    <ShaderCompilerInputs Include="$(MSBuildProjectDirectory)\..\..\Tools\ShaderCompiler\ShaderCompiler.csproj" />
+    <ShaderCompilerInputs Include="$(MSBuildProjectDirectory)\..\..\tools\ShaderCompiler\*.cs" />
+    <ShaderCompilerInputs Include="$(MSBuildProjectDirectory)\..\..\tools\ShaderCompiler\ShaderCompiler.csproj" />
+    <ShaderCompilerInputs Include="$(MSBuildProjectDirectory)\..\..\tools\ShaderConventions\*.cs" />
+    <ShaderCompilerInputs Include="$(MSBuildProjectDirectory)\..\..\tools\ShaderConventions\ShaderConventions.csproj" />
   </ItemGroup>
 
   <Target Name="CompileShaders"

@@ -129,7 +129,7 @@ public sealed class FrameManager : IDisposable
             var renderTarget = swapChain.GetBuffer<ID3D12Resource>(i);
             device.CreateRenderTargetView(renderTarget, null, rtvHandle);
 
-            frameResources[i] = new FrameResource(i, device, constantBufferRegistry.CreateFrameBindings(device))
+            frameResources[i] = new FrameResource(device, constantBufferRegistry.CreateFrameBindings(device))
             {
                 RenderTargetHandle = rtvHandle,
                 RenderTarget = renderTarget,
@@ -158,7 +158,7 @@ public sealed class FrameManager : IDisposable
 
         cmd.RSSetViewport(viewport);
         cmd.RSSetScissorRect(scissor);
-        cmd.SetDescriptorHeaps(heap.Heap);
+        heap.BindForCommandList(cmd);
 
         cmd.OMSetRenderTargets(currentResource.RenderTargetHandle, currentResource.DepthStencilHandle);
 

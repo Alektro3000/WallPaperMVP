@@ -6,8 +6,6 @@ namespace Renderer.FrameManagement;
 
 public sealed class FrameResource : IDisposable
 {
-    private uint FrameIndex;
-
     public required ID3D12Resource RenderTarget;
     public required CpuDescriptorHandle RenderTargetHandle;
 
@@ -24,9 +22,8 @@ public sealed class FrameResource : IDisposable
 
     internal ulong FenceValue;
 
-    public FrameResource(uint i, ID3D12Device device, ConstantBinding[] ConstantBindings)
+    public FrameResource(ID3D12Device device, ConstantBinding[] ConstantBindings)
     {
-        FrameIndex = i;
         this.ConstantBindings = ConstantBindings;
 
         CommandAllocator = device.CreateCommandAllocator(CommandListType.Direct);

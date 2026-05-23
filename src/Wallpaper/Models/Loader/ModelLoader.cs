@@ -1,8 +1,9 @@
-using System.Net;
 using System.Numerics;
-using System.Threading.Channels;
+using System.Runtime.InteropServices;
 using Models;
 using SharpGLTF.Schema2;
+using Vortice.Direct3D12;
+using Vortice.Direct3D12.Debug;
 
 
 static class ModelLoader
@@ -12,10 +13,23 @@ static class ModelLoader
         var absolute = Path.Combine("resources", path);
         var gltf = ModelRoot.Load(Path.Combine(absolute, name));
 
-        TextureProvider textureProvider = new(context, absolute);
+        TextureLoader textureLoader = new(context, absolute);
+        BindlessTextureProvider bindlessTextures = new(context);
 
-        var materialMap = ImportMaterials(context, textureProvider, gltf);
-        var (meshMap, meshData) = ImportMeshes(context, gltf, materialMap);
+        // var staticMaterialDefinition = new StaticMaterialDefinition(
+        //     context,
+        //     staticRootSignature,
+        //     "models\\materials\\static.hlsl");
+
+
+        PrimitiveLoaderRegistry primitiveLoaderRegistry = new(context, bindlessTextures);
+        MaterialInstanceLoader materialLoader = new(
+            context,
+            textureLoader,
+            bindlessTextures);
+
+        var materialMap = materialLoader.Import(gltf);
+        var (meshMap, meshData) = ImportMeshes(context, gltf, materialMap, primitiveLoaderRegistry);
 
 
         var nodes = ImportNodes(gltf, meshMap);
@@ -23,9 +37,13 @@ static class ModelLoader
 
         var skins = ImportSkins(context, gltf, nodes);
 
+        var CameraTransform = nodes.FirstOrDefault(n => n.Name == "Camera")?.DefaultTransform ?? AffineTransform.Identity; 
+
         return new Model(context)
         {
-            Materials = materialMap,
+            Materials = materialMap.ToList(),
+            MaterialDefinitions = primitiveLoaderRegistry.GetMaterialDefinition(),
+            RootSignatureDefinitions = primitiveLoaderRegistry.GetRootSignatureDefinitions(),
             Meshes = meshMap,
             Nodes = nodes,
             MeshBuffer = meshData,
@@ -33,7 +51,8 @@ static class ModelLoader
             Animations = animations,
 
             RootNodes = ImportSceneRoots(gltf, nodes),
-            textureProvider = textureProvider
+            TextureLoader = textureLoader,
+            CameraTransform = CameraTransform
         };
     }
 
@@ -41,10 +60,10 @@ static class ModelLoader
     {
         return gtlf.LogicalAnimations.Select(
             x => new Models.Animation(x.Name,
-                x.Channels.Max(x=>x.GetRotationSampler()?.GetLinearKeys()?.LastOrDefault().Key) ?? 1,
+                x.Channels.Max(x => x.GetRotationSampler()?.GetLinearKeys()?.LastOrDefault().Key) ?? 1,
                  x.Channels
-                .GroupBy(node=>node.TargetNode)
-                .Select(node => ImportAnimationNode(gtlf, node.Key , node.ToArray(), nodeMap))
+                .GroupBy(node => node.TargetNode)
+                .Select(node => ImportAnimationNode(gtlf, node.Key, node.ToArray(), nodeMap))
                 .ToList())
         ).ToList();
     }
@@ -56,7 +75,7 @@ static class ModelLoader
             Node = nodeMap[node.LogicalIndex]
         };
 
-        foreach(var animationChannel in animationChannels)
+        foreach (var animationChannel in animationChannels)
         {
             switch (animationChannel.TargetNodePath)
             {
@@ -98,46 +117,14 @@ static class ModelLoader
         return nodeAnimation;
     }
 
-    static private List<Models.Material> ImportMaterials(InitContext initContext, TextureProvider textureProvider, ModelRoot gltf)
-    {
-        return gltf.LogicalMaterials.Select(
-            mat =>
-            new Models.Material(initContext, new MaterialDescription()
-            {
-                Name = mat.Name,
-                DoubleSided = mat.DoubleSided,
-                AlphaCutoff = mat.AlphaCutoff,
-                AlphaMode = mat.Alpha switch
-                {
-                    AlphaMode.OPAQUE => "OPAQUE",
-                    AlphaMode.MASK => "OPAQUE", //throw new NotImplementedException(),
-                    AlphaMode.BLEND => "OPAQUE", //throw new NotImplementedException(),
-                },
-                BaseColorFactor = Vector4.One,
-                BaseColorTexture = GetBaseColorTexture(textureProvider, mat),
-                NormalTexture = textureProvider.GetTextureFromGltfTexture(mat.FindChannel("Normal")?.Texture)
-            })
-        ).ToList();
-    }
-
-    static private Models.Texture? GetBaseColorTexture(TextureProvider textureProvider, SharpGLTF.Schema2.Material mat)
-    {
-        var mmdTexture = textureProvider.GetTextureFromFile(mat.Extras?["mmd_material"]?["texture_rel_path"]?.ToString());
-        if (mmdTexture != null)
-            return mmdTexture;
-
-        var gltfTexture = mat.FindChannel("BaseColor")?.Texture;
-        return textureProvider.GetTextureFromGltfTexture(gltfTexture);
-    }
-
-    static private (List<Models.Mesh>, MeshBuffer meshData) ImportMeshes(InitContext context, ModelRoot gltf, List<Models.Material> materialMap)
+    static private (List<Models.Mesh>, MeshBuffer meshData) ImportMeshes(InitContext context, ModelRoot gltf, List<MaterialInstance> materialMap, PrimitiveLoaderRegistry primitiveLoaderRegistry)
     {
         //Register Primitive Sizes
         var vertexIndexRegistry = new VertexIndexRegistry(context);
         foreach (var mesh in gltf.LogicalMeshes)
             foreach (var prim in mesh.Primitives)
             {
-                RegisterPrimitive(prim, vertexIndexRegistry);
+                RegisterPrimitive(prim, vertexIndexRegistry, primitiveLoaderRegistry);
             }
 
         //Create buffer
@@ -158,7 +145,7 @@ static class ModelLoader
         return (meshes, new MeshBuffer(vertexIndexRegistry, context));
     }
 
-    static private void RegisterPrimitive(MeshPrimitive primitive, VertexIndexRegistry vertexIndexRegistry)
+    static private void RegisterPrimitive(MeshPrimitive primitive, VertexIndexRegistry vertexIndexRegistry, PrimitiveLoaderRegistry primitiveLoaderRegistry)
     {
         if (primitive.DrawPrimitiveType != PrimitiveType.TRIANGLES)
             throw new NotSupportedException("Only triangle primitives are supported for now.");
@@ -167,22 +154,15 @@ static class ModelLoader
         int indexCount = primitive.GetIndexAccessor().Count;
         int indexSize = Math.Max(primitive.GetIndexAccessor().Format.ByteSize, 2);
 
-        vertexIndexRegistry.AddPrimitive(vertexCount, indexCount, indexSize);
+        var loader = primitiveLoaderRegistry.GetPrimitiveLoader(primitive);
+
+        vertexIndexRegistry.AddPrimitive(vertexCount, indexCount, indexSize, loader.VertexSize, loader);
     }
 
-    static private ulong PackVector(Vector4 vector4)
-    {
-        ulong mask = (1 << 16) - 1;
-        var x = (ulong)vector4.X & mask;
-        var y = (ulong)vector4.Y & mask;
-        var z = (ulong)vector4.Z & mask;
-        var w = (ulong)vector4.W & mask;
-        return x | (y << 16) | (z << 32) | (w << 48);
-    }
 
     static private Primitive LoadPrimitive(
         MeshPrimitive primitive,
-        List<Models.Material> materialMap,
+        List<MaterialInstance> materialMap,
         VertexIndexRegistry vertexIndexRegistry,
         ref int primitiveId)
     {
@@ -190,40 +170,20 @@ static class ModelLoader
             throw new NotSupportedException("Only triangle primitives are supported for now.");
 
 
-        var positions = primitive.GetVertexAccessor("POSITION").AsVector3Array();
+        var currentPrimitiveId = primitiveId++;
+        VertexBufferView vertexView;
+        IndexBufferView indexView;
 
-        var normals = primitive.GetVertexAccessor("NORMAL")?.AsVector3Array();
-        var texCoords = primitive.GetVertexAccessor("TEXCOORD_0")?.AsVector2Array();
+        var primitiveLoader = vertexIndexRegistry.usedLoaders[currentPrimitiveId];
+        var primitiveDescription = primitiveLoader.LoadPrimitive(primitive);
 
-        var joints = primitive.GetVertexAccessor("JOINTS_0")?.AsVector4Array();
-        var weights = primitive.GetVertexAccessor("WEIGHTS_0")?.AsVector4Array();
+        (vertexView, indexView) = vertexIndexRegistry.UploadPrimitive(
+            currentPrimitiveId,
+            primitiveDescription.vertexes,
+            primitiveDescription.indeces);
 
-        var vertices = new StaticVertex[positions.Count];
 
-
-        for (int i = 0; i < positions.Count; i++)
-        {
-            var UshortWeights = (weights?[i] ?? Vector4.Zero) * ushort.MaxValue;
-
-            vertices[i] = new()
-            {
-                Position = positions[i],
-                UV = texCoords?[i] ?? Vector2.Zero,
-                Normal = normals?[i] ?? Vector3.Zero,
-                packedJointIndices = PackVector(joints?[i] ?? Vector4.Zero),
-                packedJointWeights = PackVector(UshortWeights)
-            };
-        }
-        ;
-
-        var indeces32 = primitive.GetIndices();
-
-        var (vertexView, indexView) = vertexIndexRegistry.UploadPrimitive(
-            primitiveId++,
-            vertices,
-            indeces32);
-
-        Models.Material? material = null;
+        Models.MaterialInstance? material = null;
         if (primitive.Material != null)
         {
             int materialId = primitive.Material.LogicalIndex;
@@ -233,11 +193,12 @@ static class ModelLoader
 
         return new Primitive()
         {
+            MaterialDefinition = primitiveLoader.GetMaterialDefinition(),
             Material = material,
             VertexBufferView = vertexView,
-            VertexCount = vertices.Length,
+            VertexCount = primitiveDescription.vertexCount,
             IndexBufferView = indexView,
-            IndexCount = indeces32.Count,
+            IndexCount = primitiveDescription.indexCount,
         };
     }
 

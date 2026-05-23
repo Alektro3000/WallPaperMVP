@@ -10,6 +10,7 @@ public class Animation
 
     public float TotalTime;
 
+    public float animationDelta = 0;
     public List<AnimationNode> AnimationNodes;
 
     public Animation(string name, float totalTime, List<AnimationNode> animationNodes)
