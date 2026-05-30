@@ -23,7 +23,7 @@ public sealed class TextureLoader : IDisposable
         this.basePath = basePath;
     }
 
-    public Texture? GetTextureFromFile(string? name)
+    public Texture? GetTextureFromFile(string? name, Format format)
     {
         if (name == null)
             return null;
@@ -32,10 +32,10 @@ public sealed class TextureLoader : IDisposable
         if (loadedTextures.TryGetValue(fullpath, out var texture))
             return texture;
 
-        return LoadTextureFromFile(fullpath);
+        return LoadTextureFromFile(fullpath, format);
     }
 
-    public Texture? GetTextureFromGltfTexture(SharpGLTF.Schema2.Texture? gltfTexture)
+    public Texture? GetTextureFromGltfTexture(SharpGLTF.Schema2.Texture? gltfTexture, Format format)
     {
         var image = gltfTexture?.PrimaryImage;
         if (image == null)
@@ -45,48 +45,49 @@ public sealed class TextureLoader : IDisposable
         if (loadedGltfImages.TryGetValue(key, out var cached))
             return cached;
 
-        return LoadTextureFromGltfImage(image, key);
+        return LoadTextureFromGltfImage(image, key, format);
     }
 
-    private Texture? LoadTextureFromGltfImage(SharpGLTF.Schema2.Image image, int key)
+    private Texture? LoadTextureFromGltfImage(SharpGLTF.Schema2.Image image, int key, Format format)
     {
         var encoded = image.Content.Content;
         using var stream = new MemoryStream(encoded.ToArray());
         using var bitmap = new Bitmap(stream);
 
-        var texture = ConvertTexture(bitmap, $"gltf_image_{key}");
+        var texture = ConvertTexture(bitmap, $"gltf_image_{key}",format);
         loadedGltfImages[key] = texture;
         return texture;
     }
 
-    private Texture? LoadTextureFromFile(string fullpath)
+    private Texture? LoadTextureFromFile(string fullpath, Format format)
     {
         if (!File.Exists(fullpath))
             return null;
 
         using var bitmap = new Bitmap(fullpath);
-        var texture = ConvertTexture(bitmap, fullpath);
+        var texture = ConvertTexture(bitmap, fullpath, format);
         loadedTextures[fullpath] = texture;
         return texture;
     }
 
-    private Texture ConvertTexture(Bitmap bitmap, string name)
+    private Texture ConvertTexture(Bitmap bitmap, string name, Format format)
     {
         var width = bitmap.Width;
         var height = bitmap.Height;
         var pixels = LoadBitmapPixelsRgba8(bitmap);
 
-        var textureResource = CreateTexture2D(device, width, height, Format.R8G8B8A8_UNorm_SRgb);
+        var textureResource = CreateTexture2D(device, width, height, format);
         using var uploadBuffer = CreateTextureUploadBuffer(device, pixels, width, height, 4);
 
         commandList.ExecuteImmediate(cmd =>
         {
-            UploadTextureData(cmd, textureResource, uploadBuffer, width, height, Format.R8G8B8A8_UNorm_SRgb);
+            UploadTextureData(cmd, textureResource, uploadBuffer, width, height, format);
             cmd.ResourceBarrierTransition(textureResource, ResourceStates.CopyDest, ResourceStates.PixelShaderResource);
         });
 
         var texture = new Texture
         {
+            Format = format,
             Name = name,
             TextureResource = textureResource,
             Width = width,

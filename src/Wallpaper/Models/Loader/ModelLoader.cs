@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Models;
+using Models.Lights;
 using SharpGLTF.Schema2;
 using Vortice.Direct3D12;
 using Vortice.Direct3D12.Debug;
@@ -11,7 +12,11 @@ static class ModelLoader
     static public Model loadModelFromGLTF(InitContext context, string path, string name)
     {
         var absolute = Path.Combine("resources", path);
-        var gltf = ModelRoot.Load(Path.Combine(absolute, name));
+        ReadSettings settings = new ReadSettings()
+        {
+            Validation = SharpGLTF.Validation.ValidationMode.TryFix
+        };
+        var gltf = ModelRoot.Load(Path.Combine(absolute, name), settings);
 
         TextureLoader textureLoader = new(context, absolute);
         BindlessTextureProvider bindlessTextures = new(context);
@@ -37,12 +42,10 @@ static class ModelLoader
 
         var skins = ImportSkins(context, gltf, nodes);
 
-        var CameraTransform = nodes.FirstOrDefault(n => n.Name == "Camera")?.DefaultTransform ?? AffineTransform.Identity; 
-
-        return new Model(context)
+        var model = new Model(context)
         {
             Materials = materialMap.ToList(),
-            MaterialDefinitions = primitiveLoaderRegistry.GetMaterialDefinition(),
+            MaterialDefinitions = primitiveLoaderRegistry.GetMaterialDefinitions(),
             RootSignatureDefinitions = primitiveLoaderRegistry.GetRootSignatureDefinitions(),
             Meshes = meshMap,
             Nodes = nodes,
@@ -52,8 +55,11 @@ static class ModelLoader
 
             RootNodes = ImportSceneRoots(gltf, nodes),
             TextureLoader = textureLoader,
-            CameraTransform = CameraTransform
+            Camera = ImportCamera(gltf, nodes),
+            Lights = ImportLights(gltf, nodes)
         };
+        model.PostInit();
+        return model;
     }
 
     private static List<Models.Animation> ImportAnimations(ModelRoot gtlf, List<Models.Node> nodeMap)
@@ -63,12 +69,12 @@ static class ModelLoader
                 x.Channels.Max(x => x.GetRotationSampler()?.GetLinearKeys()?.LastOrDefault().Key) ?? 1,
                  x.Channels
                 .GroupBy(node => node.TargetNode)
-                .Select(node => ImportAnimationNode(gtlf, node.Key, node.ToArray(), nodeMap))
+                .Select(node => ImportAnimationNode(node.Key, node.ToArray(), nodeMap))
                 .ToList())
         ).ToList();
     }
 
-    public static AnimationNode ImportAnimationNode(ModelRoot gltf, SharpGLTF.Schema2.Node node, AnimationChannel[] animationChannels, List<Models.Node> nodeMap)
+    public static AnimationNode ImportAnimationNode(SharpGLTF.Schema2.Node node, AnimationChannel[] animationChannels, List<Models.Node> nodeMap)
     {
         AnimationNode nodeAnimation = new()
         {
@@ -80,35 +86,30 @@ static class ModelLoader
             switch (animationChannel.TargetNodePath)
             {
                 case PropertyPath.translation:
-                    foreach (var key in animationChannel.GetTranslationSampler().GetLinearKeys())
-                    {
-                        nodeAnimation.Translations.Add(
-                            new LinearKey<Vector3>(key.Key, key.Value)
-                        );
-                    }
+                    nodeAnimation.Translations.AddRange(
+                        animationChannel.GetTranslationSampler()
+                        .GetLinearKeys()
+                        .Select(key => new LinearKey<Vector3>(key.Key, key.Value)));
                     break;
 
                 case PropertyPath.rotation:
-                    foreach (var key in animationChannel.GetRotationSampler().GetLinearKeys())
-                    {
-                        nodeAnimation.Rotations.Add(
-                            new LinearKey<Quaternion>(key.Key, key.Value)
-                        );
-                    }
+                    nodeAnimation.Rotations.AddRange(
+                            animationChannel.GetRotationSampler()
+                            .GetLinearKeys()                    
+                            .Select(key => new LinearKey<Quaternion>(key.Key, key.Value)));
                     break;
 
                 case PropertyPath.scale:
-                    foreach (var key in animationChannel.GetScaleSampler().GetLinearKeys())
-                    {
-                        nodeAnimation.Scales.Add(
-                            new LinearKey<Vector3>(key.Key, key.Value)
-                        );
-                    }
+                    nodeAnimation.Scales.AddRange(
+                        animationChannel.GetScaleSampler()
+                        .GetLinearKeys()
+                        .Select(key => new LinearKey<Vector3>(key.Key, key.Value)));
+
                     break;
 
                 case PropertyPath.weights:
                     // Morph target / shape key animation.
-                    // Handle separately if you need blendshapes.
+                    // TODO handle weights.
                     break;
             }
         }
@@ -137,7 +138,7 @@ static class ModelLoader
             new Models.Mesh()
             {
                 Name = mesh.Name,
-                constantBufferKey = context.ConstantBufferRegistry.Reserve<Matrix4x4>("Mesh Constant Buffer"),
+                constantBufferKey = context.ConstantBufferRegistry.Reserve<MeshConstantBuffer>("Mesh Constant Buffer"),
                 Primitives = mesh.Primitives.Select(prim => LoadPrimitive(prim, materialMap, vertexIndexRegistry, ref primitiveId)).ToList()
             }
         ).ToList();
@@ -193,7 +194,7 @@ static class ModelLoader
 
         return new Primitive()
         {
-            MaterialDefinition = primitiveLoader.GetMaterialDefinition(),
+            MaterialDefinition = primitiveLoader.GetMaterialDefinition(primitive.Material),
             Material = material,
             VertexBufferView = vertexView,
             VertexCount = primitiveDescription.vertexCount,
@@ -259,5 +260,56 @@ static class ModelLoader
         return scene.VisualChildren
             .Select(root => nodes[root.LogicalIndex])
             .ToList();
+    }
+
+    static private List<PrincipledLight> ImportLights(ModelRoot gltf, List<Models.Node> nodes)
+    {
+        return gltf.LogicalPunctualLights
+            .Select(PrincipledLight (PunctualLight x) => 
+            {
+                if(x.LightType == PunctualLightType.Spot)
+                    return new SpotLight()
+                    {
+                        OuterConeAngle = x?.OuterConeAngle ?? (float)Math.PI/2f,
+                        InnerConeAngle = x?.InnerConeAngle ?? (float)Math.PI/2f,
+                        Intensity = x?.Intensity ?? 10,
+                        Color = x?.Color ?? Vector3.One,
+                        Radius = x?.Range ?? 10,
+                        Node = nodes[gltf.LogicalNodes
+                        .FirstOrDefault(n=>n.PunctualLight == x)?.LogicalIndex 
+                        ?? throw new Exception("Invalid node for light")]
+                    };
+                else //if(x.LightType == PunctualLightType.Point)
+                    return new PointLight()
+                    {
+                        Intensity = x?.Intensity ?? 10,
+                        Color = x?.Color ?? Vector3.One,
+                        Radius = x?.Range ?? 10,
+                        Node = nodes[gltf.LogicalNodes
+                        .FirstOrDefault(n=>n.PunctualLight == x)?.LogicalIndex 
+                        ?? throw new Exception("Invalid node for light")]
+                    };
+            }).ToList();
+    }
+
+    static private Models.Camera ImportCamera(ModelRoot gltf, List<Models.Node> nodes)
+    {
+        var gltfCamera = gltf.LogicalCameras.FirstOrDefault();
+        
+        var perspective = gltfCamera?.Settings as CameraPerspective;
+        var cameraNode = nodes.FirstOrDefault(n => n.Name == "Camera") ?? 
+                throw new Exception("No camera node found in the model.");
+
+        var yfov = perspective?.VerticalFOV ?? 1f;
+        var znear = perspective?.ZNear ?? 0.1f;
+        var zfar = perspective?.ZFar ?? 100f;
+
+        return new Models.Camera
+        {
+            Node = cameraNode,
+            yfov = yfov,
+            zfar = zfar,
+            znear = znear
+        };
     }
 }

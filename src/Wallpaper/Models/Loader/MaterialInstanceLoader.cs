@@ -32,12 +32,12 @@ public sealed class MaterialInstanceLoader
                     AlphaMode = mat.Alpha switch
                     {
                         AlphaMode.OPAQUE => "OPAQUE",
-                        AlphaMode.MASK => "OPAQUE",
-                        AlphaMode.BLEND => "OPAQUE",
+                        AlphaMode.MASK => "Mask",
+                        AlphaMode.BLEND => "Blend",
                     },
                     BaseColorFactor = GetBaseColor(mat),
                     BaseColorTexture = GetBaseColorTexture(mat),
-                    NormalTexture = textureLoader.GetTextureFromGltfTexture(mat.FindChannel("Normal")?.Texture)
+                    NormalTexture = textureLoader.GetTextureFromGltfTexture(mat.FindChannel("Normal")?.Texture, Vortice.DXGI.Format.R8G8B8A8_UNorm)
                 };
 
                 return new MaterialInstance(initContext, textureProvider, description);
@@ -47,12 +47,12 @@ public sealed class MaterialInstanceLoader
 
     private Texture? GetBaseColorTexture(SharpGLTF.Schema2.Material mat)
     {
-        var mmdTexture = textureLoader.GetTextureFromFile(mat.Extras?["mmd_material"]?["texture_rel_path"]?.ToString());
+        var mmdTexture = textureLoader.GetTextureFromFile(mat.Extras?["mmd_material"]?["texture_rel_path"]?.ToString(), Vortice.DXGI.Format.R8G8B8A8_UNorm_SRgb);
         if (mmdTexture != null)
             return mmdTexture;
 
         var gltfTexture = mat.FindChannel("BaseColor")?.Texture;
-        return textureLoader.GetTextureFromGltfTexture(gltfTexture);
+        return textureLoader.GetTextureFromGltfTexture(gltfTexture, Vortice.DXGI.Format.R8G8B8A8_UNorm_SRgb);
     }
     private Vector4? GetBaseColor(SharpGLTF.Schema2.Material mat)
     {

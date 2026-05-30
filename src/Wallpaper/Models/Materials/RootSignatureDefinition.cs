@@ -41,7 +41,7 @@ public sealed class RootSignatureDefinition : IDisposable
             new(
                 RootParameterType.ConstantBufferView,
                 new RootDescriptor1(0, 0),
-                ShaderVisibility.Vertex),
+                ShaderVisibility.All),
             new(
                 RootParameterType.ConstantBufferView,
                 new RootDescriptor1(1, 0),
@@ -64,9 +64,9 @@ public sealed class RootSignatureDefinition : IDisposable
         var staticSampler = new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
         {
             Filter = Filter.MinMagMipLinear,
-            AddressU = TextureAddressMode.Clamp,
-            AddressV = TextureAddressMode.Clamp,
-            AddressW = TextureAddressMode.Clamp,
+            AddressU = TextureAddressMode.Wrap,
+            AddressV = TextureAddressMode.Wrap,
+            AddressW = TextureAddressMode.Wrap,
             ComparisonFunction = ComparisonFunction.Never,
             MaxLOD = float.MaxValue
         };

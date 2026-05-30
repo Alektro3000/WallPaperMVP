@@ -19,7 +19,8 @@ public abstract class PrimitiveLoader
 {
     protected BindlessTextureProvider TextureProvider { get; }
     protected RootSignatureDefinition? rootSignatureDefinition;
-    protected MaterialDefinition? materialDefinition;
+    protected Dictionary<MaterialPermutationKey, MaterialDefinition> materialDefinitions = new();
+
 
     protected InitContext InitContext;
     public PrimitiveLoader(InitContext initContext, BindlessTextureProvider textureProvider)
@@ -29,6 +30,7 @@ public abstract class PrimitiveLoader
     }
     public abstract RootSignatureDefinition GetRootSignatureDefinition();
     public abstract int VertexSize {get;}
-    public abstract MaterialDefinition GetMaterialDefinition();
+    public List<MaterialDefinition> GetMaterialDefinitions() => materialDefinitions.Values.ToList();
+    public abstract MaterialDefinition GetMaterialDefinition(Material material);
     public abstract LoadingPrimitiveDescription LoadPrimitive(MeshPrimitive primitive);
 }

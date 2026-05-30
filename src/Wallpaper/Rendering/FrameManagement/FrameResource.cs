@@ -1,3 +1,4 @@
+using Renderer.Descriptors;
 using Renderer.Resources;
 using Settings;
 using Vortice.Direct3D12;
@@ -7,10 +8,9 @@ namespace Renderer.FrameManagement;
 public sealed class FrameResource : IDisposable
 {
     public required ID3D12Resource RenderTarget;
-    public required CpuDescriptorHandle RenderTargetHandle;
-
-    public required ID3D12Resource DepthStencil ;
-    public required CpuDescriptorHandle DepthStencilHandle ;
+    public required ResourceDescriptor RenderTargetHandle ;
+    public required ID3D12Resource DepthStencil;
+    public required ResourceDescriptor DepthStencilHandle ;
 
     public ID3D12CommandAllocator CommandAllocator;
     public ID3D12GraphicsCommandList CommandList;

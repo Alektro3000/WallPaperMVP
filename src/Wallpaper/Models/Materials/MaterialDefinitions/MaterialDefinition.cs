@@ -11,13 +11,13 @@ public class MaterialDefinition : IDisposable
 {
     public RootSignatureDefinition RootSignatureDefinition { get; }
     public ID3D12PipelineState PipelineState { get; }
-    public PermutationKey PermutationKey { get; }
+    public MaterialPermutationKey PermutationKey { get; }
 
     public MaterialDefinition(
         InitContext initContext,
         RootSignatureDefinition rootSignatureDefinition,
         String shaderPath,
-        PermutationKey permutationKey
+        MaterialPermutationKey permutationKey
         )
     {
         PermutationKey = permutationKey;
@@ -44,8 +44,14 @@ public class MaterialDefinition : IDisposable
         String shaderPath)
     {
 
-        ReadOnlyMemory<byte> vs = ShaderLibrary.GetShader(shaderPath, "vs", PermutationKey);
-        ReadOnlyMemory<byte> ps = ShaderLibrary.GetShader(shaderPath, "ps", PermutationKey);
+        ReadOnlyMemory<byte> vs = ShaderLibrary.GetShader(shaderPath, "vs", PermutationKey.ShaderPermutation);
+        ReadOnlyMemory<byte> ps = ShaderLibrary.GetShader(shaderPath, "ps", PermutationKey.ShaderPermutation);
+
+        var RasterizerState = new RasterizerDescription(
+            PermutationKey.TwoSided ? CullMode.None : CullMode.Back,
+            FillMode.Solid,
+            true);
+
 
         GraphicsPipelineStateDescription pipelineStateDescription = new()
         {
@@ -55,7 +61,7 @@ public class MaterialDefinition : IDisposable
             InputLayout = GetInputLayoutDescription().ToArray(),
             SampleMask = uint.MaxValue,
             PrimitiveTopologyType = PrimitiveTopologyType.Triangle,
-            RasterizerState = RasterizerDescription.CullNone,
+            RasterizerState = RasterizerState,
             BlendState = BlendDescription.Opaque,
             DepthStencilState = DepthStencilDescription.Default,
             DepthStencilFormat = Format.D32_Float,
@@ -77,7 +83,7 @@ public class MaterialDefinition : IDisposable
             new("TEXCOORD", 0, Format.R32G32_Float, 40, 0, InputClassification.PerVertexData, 0),
         };
 
-        if(PermutationKey.Skeletal)
+        if(PermutationKey.ShaderPermutation.Skeletal)
         {
             baseLayout.AddRange([
                 new("WEIGHTS", 0, Format.R16G16B16A16_UNorm, 48, 0, InputClassification.PerVertexData, 0),

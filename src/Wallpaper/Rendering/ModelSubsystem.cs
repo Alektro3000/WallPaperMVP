@@ -8,9 +8,11 @@ class ModelSubsystem : IDisposable
     Model[] models;
     public ModelSubsystem(InitContext initContext)
     {
+        var roomSettings = initContext.SystemSettings.GetSettings<Models.Settings>().loadRoom > 0.5f;
         models = 
         [
-            ModelLoader.loadModelFromGLTF(initContext, "room", "room.gltf")
+            roomSettings ? ModelLoader.loadModelFromGLTF(initContext, "room", "l1.gltf")
+            : ModelLoader.loadModelFromGLTF(initContext, "room2", "room.gltf")
         ];
     }
 

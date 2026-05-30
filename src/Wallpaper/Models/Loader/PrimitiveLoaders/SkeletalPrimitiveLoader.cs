@@ -19,12 +19,19 @@ public class SkeletalPrimitiveLoader : PrimitiveLoader
         rootSignatureDefinition = new RootSignatureDefinition(InitContext, RootSignatureDefinitionType.SkeletalMesh, TextureProvider);
         return rootSignatureDefinition;
     }
-    public override MaterialDefinition GetMaterialDefinition()
+    public override MaterialDefinition GetMaterialDefinition(Material? material)
     {
-        if(materialDefinition != null)
-            return materialDefinition;
-        materialDefinition = new MaterialDefinition(InitContext, GetRootSignatureDefinition(), "models\\materials\\pbr", new PermutationKey(true));
-        return materialDefinition;
+        bool TwoSided = material?.DoubleSided ?? true;
+        var permutationKey = new PermutationKey(true);
+        var mat = new MaterialPermutationKey(permutationKey, TwoSided);
+
+        if(materialDefinitions.TryGetValue(mat, out var def))
+        {
+            return def;
+        }
+        var matDef = new MaterialDefinition(InitContext, GetRootSignatureDefinition(), "models\\materials\\pbr", mat);
+        materialDefinitions[mat] = matDef;
+        return matDef;
     }
 
     static private ulong PackVector(Vector4 vector4)

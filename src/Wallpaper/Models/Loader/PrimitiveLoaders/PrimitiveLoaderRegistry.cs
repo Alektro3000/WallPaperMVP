@@ -21,8 +21,8 @@ public class PrimitiveLoaderRegistry(InitContext initContext, BindlessTexturePro
     {
         return [skeletalLoader.GetRootSignatureDefinition(),staticLoader.GetRootSignatureDefinition()];
     }
-    public List<MaterialDefinition> GetMaterialDefinition()
+    public List<MaterialDefinition> GetMaterialDefinitions()
     {
-        return [skeletalLoader.GetMaterialDefinition(),staticLoader.GetMaterialDefinition()];
+        return [..skeletalLoader.GetMaterialDefinitions(),..staticLoader.GetMaterialDefinitions()];
     }
 }

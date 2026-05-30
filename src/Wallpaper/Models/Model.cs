@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
+using Models.Lights;
 using Models.Material;
 using Renderer.FrameManagement;
 using Renderer.Resources;
@@ -10,24 +11,9 @@ using Vortice.Direct3D12;
 namespace Models;
 
 
-public class Settings : ISettings
-{
-    [UiRange(0,1,1)]
-    public float useFreeCamera;
-    public Vector3 cameraPos;
-    public Vector3 centerPos;
-
-    public float CameraSpeed;
-    [UiRange(0,1,1)]
-    public float showUV;
-    [UiRange(0,1,1)]
-    public float showNormal;
-}
-
-
 public sealed class Model : IDisposable
 {
-    public AffineTransform CameraTransform;
+    public Camera Camera;
     public List<MaterialInstance> Materials = [];
     public List<MaterialDefinition> MaterialDefinitions = [];
     public List<RootSignatureDefinition> RootSignatureDefinitions = [];
@@ -37,11 +23,27 @@ public sealed class Model : IDisposable
     public List<Node> Nodes = [];
     public List<Node> RootNodes = [];
     public List<Animation> Animations = [];
+    public List<PrincipledLight> Lights = [];
     public required TextureLoader TextureLoader;
     public float rotationDelta = 0;
+
+    public List<MaterialGrouping> PrimitivesToRender;
     public Model(InitContext initContext)
     {
-
+    }
+    public void PostInit()
+    {
+        PrimitivesToRender =
+            Nodes
+            .Where(x => x.Mesh != null)
+            .SelectMany(node => node.Mesh.Primitives.Select(p => (node, p)).ToList<(Node node, Primitive primitive)>())
+            .GroupBy(x => x.primitive.MaterialDefinition)
+            .Select(materialGroup => new MaterialGrouping
+            {
+                MaterialDefinition = materialGroup.Key,
+                Nodes = [.. materialGroup.GroupBy(x => x.node, x => x.primitive)]
+            })
+            .ToList();
     }
     public void Dispose()
     {
@@ -72,10 +74,12 @@ public sealed class Model : IDisposable
             i.LocalTransform = i.DefaultTransform;
         }
 
-        foreach(var animation in Animations)
-            if(animation != null)
+        var set = frameResource.Settings.GetSettings<Settings>();
+
+        foreach (var animation in Animations)
+            if (animation != null)
             {
-                animation.animationDelta += frameResource.FrameMetric.DeltaTime;
+                animation.animationDelta += frameResource.FrameMetric.DeltaTime * set.AnimationSpeed;
                 animation.animationDelta %= animation.TotalTime;
 
                 foreach (var animationNode in animation.AnimationNodes)
@@ -101,72 +105,96 @@ public sealed class Model : IDisposable
     {
 
         var set = frameResource.Settings.GetSettings<Settings>();
+        var spotLightConstants = Lights
+            .Select(x=>{
+                var lightConstant = x.GetLightConstant();
+                lightConstant.LightColor *= set.Intensity;
+                return lightConstant;
+    }         )
+            .Take(8).ToArray();
+        
+
+        if(set.showConcreteLight != -1)
+        {
+            spotLightConstants = spotLightConstants.Skip((int)set.showConcreteLight).Take(1).ToArray();
+        }
 
         rotationDelta += frameResource.FrameMetric.DeltaTime * set.CameraSpeed;
         rotationDelta %= (float)(Math.PI * 2);
 
-        var rotation = Quaternion.CreateFromAxisAngle(new Vector3(0,1,0), rotationDelta);
+        var rotation = Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), rotationDelta);
 
 
-        var viewMatrix = Matrix4x4.Invert(CameraTransform.Matrix, out var inv)
+        var cameraPos = Camera.Node.GlobalTransform.Translation;
+        var viewMatrix = Matrix4x4.Invert(Camera.Node.GlobalTransform.Matrix, out var inv)
             ? inv
             : Matrix4x4.Identity;
-        
-        if(set.useFreeCamera > 0)
+
+        if (set.useFreeCamera > 0)
+        {
+            cameraPos = set.centerPos + Vector3.Transform(set.cameraPos, rotation);
             viewMatrix = Matrix4x4.CreateLookAt(
-                cameraPosition: set.centerPos + Vector3.Transform(set.cameraPos, rotation),
+                cameraPosition: cameraPos,
                 cameraTarget: set.centerPos,
                 cameraUpVector: Vector3.UnitY);
+        }
 
         var projection =
             Matrix4x4.CreatePerspectiveFieldOfView(
-                fieldOfView: MathF.PI / 4.0f,
+                fieldOfView: Camera.yfov,
                 aspectRatio: frameResource.FrameMetric.ratio,
-                nearPlaneDistance: 0.1f,
-                farPlaneDistance: 100.0f);
+                nearPlaneDistance: Camera.znear,
+                farPlaneDistance: Camera.zfar);
 
-        var PrimitivesToRender = 
-            Nodes
-            .Where(x => x.Mesh != null)
-            .SelectMany(node => node.Mesh.Primitives.Select(p => (node, p)).ToList<(Node node, Primitive primitive)>() )
-            .GroupBy(x=>x.primitive.MaterialDefinition)
-            .Select(materialGroup => new
-            {
-                MaterialDefinition = materialGroup.Key,
-                Nodes = materialGroup
-                    .GroupBy(x => x.node)
-            })
-            .ToList();
 
         foreach (var MaterialDefinitionGrouping in PrimitivesToRender)
         {
             MaterialDefinition MaterialDefinition = MaterialDefinitionGrouping.MaterialDefinition;
             var cmd = frameResource.CommandList;
+            if (MaterialDefinition.PermutationKey.TwoSided && set.showDoubleSided <= 0)
+            {
+                continue;
+            }
+            if ((!MaterialDefinition.PermutationKey.TwoSided) && set.showSingleSided <= 0)
+            {
+                continue;
+            }
             MaterialDefinition.Bind(frameResource);
-            
             foreach (var nodeGrouping in MaterialDefinitionGrouping.Nodes)
             {
-                var node = nodeGrouping.Key;
+                Node node = nodeGrouping.Key;
                 var mesh = node.Mesh!;
 
-                var mvp = node.GlobalMatrix  * viewMatrix * projection;
-                frameResource.GetBufferConstantRef(mesh.constantBufferKey) = mvp;
+                var vp = viewMatrix * projection;
+
+                var meshBuffer = new MeshConstantBuffer();
+                Matrix4x4.Invert(node.GlobalMatrix, out meshBuffer.inverseModelTransform);
+
+                meshBuffer.inverseModelTransform = Matrix4x4.Transpose(meshBuffer.inverseModelTransform);
+                meshBuffer.modelTransform = node.GlobalMatrix;
+                meshBuffer.viewTransform = vp;
+                meshBuffer.CameraPosition = cameraPos;
+                meshBuffer.NormalScale = set.NormalScale;
+                meshBuffer.LightCount = spotLightConstants.Length;
+                for(int i = 0; i < spotLightConstants.Length; i++)
+                    meshBuffer.lightConstants[i] = spotLightConstants[i];
+                    
+                frameResource.GetBufferConstantRef(mesh.constantBufferKey) = meshBuffer;
+
 
                 IEnumerable<Primitive> selected = mesh.Primitives;
-                
-                foreach (var primitivePair in nodeGrouping)
+
+                foreach (var primitive in nodeGrouping)
                 {
-                    var primitive = primitivePair.primitive;
-                    
-                    if (primitive.Material == null)
+                    if (primitive.Material == null || !primitive.Material.Visible)
                     {
                         continue;
                     }
 
                     primitive.Material.Bind(frameResource);
-                    
+
                     node.Skin?.BindSkin(frameResource, primitive.MaterialDefinition.RootSignatureDefinition.SkeletalMeshBind());
-                        
+
                     cmd.SetGraphicsRootConstantBufferView(0, frameResource.GetGPUVirtualAddress(mesh.constantBufferKey));
 
                     cmd.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
@@ -175,8 +203,18 @@ public sealed class Model : IDisposable
                     cmd.DrawIndexedInstanced((uint)primitive.IndexCount, 1, 0, 0, 0);
                 }
             }
-        }        
+        }
     }
 
+    public record struct MaterialGrouping(MaterialDefinition MaterialDefinition, List<IGrouping<Node, Primitive>> Nodes)
+    {
+    }
+}
 
+public class Camera
+{
+    public Node Node;
+    public float yfov;
+    public float zfar;
+    public float znear;
 }

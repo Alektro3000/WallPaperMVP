@@ -1,6 +1,7 @@
 
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Models;
 using Models.Material;
 using ShaderConventions;
@@ -19,12 +20,19 @@ public class StaticPrimitiveLoader : PrimitiveLoader
         rootSignatureDefinition = new RootSignatureDefinition(InitContext, RootSignatureDefinitionType.StaticMesh, TextureProvider);
         return rootSignatureDefinition;
     }
-    public override MaterialDefinition GetMaterialDefinition()
+    public override MaterialDefinition GetMaterialDefinition(Material? material)
     {
-        if(materialDefinition != null)
-            return materialDefinition;
-        materialDefinition = new MaterialDefinition(InitContext, GetRootSignatureDefinition(), "models\\materials\\pbr", new PermutationKey(false));
-        return materialDefinition;
+        bool TwoSided = material?.DoubleSided ?? true;
+        var permutationKey = new PermutationKey(false);
+        var mat = new MaterialPermutationKey(permutationKey, TwoSided);
+
+        if(materialDefinitions.TryGetValue(mat, out var def))
+        {
+            return def;
+        }
+        var matDef = new MaterialDefinition(InitContext, GetRootSignatureDefinition(), "models\\materials\\pbr", mat);
+        materialDefinitions[mat] = matDef;
+        return matDef;
     }
 
     public override int VertexSize {get => Marshal.SizeOf<StaticMeshVertex>(); }
@@ -34,6 +42,7 @@ public class StaticPrimitiveLoader : PrimitiveLoader
         var positions = primitive.GetVertexAccessor("POSITION").AsVector3Array();
 
         var normals = primitive.GetVertexAccessor("NORMAL")?.AsVector3Array();
+        var tangents = primitive.GetVertexAccessor("TANGENT")?.AsVector4Array();
         var texCoords = primitive.GetVertexAccessor("TEXCOORD_0")?.AsVector2Array();
 
         var indeces32 = primitive.GetIndices();
@@ -50,7 +59,7 @@ public class StaticPrimitiveLoader : PrimitiveLoader
                 Position = positions[i],
                 UV = texCoords?[i] ?? Vector2.Zero,
                 Normal = normals?[i] ?? Vector3.Zero,
-                Tangent = Vector4.Zero,
+                Tangent = tangents?[i] ?? Vector4.UnitY,
             };
         }
 

@@ -16,10 +16,19 @@ public class MaterialInstance
         public int normalTextureIndex;
         
         public uint flags;
+	    public float Metallic = 0;
+	    public float Roughness = 1;
+	    public float AmbientIntensity = 0.03f;
+
+        public MaterialInfo()
+        {
+        }
+
     }
 
     public Vector3? AlbedoColor;
     public Texture? AlbedoTexture;
+    public bool Visible = true;
     
     public Texture? NormalTexture;
     public BindlessTextureProvider TextureProvider { get; }
@@ -43,15 +52,22 @@ public class MaterialInstance
         var cmd = frameResource.CommandList;
         ref var materialConstantBuffer = ref frameResource.GetBufferConstantRef(ConstantKey);
 
+        var materialInfo = new MaterialInfo();
+
         var settings = frameResource.Settings.GetSettings<Settings>();
         var flags = (AlbedoTexture != null) ? 1u : 0;
-        flags |= (AlbedoColor != null) ? 2u : 0;
+        flags |= (NormalTexture != null) ? 2u : 0;
         flags |= (settings.showUV > 0) ? 4u : 0;
         flags |= (settings.showNormal > 0) ? 8u : 0;
-        materialConstantBuffer.flags = flags;
-        materialConstantBuffer.AlbedoColor = AlbedoColor ?? Vector3.Zero;
-        materialConstantBuffer.albedoTextureIndex = TextureProvider.GetOrCreateBindlessIndex(AlbedoTexture);
-        materialConstantBuffer.normalTextureIndex = TextureProvider.GetOrCreateBindlessIndex(NormalTexture);
+        materialInfo.flags = flags;
+        materialInfo.AlbedoColor = AlbedoColor ?? Vector3.Zero;
+        materialInfo.albedoTextureIndex = TextureProvider.GetOrCreateBindlessIndex(AlbedoTexture);
+        materialInfo.normalTextureIndex = TextureProvider.GetOrCreateBindlessIndex(NormalTexture);
+        materialInfo.Metallic = settings.metallic;
+        materialInfo.Roughness = settings.roughness;
+        materialInfo.AmbientIntensity = settings.ambientIntensity;
+
+        materialConstantBuffer = materialInfo;
 
         cmd.SetGraphicsRootConstantBufferView(1, frameResource.GetGPUVirtualAddress(ConstantKey));
     }
