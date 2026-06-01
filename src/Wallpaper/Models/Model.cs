@@ -98,23 +98,35 @@ public sealed class Model : IDisposable
             i.Skin?.UpdateJointsPositions(frameResource, i.GlobalMatrix);
         }
 
-        RenderMesh(frameResource);
+        
+        var spotLightConstants = ProcessLight(frameResource);
+
+
+        frameResource.BindRenderTarget();
+
+        RenderMesh(frameResource, spotLightConstants);
     }
 
-    public void RenderMesh(FrameResource frameResource)
+    public LightConstant[] ProcessLight(FrameResource frameResource)
     {
-
         var set = frameResource.Settings.GetSettings<Settings>();
-        var spotLightConstants = Lights
-            .Select(x=>{
+
+        return Lights
+            .Select(x =>
+            {
                 var lightConstant = x.GetLightConstant();
                 lightConstant.LightColor *= set.Intensity;
                 return lightConstant;
-    }         )
+            })
             .Take(8).ToArray();
-        
+    }
 
-        if(set.showConcreteLight != -1)
+    public void RenderMesh(FrameResource frameResource, LightConstant[] spotLightConstants)
+    {
+
+        var set = frameResource.Settings.GetSettings<Settings>();
+
+        if (set.showConcreteLight != -1)
         {
             spotLightConstants = spotLightConstants.Skip((int)set.showConcreteLight).Take(1).ToArray();
         }
@@ -176,9 +188,9 @@ public sealed class Model : IDisposable
                 meshBuffer.CameraPosition = cameraPos;
                 meshBuffer.NormalScale = set.NormalScale;
                 meshBuffer.LightCount = spotLightConstants.Length;
-                for(int i = 0; i < spotLightConstants.Length; i++)
+                for (int i = 0; i < spotLightConstants.Length; i++)
                     meshBuffer.lightConstants[i] = spotLightConstants[i];
-                    
+
                 frameResource.GetBufferConstantRef(mesh.constantBufferKey) = meshBuffer;
 
 

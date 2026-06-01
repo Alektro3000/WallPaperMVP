@@ -48,7 +48,8 @@ public sealed class FrameManager : IDisposable
 
         for(uint i = 0; i < frameCount; i++)
             frameResources[i] = new FrameResource(device, 
-                constantBufferRegistry.CreateFrameBindings(device))
+                constantBufferRegistry.CreateFrameBindings(device), 
+                screenRenderTarget)
             {
                 RenderTarget = screenRenderTarget.GetBuffer(i),
                 RenderTargetHandle = screenRenderTarget.GetRenderTargetView(i, device),
@@ -76,22 +77,11 @@ public sealed class FrameManager : IDisposable
             ResourceStates.Present,
             ResourceStates.RenderTarget);
 
-        screenRenderTarget.BindForCommandList(cmd);
         heap.BindForCommandList(cmd);
 
-        cmd.OMSetRenderTargets(
-            currentResource.RenderTargetHandle.Cpu, 
-            currentResource.DepthStencilHandle.Cpu);
+        currentResource.BindRenderTarget();
+        currentResource.ClearRenderTarget();
 
-        cmd.ClearRenderTargetView(
-            currentResource.RenderTargetHandle.Cpu, 
-            new Color4(0.0f, 0.0f, 0.0f, 0.0f));
-            
-        cmd.ClearDepthStencilView(
-            currentResource.DepthStencilHandle.Cpu,
-            ClearFlags.Depth,
-            1.0f,
-            0);
         return currentResource;
     }
 

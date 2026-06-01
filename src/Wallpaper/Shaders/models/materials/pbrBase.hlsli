@@ -12,8 +12,6 @@ struct LightDescription
     float3 padding;
 };
 
-#define AlbedoTexFlag 1
-#define NormalTexFlag 2
 #define PI 3.1415926
 
 float EvaluateSpotAttenuation(float distance, float3 L, LightDescription light)
@@ -42,42 +40,44 @@ float EvaluateSpotAttenuation(float distance, float3 L, LightDescription light)
     return distAtten * spotAtten;
 }
 
-float DistributionGGX(float3 N, float3 H, float roughness)
+float DistributionGGX(float NdotH, float a)
 {
-    float a = roughness * roughness;
     float a2 = a * a;
 
-    float NdotH = saturate(dot(N, H));
-    float NdotH2 = NdotH * NdotH;
+    float f = (NdotH * a2 - NdotH) * NdotH + 1.0;
 
-    float denom = NdotH2 * (a2 - 1.0) + 1.0;
-    denom = PI * denom * denom;
-
-    return a2 / max(denom, 0.00001);
+    return a2 / (PI * f * f);
 }
 
-float GeometrySchlickGGX(float NdotV, float roughness)
+float GeometrySmith(float NdotV, float NdotL, float a)
 {
-    float r = roughness + 1.0;
-    float k = (r * r) / 8.0;
+    float a2 = a * a;
 
-    return NdotV / max(NdotV * (1.0 - k) + k, 0.00001);
-}
+    float GGXL = NdotV * sqrt((-NdotL * a2 + NdotL) * NdotL + a2);
+    float GGXV = NdotL * sqrt((-NdotV * a2 + NdotV) * NdotV + a2);
 
-float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
-{
-    float NdotV = saturate(dot(N, V));
-    float NdotL = saturate(dot(N, L));
-
-    float ggxV = GeometrySchlickGGX(NdotV, roughness);
-    float ggxL = GeometrySchlickGGX(NdotL, roughness);
-
-    return ggxV * ggxL;
+    return 0.5 / (GGXV + GGXL);
 }
 
 float3 FresnelSchlick(float cosTheta, float3 F0)
 {
-    return F0 + (1.0 - F0) * pow(saturate(1.0 - cosTheta), 5.0);
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+float Fd_Lambert() {
+    return 1.0 / PI;
+}
+
+float F_Schlick(float u, float f0, float f90) {
+    return f0 + (f90 - f0) * pow(1.0 - u, 5.0);
+}
+
+
+float Fd_Burley(float NoV, float NoL, float LoH, float roughness) {
+    float f90 = 0.5 + 2.0 * roughness * LoH * LoH;
+    float lightScatter = F_Schlick(NoL, 1.0, f90);
+    float viewScatter = F_Schlick(NoV, 1.0, f90);
+    return lightScatter * viewScatter * (1.0 / PI);
 }
 
 // ------------------------------------------------------------
@@ -89,8 +89,9 @@ float3 EvaluateSpotLightPBR(
     float3 N,
     float3 V,
     float3 baseColor,
-    float roughness,
+    float alpha,
     float metallic,
+    float3 F0,
     LightDescription light)
 {
     float3 lightPos = light.lightPos;
@@ -100,40 +101,26 @@ float3 EvaluateSpotLightPBR(
     float distance = length(toLight);
     float3 L = toLight / max(distance, 0.00001);
 
+    float3 H = normalize(V + L);
 
     float NdotL = saturate(dot(N, L));
-    float NdotV = saturate(dot(N, V));
-
-    if ( NdotV <= 0.0)
-        return float3(0.0, 0.0, 0.0);
-
-    if ( NdotL <= 0.0 )
-        return float3(0.0, 0.0, 0.0);
+    float NdotH = saturate(dot(N, H));
+    float LdotH = saturate(dot(H, L));
+    float NdotV = abs(dot(N, V)) + 1e-5;
 
     float attenuation = EvaluateSpotAttenuation(distance, L, light);
 
     if (attenuation <= 0.0)
         return float3(0.0, 0.0, 0.0);
 
-    float3 H = normalize(V + L);
+    float D = DistributionGGX(NdotH, alpha);
+    float G = GeometrySmith(NdotV, NdotL, alpha);
+    float3 F = FresnelSchlick(LdotH, F0);
 
-    float3 F0 = float3(0.04, 0.04, 0.04);
-    F0 = lerp(F0, baseColor, metallic);
+    float3 specular = D * G * F;
 
-    float D = DistributionGGX(N, H, roughness);
-    float G = GeometrySmith(N, V, L, roughness);
-    float3 F = FresnelSchlick(saturate(dot(H, V)), F0);
-
-    float3 numerator = D * G * F;
-    float denominator = max(4.0 * NdotV * NdotL, 0.00001);
-
-    float3 specular = numerator / denominator;
-
-    float3 kS = F;
-    float3 kD = 1.0 - kS;
-    kD *= 1.0 - metallic;
-
-    float3 diffuse = kD * baseColor / PI;
+    float3 kD = (1.0 - F) * (1.0 - metallic);
+    float3 diffuse = kD * baseColor * Fd_Burley(NdotV, NdotL, LdotH, alpha);
 
     float3 radiance = light.LightColorAndFalloffExponent.rgb * attenuation;
 

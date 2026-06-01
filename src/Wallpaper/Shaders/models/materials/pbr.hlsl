@@ -11,6 +11,9 @@ cbuffer MaterialBuffer : register(b1)
 	float AmbientIntensity;
 };
 
+#define AlbedoTexFlag 1
+#define NormalTexFlag 2
+
 Texture2D TextureHeap[] : register(t0);
 SamplerState LinearSampler : register(s0);
 
@@ -129,14 +132,6 @@ float4 MAIN_PS(VSOutput input, bool isFrontFace : SV_IsFrontFace) : SV_Target
     float3 worldPos = input.worldPosition;
     float3 V = normalize(CameraPos - worldPos);
 
-    float metallic = Metallic;
-    float roughness = Roughness;
-    float ambientIntensity = AmbientIntensity;
-
-
-    //Ensure normal is facing the view direction for single sided materials
-    if (dot(normalWS, V) < 0) 
-        return float4(1,0,0,1);
 
     if ((flags & 4) != 0 && (dot(normalWS, V) < 0))
     {
@@ -155,6 +150,10 @@ float4 MAIN_PS(VSOutput input, bool isFrontFace : SV_IsFrontFace) : SV_Target
         baseColor = TextureHeap[albedoTextureIndex].Sample(LinearSampler, input.UV).xyz;
     }
 
+    float metallic = Metallic;
+    float alpha  = max(Roughness*Roughness, 0.001);
+    float ambientIntensity = AmbientIntensity;
+    
     float3 F0 = lerp(float3(0.04,0.04,0.04), baseColor, metallic);
 
     float3 kS = FresnelSchlick(
@@ -175,7 +174,8 @@ float4 MAIN_PS(VSOutput input, bool isFrontFace : SV_IsFrontFace) : SV_Target
             normalWS,
             V,
             baseColor, 
-            roughness, metallic,
+            alpha , metallic,
+            F0,
             Lights[i]
         );
     }

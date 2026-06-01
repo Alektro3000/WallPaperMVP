@@ -11,8 +11,8 @@ class ModelSubsystem : IDisposable
         var roomSettings = initContext.SystemSettings.GetSettings<Models.Settings>().loadRoom > 0.5f;
         models = 
         [
-            roomSettings ? ModelLoader.loadModelFromGLTF(initContext, "room", "l1.gltf")
-            : ModelLoader.loadModelFromGLTF(initContext, "room2", "room.gltf")
+            roomSettings ? ModelLoader.loadModelFromGLTF(initContext, "room2", "room.gltf")
+            : ModelLoader.loadModelFromGLTF(initContext, "room", "l1.gltf")
         ];
     }
 
