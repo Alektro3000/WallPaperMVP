@@ -184,13 +184,14 @@ static class ModelLoader
             primitiveDescription.indeces);
 
 
-        Models.MaterialInstance? material = null;
+        MaterialInstance? material = null;
         if (primitive.Material != null)
         {
             int materialId = primitive.Material.LogicalIndex;
             if (0 <= materialId && materialId < materialMap.Count)
                 material = materialMap[materialId];
         }
+        
 
         return new Primitive()
         {

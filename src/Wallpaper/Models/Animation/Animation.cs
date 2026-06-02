@@ -1,5 +1,3 @@
-
-
 using System.Numerics;
 
 namespace Models;
@@ -24,7 +22,7 @@ public class Animation
 
 public class AnimationNode
 {
-    public Node Node;
+    public required Node Node;
     public List<LinearKey<Vector3>> Translations = new();
     public List<LinearKey<Quaternion>> Rotations = new();
     public List<LinearKey<Vector3>> Scales = new();

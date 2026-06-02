@@ -11,9 +11,9 @@ using Vortice.Direct3D12;
 namespace Models;
 
 
-public sealed class Model : IDisposable
+public sealed class Model(InitContext initContext) : IDisposable
 {
-    public Camera Camera;
+    public required Camera Camera;
     public List<MaterialInstance> Materials = [];
     public List<MaterialDefinition> MaterialDefinitions = [];
     public List<RootSignatureDefinition> RootSignatureDefinitions = [];
@@ -27,16 +27,14 @@ public sealed class Model : IDisposable
     public required TextureLoader TextureLoader;
     public float rotationDelta = 0;
 
-    public List<MaterialGrouping> PrimitivesToRender;
-    public Model(InitContext initContext)
-    {
-    }
+    public List<MaterialGrouping> PrimitivesToRender = [];
+
     public void PostInit()
     {
         PrimitivesToRender =
             Nodes
             .Where(x => x.Mesh != null)
-            .SelectMany(node => node.Mesh.Primitives.Select(p => (node, p)).ToList<(Node node, Primitive primitive)>())
+            .SelectMany(node => node?.Mesh?.Primitives?.Select(p => (node, p))?.ToList<(Node node, Primitive primitive)>() ?? [])
             .GroupBy(x => x.primitive.MaterialDefinition)
             .Select(materialGroup => new MaterialGrouping
             {
@@ -247,7 +245,7 @@ public sealed class Model : IDisposable
 
 public class Camera
 {
-    public Node Node;
+    public required Node Node;
     public float yfov;
     public float zfar;
     public float znear;
