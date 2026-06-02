@@ -69,44 +69,18 @@ public sealed class Model : IDisposable
 
     public void Render(FrameResource frameResource)
     {
-        foreach (var i in Nodes)
-        {
-            i.LocalTransform = i.DefaultTransform;
-        }
-
-        var set = frameResource.Settings.GetSettings<Settings>();
-
-        foreach (var animation in Animations)
-            if (animation != null)
-            {
-                animation.animationDelta += frameResource.FrameMetric.DeltaTime * set.AnimationSpeed;
-                animation.animationDelta %= animation.TotalTime;
-
-                foreach (var animationNode in animation.AnimationNodes)
-                {
-                    animationNode.UpdateTransform(animation.animationDelta);
-                }
-            }
-
-        foreach (var i in RootNodes)
-        {
-            i.UpdateWorldTransforms(AffineTransform.Identity);
-        }
-
+        updateNodePositions(frameResource);
         foreach (var i in Nodes.Where(x => x.Skin != null))
         {
             i.Skin?.UpdateJointsPositions(frameResource, i.GlobalMatrix);
         }
-
         
         var spotLightConstants = ProcessLight(frameResource);
 
 
         frameResource.BindRenderTarget();
-
-        RenderMesh(frameResource, spotLightConstants);
+        MainPass(frameResource, spotLightConstants);
     }
-
     public LightConstant[] ProcessLight(FrameResource frameResource)
     {
         var set = frameResource.Settings.GetSettings<Settings>();
@@ -121,7 +95,7 @@ public sealed class Model : IDisposable
             .Take(8).ToArray();
     }
 
-    public void RenderMesh(FrameResource frameResource, LightConstant[] spotLightConstants)
+    public void MainPass(FrameResource frameResource, LightConstant[] spotLightConstants)
     {
 
         var set = frameResource.Settings.GetSettings<Settings>();
@@ -135,7 +109,6 @@ public sealed class Model : IDisposable
         rotationDelta %= (float)(Math.PI * 2);
 
         var rotation = Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), rotationDelta);
-
 
         var cameraPos = Camera.Node.GlobalTransform.Translation;
         var viewMatrix = Matrix4x4.Invert(Camera.Node.GlobalTransform.Matrix, out var inv)
@@ -158,7 +131,16 @@ public sealed class Model : IDisposable
                 nearPlaneDistance: Camera.znear,
                 farPlaneDistance: Camera.zfar);
 
+        var vp = viewMatrix * projection;
 
+        RenderMesh(frameResource, spotLightConstants, vp, cameraPos, true);
+        RenderMesh(frameResource, spotLightConstants, vp, cameraPos, false);
+    }
+
+    private void RenderMesh(FrameResource frameResource, LightConstant[] spotLightConstants, Matrix4x4 vp, Vector3 cameraPosition, bool bindDepthPass = false)
+    {
+        
+        var set = frameResource.Settings.GetSettings<Settings>();
         foreach (var MaterialDefinitionGrouping in PrimitivesToRender)
         {
             MaterialDefinition MaterialDefinition = MaterialDefinitionGrouping.MaterialDefinition;
@@ -171,13 +153,18 @@ public sealed class Model : IDisposable
             {
                 continue;
             }
-            MaterialDefinition.Bind(frameResource);
+            if(bindDepthPass)
+            {
+                MaterialDefinition.BindDepthPass(frameResource);
+            }
+            else
+            {
+                MaterialDefinition.Bind(frameResource);
+            }
             foreach (var nodeGrouping in MaterialDefinitionGrouping.Nodes)
             {
                 Node node = nodeGrouping.Key;
                 var mesh = node.Mesh!;
-
-                var vp = viewMatrix * projection;
 
                 var meshBuffer = new MeshConstantBuffer();
                 Matrix4x4.Invert(node.GlobalMatrix, out meshBuffer.inverseModelTransform);
@@ -185,7 +172,7 @@ public sealed class Model : IDisposable
                 meshBuffer.inverseModelTransform = Matrix4x4.Transpose(meshBuffer.inverseModelTransform);
                 meshBuffer.modelTransform = node.GlobalMatrix;
                 meshBuffer.viewTransform = vp;
-                meshBuffer.CameraPosition = cameraPos;
+                meshBuffer.CameraPosition = cameraPosition;
                 meshBuffer.NormalScale = set.NormalScale;
                 meshBuffer.LightCount = spotLightConstants.Length;
                 for (int i = 0; i < spotLightConstants.Length; i++)
@@ -221,6 +208,35 @@ public sealed class Model : IDisposable
     public record struct MaterialGrouping(MaterialDefinition MaterialDefinition, List<IGrouping<Node, Primitive>> Nodes)
     {
     }
+    
+    private void updateNodePositions(FrameResource frameResource)
+    {
+        foreach (var i in Nodes)
+        {
+            i.LocalTransform = i.DefaultTransform;
+        }
+
+        var set = frameResource.Settings.GetSettings<Settings>();
+
+        foreach (var animation in Animations)
+            if (animation != null)
+            {
+                animation.animationDelta += frameResource.FrameMetric.DeltaTime * set.AnimationSpeed;
+                animation.animationDelta %= animation.TotalTime;
+
+                foreach (var animationNode in animation.AnimationNodes)
+                {
+                    animationNode.UpdateTransform(animation.animationDelta);
+                }
+            }
+
+        foreach (var i in RootNodes)
+        {
+            i.UpdateWorldTransforms(AffineTransform.Identity);
+        }
+    }
+
+
 }
 
 public class Camera

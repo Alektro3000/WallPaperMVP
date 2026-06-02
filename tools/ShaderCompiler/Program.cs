@@ -89,11 +89,7 @@ internal static class Program
         foreach (Match match in stageMatches)
         {
             string stageName = match.Groups[1].Value;
-            if (!foundStages.Add(stageName))
-            {
-                throw new InvalidOperationException(
-                    $"Shader file contains duplicate MAIN_{stageName} entry point: {inputPath}");
-            }
+            foundStages.Add(stageName);
         }
 
         string relativePath = Path.GetRelativePath(inputRoot, inputPath);
@@ -128,20 +124,28 @@ internal static class Program
 
         foreach (var ((stageName, permutationKey), outputPath) in outputs)
         {
-            var stage = StageMap[stageName];
-            string stageSuffix = stageName.ToLowerInvariant();
+            try
+            {                
+                var stage = StageMap[stageName];
+                string stageSuffix = stageName.ToLowerInvariant();
 
-            Log.Information("{ShaderPath}: MAIN_{Stage} [{StageSuffix}] [{PermutationKey}]",
-                relativePath, stageName, stageSuffix, permutationKey);
-            Log.Information("{InputPath} to base {OutputPath}", inputPath, outputPath);
+                Log.Information("{ShaderPath}: MAIN_{Stage} [{StageSuffix}] [{PermutationKey}]",
+                    relativePath, stageName, stageSuffix, permutationKey);
+                Log.Information("{InputPath} to base {OutputPath}", inputPath, outputPath);
 
-            var bytecode = ShaderCompiler.Compile(inputPath, stage, $"MAIN_{stageName}", loadResult.Source, permutationKey);
-            string? directory = Path.GetDirectoryName(outputPath);
-            if (!string.IsNullOrEmpty(directory))
-            {
-                Directory.CreateDirectory(directory);
+                var bytecode = ShaderCompiler.Compile(inputPath, stage, $"MAIN_{stageName}", loadResult.Source, permutationKey);
+                string? directory = Path.GetDirectoryName(outputPath);
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+                File.WriteAllBytes(outputPath, bytecode.ToArray());
             }
-            File.WriteAllBytes(outputPath, bytecode.ToArray());
+            catch (Exception ex)
+            {
+                Log.Error("Failed to compile shader permutation {ShaderPath}", inputPath);
+                throw;
+            }
 
         }
     }

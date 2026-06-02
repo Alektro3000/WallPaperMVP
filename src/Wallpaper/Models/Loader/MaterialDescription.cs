@@ -9,6 +9,7 @@ public class MaterialDescription
     public Vector4? BaseColorFactor;
     public Texture? BaseColorTexture;
     public Texture? NormalTexture;
+    public Texture? PackedTexture;
     public bool DoubleSided;
     public string AlphaMode = "OPAQUE";
     public float AlphaCutoff = 0.5f;
@@ -22,5 +23,4 @@ public class MaterialDescription
         AlphaMode = "OPAQUE",
         AlphaCutoff = 0.5f
     };
-
 }

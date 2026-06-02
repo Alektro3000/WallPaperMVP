@@ -37,7 +37,8 @@ public sealed class MaterialInstanceLoader
                     },
                     BaseColorFactor = GetBaseColor(mat),
                     BaseColorTexture = GetBaseColorTexture(mat),
-                    NormalTexture = textureLoader.GetTextureFromGltfTexture(mat.FindChannel("Normal")?.Texture, Vortice.DXGI.Format.R8G8B8A8_UNorm)
+                    NormalTexture = textureLoader.GetTextureFromGltfTexture(mat.FindChannel("Normal")?.Texture, Vortice.DXGI.Format.R8G8B8A8_UNorm),
+                    PackedTexture = textureLoader.GetTextureFromGltfTexture(mat.FindChannel("MetallicRoughness")?.Texture, Vortice.DXGI.Format.R8G8B8A8_UNorm)
                 };
 
                 return new MaterialInstance(initContext, textureProvider, description);

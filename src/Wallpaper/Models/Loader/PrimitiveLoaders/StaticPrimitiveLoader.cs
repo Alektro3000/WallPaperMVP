@@ -30,7 +30,8 @@ public class StaticPrimitiveLoader : PrimitiveLoader
         {
             return def;
         }
-        var matDef = new MaterialDefinition(InitContext, GetRootSignatureDefinition(), "models\\materials\\pbr", mat);
+        var depthDef = new DepthDefinition(InitContext, GetRootSignatureDefinition(), "models\\materials\\pbr", mat);
+        var matDef = new MaterialDefinition(InitContext, GetRootSignatureDefinition(), "models\\materials\\pbr", mat, depthDef);
         materialDefinitions[mat] = matDef;
         return matDef;
     }

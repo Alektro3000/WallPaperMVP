@@ -7,20 +7,21 @@ using Vortice.Direct3D12;
 using Vortice.DXGI;
 
 namespace Models.Material;
-public class MaterialDefinition : IDisposable
+
+public class DepthDefinition : IDisposable
 {
     public RootSignatureDefinition RootSignatureDefinition { get; }
     public ID3D12PipelineState PipelineState { get; }
     public MaterialPermutationKey PermutationKey { get; }
 
-    public MaterialDefinition(
+    public DepthDefinition(
         InitContext initContext,
         RootSignatureDefinition rootSignatureDefinition,
         String shaderPath,
         MaterialPermutationKey permutationKey
         )
     {
-        PermutationKey = permutationKey;
+        PermutationKey = permutationKey.withDepthPass(true);
         RootSignatureDefinition = rootSignatureDefinition;
         var device = initContext.GraphicsContext.Device;
         PipelineState = CreateGraphicPipeline(device, RootSignatureDefinition.RootSignature, shaderPath);
@@ -66,7 +67,7 @@ public class MaterialDefinition : IDisposable
             DepthStencilState = DepthStencilDescription.Default,
             DepthStencilFormat = Format.D32_Float,
             SampleDescription = SampleDescription.Default,
-            RenderTargetFormats = [Format.B8G8R8A8_UNorm]
+            RenderTargetFormats = []
         };
 
         return device.CreateGraphicsPipelineState(pipelineStateDescription);

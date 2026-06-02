@@ -5,6 +5,7 @@ cbuffer MaterialBuffer : register(b1)
     float3 albedoColor;
     int albedoTextureIndex;
     int normalTextureIndex;
+    int packedTextureIndex;
     uint flags;
 	float Metallic;
 	float Roughness;
@@ -13,6 +14,7 @@ cbuffer MaterialBuffer : register(b1)
 
 #define AlbedoTexFlag 1
 #define NormalTexFlag 2
+#define PackedTexFlag 4
 
 Texture2D TextureHeap[] : register(t0);
 SamplerState LinearSampler : register(s0);
@@ -100,9 +102,17 @@ VSOutput MAIN_VS(VSInput input)
     return o;
 }
 
+#ifdef DEPTHPASS
+
+void MAIN_PS(VSOutput input)
+{
+    
+}
+
+#else
+
 float4 MAIN_PS(VSOutput input, bool isFrontFace : SV_IsFrontFace) : SV_Target
 {
-
     
     float backSideFlip = isFrontFace ? 1 : -1;
     float3 normal = normalize(input.normal) * backSideFlip;
@@ -131,28 +141,24 @@ float4 MAIN_PS(VSOutput input, bool isFrontFace : SV_IsFrontFace) : SV_Target
     
     float3 worldPos = input.worldPosition;
     float3 V = normalize(CameraPos - worldPos);
-
-
-    if ((flags & 4) != 0 && (dot(normalWS, V) < 0))
-    {
-        return float4(normalWS*0.5+0.5,1);
-    }
-    
-    if ((flags & 8) != 0 && (dot(normal, V) < 0))
-    {
-        return float4(0,1,0,1);
-    }
-
     
     float3 baseColor = albedoColor;
     if ((flags & AlbedoTexFlag) != 0)
     {
         baseColor = TextureHeap[albedoTextureIndex].Sample(LinearSampler, input.UV).xyz;
     }
-
     float metallic = Metallic;
-    float alpha  = max(Roughness*Roughness, 0.001);
+    float alpha = Roughness * Roughness;
     float ambientIntensity = AmbientIntensity;
+
+    if((flags & PackedTexFlag) != 0)
+    {
+        float4 packed = TextureHeap[packedTextureIndex].Sample(LinearSampler, input.UV);
+        metallic = packed.b;
+        alpha = packed.g;
+    }
+
+    alpha = max(alpha, 0.001);
     
     float3 F0 = lerp(float3(0.04,0.04,0.04), baseColor, metallic);
 
@@ -181,3 +187,5 @@ float4 MAIN_PS(VSOutput input, bool isFrontFace : SV_IsFrontFace) : SV_Target
     }
     return float4(TonemapACES(hdr), 1.0f);
 }
+
+#endif
