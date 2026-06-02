@@ -1,10 +1,4 @@
-
-
-using System.Numerics;
-using System.Runtime.InteropServices;
-using Models;
 using Models.Material;
-using SharpGen.Runtime;
 using SharpGLTF.Schema2;
 
 namespace Models.Loader;
@@ -32,7 +26,7 @@ public abstract class PrimitiveLoader
     public abstract RootSignatureDefinition GetRootSignatureDefinition();
     public abstract int VertexSize {get;}
     public List<MaterialDefinition> GetMaterialDefinitions() => materialDefinitions.Values.ToList();
-    public abstract MaterialDefinition GetMaterialDefinition(SharpGLTF.Schema2.Material material);
+    public abstract MaterialDefinition GetMaterialDefinition(SharpGLTF.Schema2.Material? material);
     public abstract LoadingPrimitiveDescription LoadPrimitive(MeshPrimitive primitive);
 }
 
