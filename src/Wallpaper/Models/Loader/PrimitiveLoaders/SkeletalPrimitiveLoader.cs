@@ -6,6 +6,9 @@ using Models.Material;
 using ShaderConventions;
 using SharpGen.Runtime;
 using SharpGLTF.Schema2;
+
+
+namespace Models.Loader;
 public class SkeletalPrimitiveLoader : PrimitiveLoader
 {
     public SkeletalPrimitiveLoader(InitContext initContext, BindlessTextureProvider textureProvider) : base(initContext, textureProvider)
@@ -19,11 +22,12 @@ public class SkeletalPrimitiveLoader : PrimitiveLoader
         rootSignatureDefinition = new RootSignatureDefinition(InitContext, RootSignatureDefinitionType.SkeletalMesh, TextureProvider);
         return rootSignatureDefinition;
     }
-    public override MaterialDefinition GetMaterialDefinition(Material? material)
+    public override MaterialDefinition GetMaterialDefinition(SharpGLTF.Schema2.Material? material)
     {
         bool TwoSided = material?.DoubleSided ?? true;
         var permutationKey = new PermutationKey(true);
-        var mat = new MaterialPermutationKey(permutationKey, TwoSided);
+        var alpha = material?.Alpha.ConvertAlphaMode() ?? AlphaMode.OPAQUE;
+        var mat = new MaterialPermutationKey(permutationKey, TwoSided, alpha);
 
         if(materialDefinitions.TryGetValue(mat, out var def))
         {

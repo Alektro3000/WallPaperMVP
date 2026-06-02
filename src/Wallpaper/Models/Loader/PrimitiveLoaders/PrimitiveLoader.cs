@@ -7,6 +7,7 @@ using Models.Material;
 using SharpGen.Runtime;
 using SharpGLTF.Schema2;
 
+namespace Models.Loader;
 public record struct LoadingPrimitiveDescription
 (
     byte[] vertexes,
@@ -31,6 +32,21 @@ public abstract class PrimitiveLoader
     public abstract RootSignatureDefinition GetRootSignatureDefinition();
     public abstract int VertexSize {get;}
     public List<MaterialDefinition> GetMaterialDefinitions() => materialDefinitions.Values.ToList();
-    public abstract MaterialDefinition GetMaterialDefinition(Material material);
+    public abstract MaterialDefinition GetMaterialDefinition(SharpGLTF.Schema2.Material material);
     public abstract LoadingPrimitiveDescription LoadPrimitive(MeshPrimitive primitive);
 }
+
+
+public static class LoaderExtension
+{
+    public static AlphaMode ConvertAlphaMode(this SharpGLTF.Schema2.AlphaMode alphaMode)
+    {
+        return alphaMode switch
+                    {
+                        SharpGLTF.Schema2.AlphaMode.OPAQUE => AlphaMode.OPAQUE,
+                        SharpGLTF.Schema2.AlphaMode.MASK => AlphaMode.MASK,
+                        SharpGLTF.Schema2.AlphaMode.BLEND => AlphaMode.BLEND,
+                        _ => throw new NotImplementedException("Unknown alpha mode"),
+                    };
+    }
+} 

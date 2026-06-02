@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using Models;
+using Models.Loader;
 using Renderer.Commands;
 using Renderer.Resources;
 using Vortice.Direct3D12;

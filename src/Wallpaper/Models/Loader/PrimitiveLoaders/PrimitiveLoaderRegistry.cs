@@ -4,6 +4,7 @@ using Models;
 using Models.Material;
 using SharpGLTF.Schema2;
 
+namespace Models.Loader;
 public class PrimitiveLoaderRegistry(InitContext initContext, BindlessTextureProvider bindlessTextureProvider)
 {    
     PrimitiveLoader skeletalLoader = new SkeletalPrimitiveLoader(initContext, bindlessTextureProvider);

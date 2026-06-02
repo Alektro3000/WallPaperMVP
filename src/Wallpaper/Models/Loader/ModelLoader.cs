@@ -6,7 +6,7 @@ using SharpGLTF.Schema2;
 using Vortice.Direct3D12;
 using Vortice.Direct3D12.Debug;
 
-
+namespace Models.Loader;
 static class ModelLoader
 {
     static public Model loadModelFromGLTF(InitContext context, string path, string name)

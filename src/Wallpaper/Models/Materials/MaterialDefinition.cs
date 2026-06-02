@@ -15,6 +15,8 @@ public class MaterialDefinition : IDisposable
     public MaterialPermutationKey PermutationKey { get; }
     public DepthDefinition DepthDefinition { get; }
 
+    public AlphaMode alphaMode {get => PermutationKey.AlphaMode;}
+
     public MaterialDefinition(
         InitContext initContext,
         RootSignatureDefinition rootSignatureDefinition,
@@ -28,6 +30,7 @@ public class MaterialDefinition : IDisposable
         var device = initContext.GraphicsContext.Device;
         PipelineState = CreateGraphicPipeline(device, RootSignatureDefinition.RootSignature, shaderPath);
         DepthDefinition = depthDefinition;
+        
     }
 
     public void Bind(FrameResource frameResource)
@@ -70,8 +73,14 @@ public class MaterialDefinition : IDisposable
             SampleMask = uint.MaxValue,
             PrimitiveTopologyType = PrimitiveTopologyType.Triangle,
             RasterizerState = RasterizerState,
-            BlendState = BlendDescription.Opaque,
-            DepthStencilState = new DepthStencilDescription(true, DepthWriteMask.All, ComparisonFunction.Equal),
+            BlendState = alphaMode switch
+            {
+                AlphaMode.OPAQUE => BlendDescription.Opaque,
+                AlphaMode.MASK => BlendDescription.Opaque,
+                AlphaMode.BLEND => BlendDescription.AlphaBlend,
+                _ => throw new NotImplementedException("Unknown alpha mode"),
+            },
+            DepthStencilState = new DepthStencilDescription(true, DepthWriteMask.All, ComparisonFunction.LessEqual),
             DepthStencilFormat = Format.D32_Float,
             SampleDescription = SampleDescription.Default,
             RenderTargetFormats = [Format.B8G8R8A8_UNorm]

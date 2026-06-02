@@ -143,9 +143,12 @@ float4 MAIN_PS(VSOutput input, bool isFrontFace : SV_IsFrontFace) : SV_Target
     float3 V = normalize(CameraPos - worldPos);
     
     float3 baseColor = albedoColor;
+    float colorAlpha = 1;
     if ((flags & AlbedoTexFlag) != 0)
     {
-        baseColor = TextureHeap[albedoTextureIndex].Sample(LinearSampler, input.UV).xyz;
+        float4 color = TextureHeap[albedoTextureIndex].Sample(LinearSampler, input.UV);
+        baseColor = color.xyz;
+        colorAlpha = color.w;
     }
     float metallic = Metallic;
     float alpha = Roughness * Roughness;
@@ -185,7 +188,7 @@ float4 MAIN_PS(VSOutput input, bool isFrontFace : SV_IsFrontFace) : SV_Target
             Lights[i]
         );
     }
-    return float4(TonemapACES(hdr), 1.0f);
+    return float4(TonemapACES(hdr), colorAlpha);
 }
 
 #endif

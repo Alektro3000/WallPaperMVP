@@ -29,12 +29,6 @@ public sealed class MaterialInstanceLoader
                     Name = mat.Name,
                     DoubleSided = mat.DoubleSided,
                     AlphaCutoff = mat.AlphaCutoff,
-                    AlphaMode = mat.Alpha switch
-                    {
-                        AlphaMode.OPAQUE => "OPAQUE",
-                        AlphaMode.MASK => "Mask",
-                        AlphaMode.BLEND => "Blend",
-                    },
                     BaseColorFactor = GetBaseColor(mat),
                     BaseColorTexture = GetBaseColorTexture(mat),
                     NormalTexture = textureLoader.GetTextureFromGltfTexture(mat.FindChannel("Normal")?.Texture, Vortice.DXGI.Format.R8G8B8A8_UNorm),

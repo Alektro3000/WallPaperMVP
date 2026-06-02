@@ -3,6 +3,14 @@ using System.Numerics;
 using Renderer.FrameManagement;
 
 namespace Models;
+
+public enum AlphaMode
+{
+    OPAQUE,
+    MASK,
+    BLEND
+}
+
 public class MaterialDescription
 {
     public string Name = "";
@@ -11,16 +19,5 @@ public class MaterialDescription
     public Texture? NormalTexture;
     public Texture? PackedTexture;
     public bool DoubleSided;
-    public string AlphaMode = "OPAQUE";
     public float AlphaCutoff = 0.5f;
-
-    public static readonly MaterialDescription DefaultMaterial = new()
-    {
-        Name = "__DefaultMaterial",
-        BaseColorFactor = new Vector4(1, 1, 1, 1),
-        BaseColorTexture = null,
-        DoubleSided = false,
-        AlphaMode = "OPAQUE",
-        AlphaCutoff = 0.5f
-    };
 }

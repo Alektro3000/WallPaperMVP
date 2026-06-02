@@ -43,6 +43,7 @@ public sealed class Model : IDisposable
                 MaterialDefinition = materialGroup.Key,
                 Nodes = [.. materialGroup.GroupBy(x => x.node, x => x.primitive)]
             })
+            .OrderBy(x => x.MaterialDefinition.alphaMode)
             .ToList();
     }
     public void Dispose()
@@ -137,13 +138,18 @@ public sealed class Model : IDisposable
         RenderMesh(frameResource, spotLightConstants, vp, cameraPos, false);
     }
 
-    private void RenderMesh(FrameResource frameResource, LightConstant[] spotLightConstants, Matrix4x4 vp, Vector3 cameraPosition, bool bindDepthPass = false)
+    private void RenderMesh(FrameResource frameResource, LightConstant[] spotLightConstants, Matrix4x4 vp, Vector3 cameraPosition, bool DepthPass = false)
     {
         
         var set = frameResource.Settings.GetSettings<Settings>();
         foreach (var MaterialDefinitionGrouping in PrimitivesToRender)
         {
             MaterialDefinition MaterialDefinition = MaterialDefinitionGrouping.MaterialDefinition;
+            
+            //Skip depth pass if material is transparent
+            if (MaterialDefinition.alphaMode == AlphaMode.BLEND && DepthPass)
+                continue;
+
             var cmd = frameResource.CommandList;
             if (MaterialDefinition.PermutationKey.TwoSided && set.showDoubleSided <= 0)
             {
@@ -153,7 +159,7 @@ public sealed class Model : IDisposable
             {
                 continue;
             }
-            if(bindDepthPass)
+            if(DepthPass)
             {
                 MaterialDefinition.BindDepthPass(frameResource);
             }

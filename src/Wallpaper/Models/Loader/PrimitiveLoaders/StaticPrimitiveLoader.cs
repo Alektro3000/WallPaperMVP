@@ -7,6 +7,8 @@ using Models.Material;
 using ShaderConventions;
 using SharpGen.Runtime;
 using SharpGLTF.Schema2;
+
+namespace Models.Loader;
 public class StaticPrimitiveLoader : PrimitiveLoader
 {
     public StaticPrimitiveLoader(InitContext initContext, BindlessTextureProvider textureProvider) : base(initContext, textureProvider)
@@ -20,11 +22,12 @@ public class StaticPrimitiveLoader : PrimitiveLoader
         rootSignatureDefinition = new RootSignatureDefinition(InitContext, RootSignatureDefinitionType.StaticMesh, TextureProvider);
         return rootSignatureDefinition;
     }
-    public override MaterialDefinition GetMaterialDefinition(Material? material)
+    public override MaterialDefinition GetMaterialDefinition(SharpGLTF.Schema2.Material? material)
     {
         bool TwoSided = material?.DoubleSided ?? true;
         var permutationKey = new PermutationKey(false);
-        var mat = new MaterialPermutationKey(permutationKey, TwoSided);
+        var alpha = material?.Alpha.ConvertAlphaMode() ?? AlphaMode.OPAQUE;
+        var mat = new MaterialPermutationKey(permutationKey, TwoSided, alpha);
 
         if(materialDefinitions.TryGetValue(mat, out var def))
         {
