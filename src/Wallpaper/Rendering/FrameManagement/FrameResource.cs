@@ -20,7 +20,7 @@ public sealed class FrameResource : IDisposable
     private ConstantBinding[] ConstantBindings;
 
     public FrameMetric FrameMetric;
-    public required SystemSettings Settings;
+    public SystemSettings Settings;
 
     internal ulong FenceValue;
 
