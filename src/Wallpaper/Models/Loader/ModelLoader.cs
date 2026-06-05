@@ -9,7 +9,7 @@ using Vortice.Direct3D12.Debug;
 namespace Models.Loader;
 static class ModelLoader
 {
-    static public Model loadModelFromGLTF(InitContext context, string path, string name)
+    static public Model loadModelFromGLTF(InitContext initContext, string path, string name)
     {
         var absolute = Path.Combine("resources", path);
         ReadSettings settings = new ReadSettings()
@@ -18,31 +18,25 @@ static class ModelLoader
         };
         var gltf = ModelRoot.Load(Path.Combine(absolute, name), settings);
 
-        TextureLoader textureLoader = new(context, absolute);
-        BindlessTextureProvider bindlessTextures = new(context);
+        TextureLoader textureLoader = new(initContext, absolute);
+        BindlessTextureProvider bindlessTextures = new(initContext);
 
-        // var staticMaterialDefinition = new StaticMaterialDefinition(
-        //     context,
-        //     staticRootSignature,
-        //     "models\\materials\\static.hlsl");
-
-
-        PrimitiveLoaderRegistry primitiveLoaderRegistry = new(context, bindlessTextures);
+        PrimitiveLoaderRegistry primitiveLoaderRegistry = new(initContext, bindlessTextures);
         MaterialInstanceLoader materialLoader = new(
-            context,
+            initContext,
             textureLoader,
             bindlessTextures);
 
         var materialMap = materialLoader.Import(gltf);
-        var (meshMap, meshData) = ImportMeshes(context, gltf, materialMap, primitiveLoaderRegistry);
+        var (meshMap, meshData) = ImportMeshes(initContext, gltf, materialMap, primitiveLoaderRegistry);
 
 
         var nodes = ImportNodes(gltf, meshMap);
         var animations = ImportAnimations(gltf, nodes);
 
-        var skins = ImportSkins(context, gltf, nodes);
+        var skins = ImportSkins(initContext, gltf, nodes);
 
-        var model = new Model(context)
+        var model = new Model(initContext)
         {
             Materials = materialMap.ToList(),
             MaterialDefinitions = primitiveLoaderRegistry.GetMaterialDefinitions(),
@@ -56,7 +50,7 @@ static class ModelLoader
             RootNodes = ImportSceneRoots(gltf, nodes),
             TextureLoader = textureLoader,
             Camera = ImportCamera(gltf, nodes),
-            Lights = ImportLights(gltf, nodes)
+            Lights = ImportLights(initContext, bindlessTextures, gltf, nodes)
         };
         model.PostInit();
         return model;
@@ -191,7 +185,7 @@ static class ModelLoader
             if (0 <= materialId && materialId < materialMap.Count)
                 material = materialMap[materialId];
         }
-        
+
 
         return new Primitive()
         {
@@ -263,13 +257,13 @@ static class ModelLoader
             .ToList();
     }
 
-    static private List<PrincipledLight> ImportLights(ModelRoot gltf, List<Models.Node> nodes)
+    static private List<PrincipledLight> ImportLights(InitContext initContext, BindlessTextureProvider textureProvider, ModelRoot gltf, List<Models.Node> nodes)
     {
         return gltf.LogicalPunctualLights
             .Select(PrincipledLight (PunctualLight x) => 
             {
                 if(x.LightType == PunctualLightType.Spot)
-                    return new SpotLight()
+                    return new SpotLight(initContext, textureProvider)
                     {
                         OuterConeAngle = x?.OuterConeAngle ?? (float)Math.PI/2f,
                         InnerConeAngle = x?.InnerConeAngle ?? (float)Math.PI/2f,

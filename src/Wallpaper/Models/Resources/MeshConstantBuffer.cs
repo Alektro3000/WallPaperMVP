@@ -15,9 +15,4 @@ public struct MeshConstantBuffer
 {
     public Matrix4x4 inverseModelTransform;
     public Matrix4x4 modelTransform;
-    public Matrix4x4 viewTransform;
-    public LightConstantBufferHelper lightConstants;
-    public Vector3 CameraPosition;
-    public int LightCount;
-    public float NormalScale;
 }

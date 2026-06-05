@@ -20,6 +20,8 @@ public class Settings : ISettings
     [UiRange(0, 1, 1)]
     public float showNormal;
     [UiRange(0, 1, 1)]
+    public float showShadows;
+    [UiRange(0, 1, 1)]
     public float showDoubleSided;
     [UiRange(0, 1, 1)]
     public float showSingleSided;

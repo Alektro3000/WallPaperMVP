@@ -1,15 +1,20 @@
 #include "pbrBase.hlsli"
 
-cbuffer ModelConstants : register(b0)
+cbuffer SceneConstants : register(b0)
 {
-    float4x4 WorldToModelTransform;
-    float4x4 ModelTransform;
     float4x4 ViewProjection;
     LightDescription Lights[8];
 	float3 CameraPos;
 	int LightCount;
 	float NormalScale;
 }
+
+cbuffer ModelConstants : register(b2)
+{
+    float4x4 WorldToModelTransform;
+    float4x4 ModelTransform;
+}
+
 
 inline float3 ObjectToWorldNormal( in float3 norm ) {
 	// Multiply by transposed inverse matrix,

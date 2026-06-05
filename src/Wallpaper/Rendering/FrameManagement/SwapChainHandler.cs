@@ -1,6 +1,7 @@
 
 using Renderer.Core;
 using Renderer.Descriptors;
+using SharpGen.Runtime;
 using Vortice.Direct3D12;
 using Vortice.DXGI;
 using Vortice.Mathematics;
@@ -29,8 +30,8 @@ public sealed class SwapChainHandler : IDisposable
         swapChain = CreateSwapChain(width, height, frameCount, context, hwnd);
         rtvHeap = CreateRTVHeap(context.Device, frameCount);
 
-        viewport = new Viewport(0, 0, width, height, 0.0f, 1.0f);
-        scissor = new RectI(0, 0, width, height);
+        viewport = new Viewport(width, height);
+        scissor = new RectI(width, height);
     }
 
     private ID3D12DescriptorHeap CreateRTVHeap(ID3D12Device device, uint frameCount)
@@ -85,12 +86,7 @@ public sealed class SwapChainHandler : IDisposable
     
     public static IDXGISwapChain3 CreateSwapChain(int width, int height, uint frameCount, GraphicsContext context, nint hwnd)
     {
-
-#if DEBUGDX
-        using IDXGIFactory4 factory = DXGI.CreateDXGIFactory2<IDXGIFactory4>(true);
-#else
-        using IDXGIFactory4 factory = DXGI.CreateDXGIFactory2<IDXGIFactory4>(false);
-#endif
+        using IDXGIFactory4 factory = CreateFactory();
 
 #if TRANSPARENT
         var swapChainDesc = new SwapChainDescription1
@@ -169,5 +165,21 @@ public sealed class SwapChainHandler : IDisposable
 
 #endif
 
+    }
+
+    private static IDXGIFactory4 CreateFactory()
+    {
+#if DEBUGDX
+        try
+        {
+            return DXGI.CreateDXGIFactory2<IDXGIFactory4>(true);
+        }
+        catch (SharpGenException)
+        {
+            return DXGI.CreateDXGIFactory2<IDXGIFactory4>(false);
+        }
+#else
+        return DXGI.CreateDXGIFactory2<IDXGIFactory4>(false);
+#endif
     }
 }

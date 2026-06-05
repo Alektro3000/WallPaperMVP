@@ -50,7 +50,7 @@ public class MaterialInstance
         ConstantKey = initContext.ConstantBufferRegistry.Reserve<MaterialInfo>("Material Constant Buffer");
     }
 
-    public void Bind(FrameResource frameResource)
+    public void Bind(FrameResource frameResource, uint slotIndex)
     {
         var cmd = frameResource.CommandList;
         ref var materialConstantBuffer = ref frameResource.GetBufferConstantRef(ConstantKey);
@@ -62,6 +62,8 @@ public class MaterialInstance
         flags |= (NormalTexture != null) ? 2u : 0;
         flags |= (PackedTexture != null) ? 4u : 0;
         flags |= (settings.showNormal > 0) ? 8u : 0;
+        flags |= (settings.showUV > 0) ? 16u : 0;
+        flags |= (settings.showShadows > 0) ? 32u : 0;
         materialInfo.flags = flags;
         materialInfo.AlbedoColor = AlbedoColor ?? Vector3.Zero;
         materialInfo.albedoTextureIndex = TextureProvider.GetOrCreateBindlessIndex(AlbedoTexture);
@@ -73,6 +75,6 @@ public class MaterialInstance
 
         materialConstantBuffer = materialInfo;
 
-        cmd.SetGraphicsRootConstantBufferView(1, frameResource.GetGPUVirtualAddress(ConstantKey));
+        cmd.SetGraphicsRootConstantBufferView(slotIndex, frameResource.GetGPUVirtualAddress(ConstantKey));
     }
 }

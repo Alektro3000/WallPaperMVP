@@ -64,7 +64,7 @@ public class DepthDefinition : IDisposable
             PrimitiveTopologyType = PrimitiveTopologyType.Triangle,
             RasterizerState = RasterizerState,
             BlendState = BlendDescription.Opaque,
-            DepthStencilState = DepthStencilDescription.Default,
+            DepthStencilState = DepthStencilDescription.ReverseZ,
             DepthStencilFormat = Format.D32_Float,
             SampleDescription = SampleDescription.Default,
             RenderTargetFormats = []

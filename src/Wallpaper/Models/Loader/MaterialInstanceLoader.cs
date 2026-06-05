@@ -40,7 +40,7 @@ public sealed class MaterialInstanceLoader
         ).ToList();
     }
 
-    private Texture? GetBaseColorTexture(SharpGLTF.Schema2.Material mat)
+    private Renderer.Resources.Texture? GetBaseColorTexture(SharpGLTF.Schema2.Material mat)
     {
         var mmdTexture = textureLoader.GetTextureFromFile(mat.Extras?["mmd_material"]?["texture_rel_path"]?.ToString(), Vortice.DXGI.Format.R8G8B8A8_UNorm_SRgb);
         if (mmdTexture != null)

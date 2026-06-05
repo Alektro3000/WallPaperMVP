@@ -74,7 +74,7 @@ public sealed class FrameResource : IDisposable
         CommandList.ClearDepthStencilView(
             DepthStencilHandle.Cpu,
             ClearFlags.Depth,
-            1.0f,
+            0.0f,
             0);
     }
 }

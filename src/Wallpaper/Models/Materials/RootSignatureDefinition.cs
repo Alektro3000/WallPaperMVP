@@ -31,21 +31,29 @@ public sealed class RootSignatureDefinition : IDisposable
     public void Bind(ID3D12GraphicsCommandList cmd)
     {
         cmd.SetGraphicsRootSignature(RootSignature);
-        cmd.SetGraphicsRootDescriptorTable(2, TextureProvider.GetBindlessTableStart());
+        cmd.SetGraphicsRootDescriptorTable(3, TextureProvider.GetBindlessTableStart());
     }
 
     private static ID3D12RootSignature CreateRootSignature(ID3D12Device device, RootSignatureDefinitionType type)
     {
         var rootParameters = new List<RootParameter1>
         {
+            //Scene constants
             new(
                 RootParameterType.ConstantBufferView,
                 new RootDescriptor1(0, 0),
                 ShaderVisibility.All),
+            //Material constants
             new(
                 RootParameterType.ConstantBufferView,
                 new RootDescriptor1(1, 0),
                 ShaderVisibility.Pixel),
+            //Mesh constants
+            new(
+                RootParameterType.ConstantBufferView,
+                new RootDescriptor1(2, 0),
+                ShaderVisibility.All),
+            //Textures
             new(
                 new RootDescriptorTable1(
                     new DescriptorRange1(DescriptorRangeType.ShaderResourceView, uint.MaxValue, 0)),
@@ -54,10 +62,11 @@ public sealed class RootSignatureDefinition : IDisposable
 
         if (type == RootSignatureDefinitionType.SkeletalMesh)
         {
+            //Skeletal mesh joints
             rootParameters.Add(
                 new RootParameter1(
                     RootParameterType.ConstantBufferView,
-                    new RootDescriptor1(2, 0),
+                    new RootDescriptor1(3, 0),
                     ShaderVisibility.Vertex));
         }
 
@@ -70,16 +79,38 @@ public sealed class RootSignatureDefinition : IDisposable
             ComparisonFunction = ComparisonFunction.Never,
             MaxLOD = float.MaxValue
         };
+        
+        var shadowSampler = new StaticSamplerDescription(ShaderVisibility.All, 1, 0)
+        {
+            Filter = Filter.MinMagMipPoint,
+            AddressU = TextureAddressMode.Clamp,
+            AddressV = TextureAddressMode.Clamp,
+            AddressW = TextureAddressMode.Clamp,
+            ComparisonFunction = ComparisonFunction.Never,
+            MaxLOD = float.MaxValue
+        };
 
         return ShaderLibrary.CreateRootSignature(
             device,
             rootParameters.ToArray(),
-            [staticSampler],
+            [staticSampler, shadowSampler],
             RootSignatureFlags.AllowInputAssemblerInputLayout);
     }
     
     public uint? SkeletalMeshBind()
     {
-        return Type == RootSignatureDefinitionType.SkeletalMesh ? 3u : null;
+        return Type == RootSignatureDefinitionType.SkeletalMesh ? 4u : null;
+    }
+    public uint SceneBind()
+    {
+        return 0u;
+    }
+    public uint MeshBind()
+    {
+        return 2u;
+    }
+    public uint MaterialBind()
+    {
+        return 1u;
     }
 }

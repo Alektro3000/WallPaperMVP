@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 [StructLayout(LayoutKind.Sequential)]
 public struct LightConstant
 {   
+    public required Matrix4x4 LightViewProjection;
     public required Vector3 LightPosition;                  // xyz position
     public required float InvRadius;                        //w = 1/radius
     public required Vector3 LightColor;                     // rgb color/intensity

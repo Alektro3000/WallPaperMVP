@@ -26,6 +26,8 @@ public sealed class Model(InitContext initContext) : IDisposable
     public List<PrincipledLight> Lights = [];
     public required TextureLoader TextureLoader;
     public float rotationDelta = 0;
+    private ConstantBufferKey<SceneConstantBuffer> sceneConstantBufferKey =
+        initContext.ConstantBufferRegistry.Reserve<SceneConstantBuffer>("MainPassSceneConstantBuffer");
 
     public List<MaterialGrouping> PrimitivesToRender = [];
 
@@ -46,23 +48,14 @@ public sealed class Model(InitContext initContext) : IDisposable
     }
     public void Dispose()
     {
-        foreach (var skin in Skins)
-        {
-            skin.Dispose();
-        }
-        foreach (var mesh in Meshes)
-        {
-            mesh.Dispose();
-        }
+        Skins?.ForEach(x => x.Dispose());
+        Meshes?.ForEach(x => x.Dispose());
+        Lights?.ForEach(x => x.Dispose());
         TextureLoader.Dispose();
-        foreach (var materialDefinition in MaterialDefinitions)
-        {
-            materialDefinition.Dispose();
-        }
-        foreach (var rootSignatureDefinition in RootSignatureDefinitions)
-        {
-            rootSignatureDefinition.Dispose();
-        }
+
+        MaterialDefinitions?.ForEach(x => x.Dispose());
+        RootSignatureDefinitions?.ForEach(x => x.Dispose());
+
         MeshBuffer.Dispose();
     }
 
@@ -73,30 +66,44 @@ public sealed class Model(InitContext initContext) : IDisposable
         {
             i.Skin?.UpdateJointsPositions(frameResource, i.GlobalMatrix);
         }
-        
+
         var spotLightConstants = ProcessLight(frameResource);
 
-
-        frameResource.BindRenderTarget();
         MainPass(frameResource, spotLightConstants);
     }
     public LightConstant[] ProcessLight(FrameResource frameResource)
     {
         var set = frameResource.Settings.GetSettings<Settings>();
 
-        return Lights
-            .Select(x =>
-            {
-                var lightConstant = x.GetLightConstant();
-                lightConstant.LightColor *= set.Intensity;
-                return lightConstant;
-            })
-            .Take(8).ToArray();
+        LightConstant[] spotLightConstants = new LightConstant[Math.Min(Lights.Count, 8)];
+
+        for (int i = 0; i < spotLightConstants.Length; i++)
+        {
+            var light = Lights[i];
+            var lightConstant = light.GetLightConstant();
+            lightConstant.LightColor *= set.Intensity;
+
+            light.BindRenderTarget(frameResource, 0);
+
+            var sceneConstantBuffer = GenerateSceneConstantBuffer(
+                frameResource, spotLightConstants, lightConstant.LightViewProjection, lightConstant.LightPosition);
+
+            var sceneConstantBufferKey = light.GetSceneConstantKey(0);
+            
+            frameResource.GetBufferConstantRef(sceneConstantBufferKey) = sceneConstantBuffer;
+
+            RenderMesh(frameResource, sceneConstantBufferKey, true);
+
+            light.UnbindRenderTarget(frameResource, 0);
+
+            spotLightConstants[i] = lightConstant;
+        }
+
+        return spotLightConstants;
     }
 
     public void MainPass(FrameResource frameResource, LightConstant[] spotLightConstants)
     {
-
         var set = frameResource.Settings.GetSettings<Settings>();
 
         if (set.showConcreteLight != -1)
@@ -114,7 +121,7 @@ public sealed class Model(InitContext initContext) : IDisposable
             ? inv
             : Matrix4x4.Identity;
 
-        if (set.useFreeCamera > 0)
+        if (true)
         {
             cameraPos = set.centerPos + Vector3.Transform(set.cameraPos, rotation);
             viewMatrix = Matrix4x4.CreateLookAt(
@@ -123,32 +130,66 @@ public sealed class Model(InitContext initContext) : IDisposable
                 cameraUpVector: Vector3.UnitY);
         }
 
-        var projection =
-            Matrix4x4.CreatePerspectiveFieldOfView(
-                fieldOfView: Camera.yfov,
-                aspectRatio: frameResource.FrameMetric.ratio,
-                nearPlaneDistance: Camera.znear,
-                farPlaneDistance: Camera.zfar);
+        var projection = Matrix4x4Ex.CreatePerspectiveFieldOfViewReversedZ(
+            fieldOfView: Camera.yfov,
+            aspectRatio: frameResource.FrameMetric.ratio,
+            nearPlaneDistance: Camera.znear,
+            farPlaneDistance: Camera.zfar
+        );
 
         var vp = viewMatrix * projection;
 
-        RenderMesh(frameResource, spotLightConstants, vp, cameraPos, true);
-        RenderMesh(frameResource, spotLightConstants, vp, cameraPos, false);
+        var cmd = frameResource.CommandList;
+
+        ref var sceneConstantBuffer = ref frameResource.GetBufferConstantRef(sceneConstantBufferKey);
+        if (set.useFreeCamera > 0)
+        {
+            var light = spotLightConstants[0];
+            sceneConstantBuffer = GenerateSceneConstantBuffer(frameResource, spotLightConstants, light.LightViewProjection, light.LightPosition);
+        }
+        else
+        {
+            sceneConstantBuffer = GenerateSceneConstantBuffer(frameResource, spotLightConstants, vp, cameraPos);
+        }
+
+        frameResource.BindRenderTarget();
+        
+        //RenderMesh(frameResource, true);
+        RenderMesh(frameResource, sceneConstantBufferKey, false);
     }
 
-    private void RenderMesh(FrameResource frameResource, LightConstant[] spotLightConstants, Matrix4x4 vp, Vector3 cameraPosition, bool DepthPass = false)
+    private SceneConstantBuffer GenerateSceneConstantBuffer(FrameResource frameResource, LightConstant[] spotLightConstants, Matrix4x4 vp, Vector3 cameraPosition)
     {
-        
         var set = frameResource.Settings.GetSettings<Settings>();
+
+        var sceneConstantBuffer = new SceneConstantBuffer
+        {
+            viewTransform = vp,
+            CameraPosition = cameraPosition,
+            LightCount = spotLightConstants.Length,
+            NormalScale = set.NormalScale
+        };
+
+        for (int i = 0; i < spotLightConstants.Length; i++)
+            sceneConstantBuffer.lightConstants[i] = spotLightConstants[i];
+        
+        return sceneConstantBuffer;    
+    }
+
+    private void RenderMesh(FrameResource frameResource, ConstantBufferKey<SceneConstantBuffer> sceneConstantBufferKey, bool DepthPass = false)
+    {
+
+        var set = frameResource.Settings.GetSettings<Settings>();
+        var cmd = frameResource.CommandList;
+
         foreach (var MaterialDefinitionGrouping in PrimitivesToRender)
         {
             MaterialDefinition MaterialDefinition = MaterialDefinitionGrouping.MaterialDefinition;
-            
+
             //Skip depth pass if material is transparent
             if (MaterialDefinition.alphaMode == AlphaMode.BLEND && DepthPass)
                 continue;
 
-            var cmd = frameResource.CommandList;
             if (MaterialDefinition.PermutationKey.TwoSided && set.showDoubleSided <= 0)
             {
                 continue;
@@ -157,7 +198,7 @@ public sealed class Model(InitContext initContext) : IDisposable
             {
                 continue;
             }
-            if(DepthPass)
+            if (DepthPass)
             {
                 MaterialDefinition.BindDepthPass(frameResource);
             }
@@ -165,6 +206,10 @@ public sealed class Model(InitContext initContext) : IDisposable
             {
                 MaterialDefinition.Bind(frameResource);
             }
+
+            cmd.SetGraphicsRootConstantBufferView(MaterialDefinition.RootSignatureDefinition.SceneBind(), 
+                    frameResource.GetGPUVirtualAddress(sceneConstantBufferKey));
+            
             foreach (var nodeGrouping in MaterialDefinitionGrouping.Nodes)
             {
                 Node node = nodeGrouping.Key;
@@ -175,14 +220,10 @@ public sealed class Model(InitContext initContext) : IDisposable
 
                 meshBuffer.inverseModelTransform = Matrix4x4.Transpose(meshBuffer.inverseModelTransform);
                 meshBuffer.modelTransform = node.GlobalMatrix;
-                meshBuffer.viewTransform = vp;
-                meshBuffer.CameraPosition = cameraPosition;
-                meshBuffer.NormalScale = set.NormalScale;
-                meshBuffer.LightCount = spotLightConstants.Length;
-                for (int i = 0; i < spotLightConstants.Length; i++)
-                    meshBuffer.lightConstants[i] = spotLightConstants[i];
 
                 frameResource.GetBufferConstantRef(mesh.constantBufferKey) = meshBuffer;
+                cmd.SetGraphicsRootConstantBufferView(MaterialDefinition.RootSignatureDefinition.MeshBind(), 
+                        frameResource.GetGPUVirtualAddress(mesh.constantBufferKey));
 
 
                 IEnumerable<Primitive> selected = mesh.Primitives;
@@ -194,11 +235,10 @@ public sealed class Model(InitContext initContext) : IDisposable
                         continue;
                     }
 
-                    primitive.Material.Bind(frameResource);
+                    primitive.Material.Bind(frameResource, MaterialDefinition.RootSignatureDefinition.MaterialBind());
 
                     node.Skin?.BindSkin(frameResource, primitive.MaterialDefinition.RootSignatureDefinition.SkeletalMeshBind());
 
-                    cmd.SetGraphicsRootConstantBufferView(0, frameResource.GetGPUVirtualAddress(mesh.constantBufferKey));
 
                     cmd.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
                     cmd.IASetVertexBuffers(0, primitive.VertexBufferView);
@@ -212,7 +252,7 @@ public sealed class Model(InitContext initContext) : IDisposable
     public record struct MaterialGrouping(MaterialDefinition MaterialDefinition, List<IGrouping<Node, Primitive>> Nodes)
     {
     }
-    
+
     private void updateNodePositions(FrameResource frameResource)
     {
         foreach (var i in Nodes)

@@ -1,4 +1,6 @@
 using System.Numerics;
+using Renderer.FrameManagement;
+using Renderer.Resources;
 
 namespace Models.Lights;
 public class PointLight : PrincipledLight
@@ -9,11 +11,24 @@ public class PointLight : PrincipledLight
     public float Radius;
     public float? SourceRadius;
     public float? SoftSourceRadius;
-    
+
+    public override void BindRenderTarget(FrameResource frameResource, int shadowDescriptorIndex)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override void Dispose()
+    {
+        
+    }
+
     public override LightConstant GetLightConstant()
     {
         return new LightConstant()
         {
+            
+            LightViewProjection = GetLightViewProjection(),
+            
             // xyz = world position
             LightPosition = Node.GlobalTransform.Translation,
             
@@ -49,6 +64,21 @@ public class PointLight : PrincipledLight
             SoftSourceRadius = SoftSourceRadius ?? 0.0f,
         };
     }
-    
+
+    public override Matrix4x4 GetLightViewProjection()
+    {
+        throw new NotImplementedException();
+    }
+
+    public override ConstantBufferKey<SceneConstantBuffer> GetSceneConstantKey(int shadowDescriptorIndex)
+    {
+        throw new NotImplementedException();
+    }
+
     public override int GetShadowDescriptorCount() => 6;
+
+    public override void UnbindRenderTarget(FrameResource frameResource, int shadowDescriptorIndex)
+    {
+        throw new NotImplementedException();
+    }
 }

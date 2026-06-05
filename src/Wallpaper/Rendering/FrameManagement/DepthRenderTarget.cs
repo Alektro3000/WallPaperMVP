@@ -1,14 +1,20 @@
 using Renderer.Core;
 using Renderer.Descriptors;
+using Renderer.Resources;
 using Vortice.Direct3D12;
 using Vortice.DXGI;
 
 namespace Renderer.FrameManagement;
-public sealed class DepthRenderTarget : IDisposable
+
+public sealed class DepthRenderTarget : Texture
 {
     public readonly ResourceDescriptor Descriptor;
     public readonly ID3D12Resource DepthResource;
     private readonly ID3D12DescriptorHeap dsvHeap;
+    private readonly bool shaderReadable;
+
+    private int Width;
+    private int Height;
 
     private ID3D12DescriptorHeap CreateDSVHeap(ID3D12Device device)
     {
@@ -19,30 +25,48 @@ public sealed class DepthRenderTarget : IDisposable
             0));
     }
 
-    public DepthRenderTarget(GraphicsContext context, int width, int height)
+    public DepthRenderTarget(GraphicsContext context, int width, int height, bool shaderReadable = false)
     {
+        Width = width;
+        Height = height;
+        this.shaderReadable = shaderReadable;
+
         var device = context.Device;
-        
+
         dsvHeap = CreateDSVHeap(device);
         Descriptor = new ResourceDescriptor(
             dsvHeap.GetCPUDescriptorHandleForHeapStart(),
             dsvHeap.GetGPUDescriptorHandleForHeapStart());
 
-        DepthResource = CreateDepthBuffer(device, width, height);
-        
+        DepthResource = CreateDepthBuffer(device, width, height, shaderReadable);
 
-        device.CreateDepthStencilView(DepthResource, null, Descriptor.Cpu);
+
+        device.CreateDepthStencilView(DepthResource,
+            new DepthStencilViewDescription()
+            {
+                Format = Format.D32_Float,
+                ViewDimension = DepthStencilViewDimension.Texture2D
+            }, Descriptor.Cpu);
     }
-    private const Format DepthFormat = Format.D32_Float;
 
-    
+    public string Name => "DepthMap";
+
+    public ID3D12Resource TextureResource => DepthResource;
+
+    public Format Format => shaderReadable ? Format.R32_Float : Format.D32_Float;
+
+    int Texture.Width => Width;
+
+    int Texture.Height => Height;
+
     public static ID3D12Resource CreateDepthBuffer(
         ID3D12Device device,
         int width,
-        int height)
+        int height,
+        bool shaderReadable = false)
     {
         var depthDesc = ResourceDescription.Texture2D(
-            DepthFormat,
+            shaderReadable ? Format.R32_Typeless : Format.D32_Float,
             (uint)width,
             (uint)height,
             arraySize: 1,
@@ -51,17 +75,19 @@ public sealed class DepthRenderTarget : IDisposable
             sampleQuality: 0,
             flags: ResourceFlags.AllowDepthStencil);
 
-        var clearValue = new ClearValue
-        {
-            Format = DepthFormat,
-            DepthStencil = new DepthStencilValue(1.0f, 0)
-        };
+        ClearValue? clearValue = shaderReadable
+            ? null
+            : new ClearValue
+            {
+                Format = Format.D32_Float,
+                DepthStencil = new DepthStencilValue(0.0f, 0)
+            };
 
         return device.CreateCommittedResource(
             new HeapProperties(HeapType.Default),
             HeapFlags.None,
             depthDesc,
-            ResourceStates.DepthWrite,
+            shaderReadable ? ResourceStates.PixelShaderResource : ResourceStates.DepthWrite,
             clearValue);
     }
 

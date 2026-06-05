@@ -1,6 +1,7 @@
 
 using System.Numerics;
 using Renderer.FrameManagement;
+using Renderer.Resources;
 
 namespace Models;
 

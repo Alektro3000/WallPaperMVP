@@ -2,6 +2,7 @@
 
 struct LightDescription
 {
+    float4x4 LightViewProjMatrix;                   // for shadow mapping
     float3 lightPos;
     float invRadius;
     float4 LightColorAndFalloffExponent;   // rgb color/intensity, w = falloff
@@ -15,7 +16,7 @@ struct LightDescription
 #define PI 3.1415926
 
 float EvaluateSpotAttenuation(float distance, float3 L, LightDescription light)
-{    
+{   
     float distAtten = saturate(1.0 - distance * light.invRadius);
     distAtten = pow(distAtten, light.LightColorAndFalloffExponent.w);
 

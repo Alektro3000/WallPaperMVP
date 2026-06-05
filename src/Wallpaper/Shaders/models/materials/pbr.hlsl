@@ -15,12 +15,16 @@ cbuffer MaterialBuffer : register(b1)
 #define AlbedoTexFlag 1
 #define NormalTexFlag 2
 #define PackedTexFlag 4
+#define CustomFlag    8
+#define CustomFlag1   16
+#define CustomFlag2   32
 
 Texture2D TextureHeap[] : register(t0);
 SamplerState LinearSampler : register(s0);
+SamplerState ShadowSampler : register(s1);
 
 #ifdef SKELETAL
-cbuffer JointsConstants : register(b2)
+cbuffer JointsConstants : register(b3)
 {
     float4x4 Joints[1024];
 }
@@ -91,13 +95,13 @@ VSOutput MAIN_VS(VSInput input)
 
     float4 worldPosition = mul(skinnedPosition, ModelTransform);
     o.worldPosition = worldPosition.xyz;
-    o.Position = mul( worldPosition, ViewProjection);
+    o.Position = mul(worldPosition, ViewProjection);
     float3 N = ObjectToWorldNormal(skinnedNormal.xyz);
     float3 T = ObjectToWorldDir(skinnedTangent.xyz);
     // important for normal mapping
     T = normalize(T - N * dot(N, T));
     o.normal = N;
-    o.tangent = float4(T , input.tangent.w);
+    o.tangent = float4(T, input.tangent.w);
     o.UV = input.UV;
     return o;
 }
@@ -137,7 +141,6 @@ float4 MAIN_PS(VSOutput input, bool isFrontFace : SV_IsFrontFace) : SV_Target
 
     float3 normalWS = normalize(mul(normalTS, TBN));
 
-
     
     float3 worldPos = input.worldPosition;
     float3 V = normalize(CameraPos - worldPos);
@@ -170,6 +173,7 @@ float4 MAIN_PS(VSOutput input, bool isFrontFace : SV_IsFrontFace) : SV_Target
         F0
     );
 
+        
     float3 kD = (1.0 - kS) * (1.0 - metallic);
 
     float3 ambient =
@@ -178,15 +182,54 @@ float4 MAIN_PS(VSOutput input, bool isFrontFace : SV_IsFrontFace) : SV_Target
 
     for (int i = 0; i < LightCount; i++)
     {
-        hdr += EvaluateSpotLightPBR(
-            worldPos,
-            normalWS,
-            V,
-            baseColor, 
-            alpha , metallic,
-            F0,
-            Lights[i]
-        );
+        LightDescription light = Lights[i];
+
+        float4 shadowPos = mul( float4(worldPos, 1.0), light.LightViewProjMatrix);
+        float3 shadowCoords = shadowPos.xyz / shadowPos.w;
+        float2 shadowUV = shadowCoords.xy * float2(0.5, -0.5) + 0.5;
+        float lightDepth = shadowCoords.z;
+
+        if(any(saturate(shadowUV) != shadowUV))
+        {
+            continue;
+        }
+        
+        float shadowDepth = TextureHeap[light.ShadowMapBegin].SampleLevel(ShadowSampler, shadowUV, 0).x;
+        
+        float bias = 0.0001;
+
+        float maxValue = 0.1;
+
+        float difference = (lightDepth - shadowDepth) / maxValue;
+
+        
+        if((flags & CustomFlag2) != 0)
+        {
+            if(flags & CustomFlag1)
+                return float4(saturate(difference), saturate(-difference), 0, 1);
+            
+            if(flags & CustomFlag)
+                return float4((lightDepth / maxValue).xxx, 1);
+            
+            return float4((shadowDepth / maxValue).xxx, 1);
+        }
+        
+
+        //return float4(shadowUV, 0, 1);
+        //return float4(saturate((lightDepth - shadowDepth) / (maxValue - minValue)).xxx , 1);
+
+        bool lit = lightDepth >= shadowDepth - bias;
+
+        if(lit)
+            hdr += EvaluateSpotLightPBR(
+                worldPos,
+                normalWS,
+                V,
+                baseColor, 
+                alpha , metallic,
+                F0,
+                light
+            );
     }
     return float4(TonemapACES(hdr), colorAlpha);
 }

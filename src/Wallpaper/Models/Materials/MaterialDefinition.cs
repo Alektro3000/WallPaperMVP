@@ -80,7 +80,7 @@ public class MaterialDefinition : IDisposable
                 AlphaMode.BLEND => BlendDescription.AlphaBlend,
                 _ => throw new NotImplementedException("Unknown alpha mode"),
             },
-            DepthStencilState = new DepthStencilDescription(true, DepthWriteMask.All, ComparisonFunction.LessEqual),
+            DepthStencilState = DepthStencilDescription.ReverseZ,
             DepthStencilFormat = Format.D32_Float,
             SampleDescription = SampleDescription.Default,
             RenderTargetFormats = [Format.B8G8R8A8_UNorm]

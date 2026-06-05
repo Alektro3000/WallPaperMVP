@@ -1,6 +1,6 @@
 using System.Drawing.Imaging;
 using Renderer.Commands;
-using Renderer.Core;
+using Renderer.Resources;
 using Vortice.Direct3D12;
 using Vortice.DXGI;
 
@@ -85,7 +85,7 @@ public sealed class TextureLoader : IDisposable
             cmd.ResourceBarrierTransition(textureResource, ResourceStates.CopyDest, ResourceStates.PixelShaderResource);
         });
 
-        var texture = new Texture
+        var texture = new ImageTexture
         {
             Format = format,
             Name = name,
